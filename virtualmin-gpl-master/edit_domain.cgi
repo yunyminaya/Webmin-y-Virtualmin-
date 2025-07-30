@@ -1,0 +1,441 @@
+#!/usr/local/bin/perl
+# edit_domain.cgi
+# Display details of a domain for editing
+
+require './virtual-server-lib.pl';
+&ReadParse();
+$d = &get_domain($in{'dom'});
+$d || &error($text{'edit_egone'});
+&can_config_domain($d) || &error($text{'edit_ecannot'});
+if ($d->{'parent'}) {
+	$parentdom = &get_domain($d->{'parent'});
+	}
+if ($d->{'alias'}) {
+	$aliasdom = &get_domain($d->{'alias'});
+	}
+if ($d->{'subdom'}) {
+	$subdom = &get_domain($d->{'subdom'});
+	}
+$tmpl = &get_template($d->{'template'});
+&ui_print_header(&domain_in($d), $aliasdom ?  $text{'edit_title3'} :
+				 $subdom ?    $text{'edit_title4'} :
+				 $parentdom ? $text{'edit_title2'} :
+					      $text{'edit_title'}, "");
+# Disabled, so tell the user that features cannot be changed
+if ($d->{'disabled'}) {
+	print &ui_alert_box("<span>".
+	      "<b>".$text{'edit_disabled_'.$d->{'disabled_reason'}}."\n".
+	      $text{'edit_disabled'}."</b><br>".
+	      ($d->{'disabled_why'} ?
+		&text('edit_disabled_why', $d->{'disabled_why'})."<br>" : "").
+	      ($d->{'disabled_time'} ?
+		&text('edit_disabled_time',
+		      &make_date($d->{'disabled_time'}))."<br>" : "").
+	      "</span>", 'warn', undef, undef, "");
+	}
+
+@tds = ( "width=30%" );
+print &ui_form_start("save_domain.cgi", "post");
+print &ui_hidden("dom", $in{'dom'}),"\n";
+print &ui_hidden_table_start($text{'edit_header'}, "width=100%", 2,
+			     "basic", 1, \@tds);
+
+# Domain name, with link
+$dname = &show_domain_name($d);
+$url = &get_domain_url($d)."/";
+print &ui_table_row($text{'edit_domain'},
+	&domain_has_website($d) ?
+	  "<tt>".&ui_link($url, $dname, undef, "target=_blank")."</tt>" :
+	  "<tt>$dname</tt>");
+
+if ($dname ne $d->{'dom'}) {
+	print &ui_table_row($text{'edit_xndomain'},
+		"<tt>$d->{'dom'}</tt>");
+	}
+
+# Username
+foreach $f (@database_features) {
+	$ufunc = "${f}_user";
+	if (!$d->{'parent'} && $d->{$f} && defined(&$ufunc)) {
+		$duser = &$ufunc($d);
+		if ($duser ne $d->{'user'}) {
+			push(@dbusers, &text('edit_dbuser', $duser,
+					     $text{'feature_'.$f}));
+			}
+		}
+	}
+print &ui_table_row($text{'edit_user'},
+		    "<tt>$d->{'user'}</tt> ".
+		    (@dbusers ? " (".join(", ", @dbusers).")" : ""));
+
+# Group name
+if (($d->{'unix'} || $d->{'parent'}) && $d->{'group'}) {
+	print &ui_table_row($text{'edit_group'},
+			    "<tt>$d->{'group'}</tt>");
+	}
+
+# Show creator and date
+print &ui_table_row($text{'edit_created'},
+		    &text('edit_createdby',
+			  &make_date($d->{'created'}),
+			  $d->{'creator'} ? "<tt>$d->{'creator'}</tt>"
+				          : $text{'maillog_unknown'}));
+
+if ($virtualmin_pro && $d->{'reseller'}) {
+	# Show reseller
+	print &ui_table_row($text{'edit_reseller'},
+			    "<tt>$d->{'reseller'}</tt>");
+	}
+
+if (!$aliasdom && $d->{'dir'}) {
+	# Show home directory
+	print &ui_table_row($text{'edit_home'},
+			    "<tt>$d->{'home'}</tt>");
+	}
+
+# Show IP addresses
+@ips = ( $d->{'ip'} );
+if ($d->{'ip6'}) {
+	push(@ips, $d->{'ip6'});
+	}
+my $ip = join(", ", @ips).
+	($d->{'dns_ip'} ? " (".&text('edit_dnsip2', $d->{'dns_ip'}).")" : "");
+if (&can_change_ip($d) && &can_edit_domain($d)) {
+	$ip = &ui_link("newip_form.cgi?dom=$d->{'id'}", $ip);
+	}
+print &ui_table_row($text{'edit_ips'}, $ip);
+
+if ($d->{'proxy_pass_mode'} && $d->{'proxy_pass'} && &domain_has_website($d)) {
+	# Show forwarding / proxy destination
+	print &ui_table_row($text{'edit_proxy'.$d->{'proxy_pass_mode'}},
+			    "<tt>$d->{'proxy_pass'}</tt>");
+	}
+
+if ($aliasdom) {
+	# Show link to aliased domain
+	print &ui_table_row($text{'edit_aliasto'},
+			    "<a href='edit_domain.cgi?dom=$d->{'alias'}'>".
+			    &show_domain_name($aliasdom)."</a>".
+			    ($d->{'aliasmail'} ?
+				" (".$text{'edit_aliasmail'}.")" : ""));
+	}
+elsif ($parentdom) {
+	# Show link to parent domain
+	print &ui_table_row($text{'edit_parent'},
+			    "<a href='edit_domain.cgi?dom=$d->{'parent'}'>".
+			    &show_domain_name($parentdom)."</a>");
+	}
+
+# Show domain ID
+if (&master_admin()) {
+	print &ui_table_row($text{'edit_id'},
+			    "<tt>$d->{'id'}</tt>");
+	}
+
+print &ui_hidden_table_end("basic");
+
+
+# Configuration settings section
+print &ui_hidden_table_start($text{'edit_headerc'}, "width=100%", 2,
+			     "config", 1, \@tds);
+
+# Show username prefix, with option to change
+if (!$aliasdom && $tmpl->{'append_style'} != 6) {
+	@users = &list_domain_users($d, 1, 1, 1, 1);
+	$msg = &get_prefix_msg($d);
+	print &ui_table_row($text{'edit_'.$msg},
+		@users ? "<tt>$d->{'prefix'}</tt> (".
+			  &text('edit_noprefix', scalar(@users)).")"
+		       : &ui_textbox("prefix", $d->{'prefix'}, 30));
+	}
+
+# Show active template
+foreach $t (&list_templates()) {
+	next if ($t->{'deleted'});
+	next if (($d->{'parent'} && !$d->{'alias'}) && !$t->{'for_sub'});
+	next if (!$d->{'parent'} && !$t->{'for_parent'});
+	next if (!&master_admin() && !&reseller_admin() && !$t->{'for_users'});
+	next if ($d->{'alias'} && !$t->{'for_alias'});
+	next if (!&can_use_template($t));
+	push(@cantmpls, $t);
+	$gottmpl = 1 if ($t->{'id'} == $tmpl->{'id'});
+	}
+if (@cantmpls) {
+	push(@cantmpls, $tmpl) if (!$gottmpl);
+	print &ui_table_row(&hlink($text{'edit_tmpl'},"template"),
+		    &ui_select("template", $tmpl->{'id'},
+			[ map { [ $_->{'id'}, $_->{'name'} ] } @cantmpls ]));
+	}
+
+# Generate Javascript for plan change
+@plans = sort { $a->{'name'} cmp $b->{'name'} } &list_available_plans();
+$js = "<script>\n";
+$js .= "function select_plan(num)\n";
+$js .= "{\n";
+$js .= "var domain_form_target = document.querySelectorAll('form[action*=\"domain\"][action*=\".cgi\"]');\n";
+foreach $plan (@plans) {
+	$js .= "if (num == $plan->{'id'}) {\n";
+	$js .= &quota_javascript("quota", $plan->{'quota'}, "home", 1);
+	$js .= &quota_javascript("uquota", $plan->{'uquota'}, "home", 1);
+	$js .= &quota_javascript("bw", $plan->{'bwlimit'}, "bw", 1);
+	$js .= "    }\n";
+	}
+$js .= "}\n";
+$js .= "</script>\n";
+print $js;
+
+# Show plan, with option to change
+if (!$parentdom) {
+	$plan = $d->{'plan'} eq '' ? undef : &get_plan($d->{'plan'});
+	$label = &hlink($text{'edit_plan'}, "plan");
+	if (@plans) {
+		# Can select one
+		($onlist) = grep { $_->{'id'} eq $plan->{'id'} } @plans;
+		push(@plans, $plan) if (!$onlist);
+		print &ui_table_row($label,
+		   &ui_select("plan", $plan->{'id'},
+		     [ map { [ $_->{'id'}, $_->{'name'} ] } @plans ],
+		     1, 0, 0, 0,
+		     "onChange='select_plan(options[selectedIndex].value)'").
+		   " ".
+		   &ui_checkbox("applyplan", 1, $text{'edit_applyplan'}, 1));
+		}
+	else {
+		# Just show current plan
+		print &ui_table_row($label, $plan->{'name'});
+		}
+	}
+
+# Show description
+print &ui_table_row($text{'edit_owner'},
+		    &ui_textbox("owner", $d->{'owner'}, 50, 0, undef,
+			  "autocomplete='off'"));
+
+if (!$parentdom) {
+	# Show owner's email address and password
+	print &ui_table_row(&hlink($text{'edit_email'}, "ownersemail"),
+		$d->{'unix'} ? &ui_opt_textbox("email", $d->{'email'}, 30,
+					       $text{'edit_email_def'})
+			     : &ui_textbox("email", $d->{'email'}, 30));
+
+	$smsg = &get_password_synced_types($d) ?
+			"<br>".$text{'edit_dbsync'} : "";
+	my $checked_domain_hashpass = &check_domain_hashpass($d);
+	my $optsextra = $checked_domain_hashpass ? ['hashpass_enable'] : undef;
+	print &ui_table_row($text{'edit_passwd'},
+		&ui_opt_textbox("passwd", undef, 20,
+				$text{'edit_lv'}." ".&show_password_popup($d),
+				$text{'edit_set'}, undef, $optsextra, undef,
+			 	"autocomplete=new-password").
+		($checked_domain_hashpass ? 
+			("&nbsp;&nbsp;&nbsp;&nbsp;".&ui_checkbox("hashpass_enable", 1, 
+				$text{'edit_hash'}, $d->{'hashpass'})) :
+			"").
+		$smsg);
+	}
+
+# Made domain protected if allowed
+if (&master_admin() || (&reseller_admin() && !$access{'nodelete'}) ||
+    $access{'edit_delete'} || $access{'edit_disable'}) {
+	print &ui_table_row(&hlink($text{'edit_protected'}, "edit_protected"),
+		&ui_yesno_radio("protected", $d->{'protected'}));
+	}
+
+# Show domain for use in links
+my @aliases = grep { &domain_has_website($_) }
+		   &get_domain_by("alias", $d->{'id'});
+if (!$d->{'alias'} && @aliases && &domain_has_website($d)) {
+	print &ui_table_row(&hlink($text{'edit_linkdom'}, "linkdom"),
+		&ui_select("linkdom", $d->{'linkdom'},
+			   [ [ undef, "&lt;$text{'edit_nolinkdom'}&gt;" ],
+			     map { [ $_->{'id'}, &show_domain_name($_) ] }
+				 @aliases ]));
+	}
+
+print &ui_hidden_table_end("config");
+
+# Start of collapsible section for limits
+$limits_section = !$parentdom &&
+		  (&has_home_quotas() && (&can_edit_quotas() || $d->{'unix'}) ||
+		  $config{'bw_active'});
+if ($limits_section) {
+	# Check if the domain is over any limits, show open by default if so
+	$overlimits = 0;
+	if ($d->{'bw_limit'} && $d->{'bw_usage'} > $d->{'bw_limit'}) {
+		$overlimits++;
+		}
+	if ($d->{'quota'} && 0) {
+		($totalhomequota, $totalmailquota) = &get_domain_quota($d);
+		if ($totalhomequota > $d->{'quota'}) {
+			$overlimits++;
+			}
+		}
+	if ($d->{'uquota'} && 0) {
+		$duser = &get_domain_owner($d, 1, 0, 1);
+		if ($duser && $duser->{'uquota'} > $d->{'uquota'}) {
+			$overlimits++;
+			}
+		}
+
+	print &ui_hidden_table_start($text{'edit_limitsect'}, "width=100%", 2,
+				     "limits", $overlimits, \@tds);
+	}
+
+# Show user and group quota editing inputs
+if (&has_home_quotas() && !$parentdom && &can_edit_quotas()) {
+	print &ui_table_row($text{'edit_quota'},
+		&opt_quota_input("quota", $d->{'quota'}, "home"));
+	print &ui_table_row($text{'edit_uquota'},
+		&opt_quota_input("uquota", $d->{'uquota'}, "home"));
+	}
+
+if ($config{'bw_active'} && !$parentdom) {
+	# Show bandwidth limit and period
+	if (&can_edit_bandwidth()) {
+		print &ui_table_row($text{'edit_bw'},
+			    &bandwidth_input("bw", $d->{'bw_limit'}));
+
+		# If bandwidth disabling is enabled, show option to turn off
+		# for this domain
+		if ($config{'bw_disable'}) {
+			print &ui_table_row($text{'edit_bw_disable'},
+				&ui_radio("bw_no_disable",
+					  int($d->{'bw_no_disable'}),
+					  [ [ 0, $text{'yes'} ],
+					    [ 1, $text{'no'} ] ]));
+			}
+		}
+	else {
+		print &ui_table_row($text{'edit_bw'},
+		  $d->{'bw_limit'} ?
+		    &text('edit_bwpast_'.$config{'bw_past'},
+		        &nice_size($d->{'bw_limit'}), $config{'bw_period'}) :
+		    $text{'edit_bwnone'});
+		}
+	}
+
+# Show total disk usage, broken down into unix user and mail users
+if (&has_home_quotas() && !$parentdom && $d->{'unix'}) {
+	&show_domain_quota_usage($d);
+	}
+
+if ($config{'bw_active'} && !$parentdom) {
+	# Show usage over current period
+	&show_domain_bw_usage($d);
+	}
+
+if ($limits_section) {
+	print &ui_hidden_table_end("limits");
+	}
+
+# Show section for custom fields, if any
+$fields = &show_custom_fields($d, \@tds);
+if ($fields) {
+	print &ui_hidden_table_start($text{'edit_customsect'}, "width=100%", 2,
+				     "custom", 1, \@tds);
+	print $fields;
+	print &ui_hidden_table_end("custom");
+	}
+
+# Show buttons for turning features on and off (if allowed)
+if (!$d->{'disabled'}) {
+	# Show features for this domain
+	print &ui_hidden_table_start($text{'edit_featuresect'}, "width=100%", 2,
+				     "feature", 1);
+	@grid = ( );
+	@grid_order_initial = ( );
+	$i = 0;
+	my @domain_possible_features = &list_possible_domain_features($d);
+	foreach my $f (@domain_possible_features) {
+		# Don't show features that are chained from another, if both
+		# are in the same state
+		my @ch = &can_chained_feature($f, 1);
+		if (@ch && $d->{$ch[0]} == $d->{$f}) {
+			print &ui_hidden($f, $d->{$f}),"\n";
+			next;
+			}
+
+		# Don't show unix user and directory options if enabled
+		if (($f eq "dir" || $f eq "unix") &&
+		    $config{$f} == 3 && $d->{$f}) {
+			print &ui_hidden($f, $d->{$f}),"\n";
+			next;
+			}
+
+		# Don't show dir option for alias domains if not needed
+		if ($f eq 'dir' && $config{$f} == 3 && $d->{'alias'} &&
+		    $tmpl->{'aliascopy'}) {
+			print &ui_hidden($f, $d->{$f}),"\n";
+			next;
+			}
+
+		my $ftxt = $aliasdom ? $text{'form_alias'.$f} :
+			   $parentdom ? $text{'edit_sub'.$f} : undef;
+		my $fhelp = $f;
+		$fhelp = $f."_alias" if ($aliasdom && $ftxt);
+		$ftxt ||= $text{'edit_'.$f};
+		if (!&can_use_feature($f)) {
+			push(@grid_order_initial, $f);
+			push(@grid, &ui_checkbox($f."_dis", 1, undef,
+						$d->{$f}, undef, 1).
+				    &ui_hidden($f, $d->{$f}).
+				    " <b>".&hlink($ftxt, $fhelp)."</b>");
+			}
+		else {
+			push(@grid_order_initial, $f);
+			push(@grid, &ui_checkbox($f, 1, "", $d->{$f},
+					&feature_check_chained_javascript($f)).
+				    " <b>".&hlink($ftxt, $fhelp)."</b>");
+			}
+		}
+
+	foreach $f (&list_feature_plugins()) {
+		next if (!&plugin_call($f, "feature_suitable",
+					$parentdom, $aliasdom, $subdom));
+
+		# Don't show plugins that are chained from another
+		my @ch = &can_chained_feature($f, 1);
+                if (@ch && $d->{$ch[0]} == $d->{$f}) {
+			print &ui_hidden($f, $d->{$f}),"\n";
+			next;
+			}
+
+		$label = &plugin_call($f, "feature_label", 1);
+		$label = " <b>$label</b>";
+		$hlink = &plugin_call($f, "feature_hlink");
+		$label = &hlink($label, $hlink, $f) if ($hlink);
+		if (!&can_use_feature($f)) {
+			push(@grid_order_initial, $f);
+			push(@grid, &ui_checkbox($f."_dis", 1, "",
+						 $d->{$f}, undef, 1).
+				    &ui_hidden($f, $d->{$f}).
+				    $label);
+			}
+		else {
+			push(@grid_order_initial, $f);
+			push(@grid, &ui_checkbox($f, 1, "", $d->{$f},
+					&feature_check_chained_javascript($f)).
+				    $label);
+			}
+		}
+	features_sort(\@grid, \@grid_order_initial);
+	print &ui_table_row(undef, &vui_features_sorted_grid(\@grid), 2);
+	print &ui_hidden_table_end("feature");
+	}
+
+# Save changes button
+print &ui_form_end([ [ "save", $text{'edit_save'} ] ]);
+
+# Show actions for this domain, unless the theme vetos it (cause they are on
+# the left menu)
+if (!$main::basic_virtualmin_domain &&
+    !$main::basic_virtualmin_menu) {
+	&show_domain_buttons($d);
+	}
+
+# Make sure the left menu is showing this domain
+if (defined(&theme_select_domain)) {
+	&theme_select_domain($d);
+	}
+
+&ui_print_footer("", $text{'index_return'});
