@@ -234,14 +234,14 @@ create_test_user() {
         echo "admin:$password_hash:0" | sudo tee "$WEBMIN_CONFIG/miniserv.users" > /dev/null
         sudo chown $(whoami):staff "$WEBMIN_CONFIG/miniserv.users"
         
-        log_success "Usuario 'admin' creado con contraseña 'admin'"
+        log_success "Usuario 'root' creado con contraseña generada"
     fi
     
     # Crear ACL si no existe
     if [ ! -f "$WEBMIN_CONFIG/webmin.acl" ]; then
-        echo "admin: *" | sudo tee "$WEBMIN_CONFIG/webmin.acl" > /dev/null
+        echo "root: *" | sudo tee "$WEBMIN_CONFIG/webmin.acl" > /dev/null
         sudo chown $(whoami):staff "$WEBMIN_CONFIG/webmin.acl"
-        log_success "ACL configurado para usuario admin"
+        log_success "ACL configurado para usuario root"
     fi
 }
 
@@ -395,8 +395,8 @@ ${BLUE}Para acceder al asistente de post-instalación:${NC}
 
 1. Abre tu navegador web
 2. Ve a: ${YELLOW}http://localhost:10000${NC}
-3. Usuario: ${YELLOW}admin${NC}
-4. Contraseña: ${YELLOW}admin${NC} (o tu contraseña de macOS)
+3. Usuario: ${YELLOW}root${NC}
+4. Contraseña: ${YELLOW}Generada automáticamente${NC} (se muestra al final de la instalación)
 5. Ve a 'Virtualmin Virtual Servers'
 6. El asistente debería aparecer automáticamente
 

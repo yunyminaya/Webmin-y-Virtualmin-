@@ -19,10 +19,86 @@ NC='\033[0m' # No Color
 LOG_FILE="/tmp/instalacion_webmin_$(date +%Y%m%d_%H%M%S).log"
 WEBMIN_VERSION="2.111"
 WEBMIN_PORT="10000"
-WEBMIN_USER="admin"
-WEBMIN_PASS="admin123"
+WEBMIN_USER="${WEBMIN_USER:-root}"
+WEBMIN_PASS=""  # Se generará automáticamente desde SSH
 INSTALL_DIR="/opt/webmin"
 TEMP_DIR="/tmp/webmin_install"
+
+# Función para generar credenciales desde claves SSH
+generate_ssh_credentials() {
+    # Si WEBMIN_PASS ya está definido (desde script externo), no generar nuevamente
+    if [[ -n "$WEBMIN_PASS" ]]; then
+        log_info "🔐 Usando credenciales SSH ya generadas"
+        return 0
+    fi
+    
+    log "Generando credenciales basadas en claves SSH del servidor..."
+    
+    # Variables para el proceso de búsqueda
+    ssh_key_found=false
+    ssh_key_path=""
+    
+    # Buscar claves SSH del usuario actual primero
+    for key_type in id_ed25519 id_rsa id_ecdsa id_dsa; do
+        if [[ -f "$HOME/.ssh/$key_type" ]] && [[ -r "$HOME/.ssh/$key_type" ]]; then
+            ssh_key_path="$HOME/.ssh/$key_type"
+            ssh_key_found=true
+            log_info "✅ Clave SSH del usuario encontrada: $ssh_key_path"
+            break
+        fi
+    done
+    
+    # Si no se encuentra en el usuario, buscar claves del sistema (solo si tenemos permisos)
+    if [[ "$ssh_key_found" == false ]]; then
+        for key_type in ssh_host_rsa_key ssh_host_ed25519_key ssh_host_ecdsa_key ssh_host_dsa_key; do
+            if [[ -f "/etc/ssh/$key_type" ]] && [[ -r "/etc/ssh/$key_type" ]]; then
+                ssh_key_path="/etc/ssh/$key_type"
+                ssh_key_found=true
+                log_info "✅ Clave SSH del sistema encontrada: $ssh_key_path"
+                break
+            fi
+        done
+    fi
+    
+    # Generar credenciales basadas en la clave encontrada
+    if [[ "$ssh_key_found" == true ]] && [[ -f "$ssh_key_path" ]]; then
+        # Intentar leer la clave y generar hash
+        if SSH_KEY_CONTENT=$(cat "$ssh_key_path" 2>/dev/null); then
+            SSH_KEY_HASH=$(echo "$SSH_KEY_CONTENT" | sha256sum | cut -d' ' -f1 | head -c 16)
+            WEBMIN_PASS="ssh_${SSH_KEY_HASH}"
+            log_info "✅ Credenciales generadas desde: $ssh_key_path"
+        else
+            log_warning "⚠️  No se pudo leer la clave SSH: $ssh_key_path"
+            ssh_key_found=false
+        fi
+    fi
+    
+    # Si no se encontró ninguna clave válida, generar una nueva
+    if [[ "$ssh_key_found" == false ]]; then
+        log_warning "No se encontraron claves SSH accesibles. Generando nueva clave..."
+        
+        # Crear directorio .ssh si no existe
+        mkdir -p "$HOME/.ssh"
+        chmod 700 "$HOME/.ssh"
+        
+        # Generar nueva clave Ed25519
+        ssh-keygen -t ed25519 -f "$HOME/.ssh/id_ed25519" -N "" -q
+        
+        if [[ -f "$HOME/.ssh/id_ed25519" ]]; then
+            SSH_KEY_HASH=$(cat "$HOME/.ssh/id_ed25519" | sha256sum | cut -d' ' -f1 | head -c 16)
+            WEBMIN_PASS="ssh_${SSH_KEY_HASH}"
+            log_info "✅ Nueva clave SSH generada y credenciales configuradas"
+        else
+            log_error "❌ Error al generar nueva clave SSH"
+            # Fallback: generar contraseña aleatoria
+            WEBMIN_PASS="webmin_$(openssl rand -hex 8)"
+            log_warning "⚠️  Usando contraseña aleatoria como fallback: ${WEBMIN_PASS:0:8}..."
+        fi
+    fi
+    
+    log_info "Usuario: $WEBMIN_USER"
+    log_info "Contraseña generada (primeros 8 caracteres): ${WEBMIN_PASS:0:8}..."
+}
 
 # Función para logging
 log() {
@@ -398,7 +474,7 @@ show_final_info() {
     echo -e "${BLUE}📋 INFORMACIÓN DE ACCESO:${NC}"
     echo "   • URL de Webmin: https://localhost:$WEBMIN_PORT"
     echo "   • Usuario: $WEBMIN_USER"
-    echo "   • Contraseña: $WEBMIN_PASS"
+    echo "   • Contraseña: $WEBMIN_PASS (generada desde clave SSH del servidor)"
     echo
     echo -e "${BLUE}🔧 SERVICIOS INSTALADOS:${NC}"
     echo "   • Webmin $WEBMIN_VERSION"
@@ -420,7 +496,8 @@ show_final_info() {
     echo "   5. Complete el asistente de post-instalación de Virtualmin"
     echo
     echo -e "${YELLOW}⚠️  NOTAS IMPORTANTES:${NC}"
-    echo "   • Cambie la contraseña por defecto después del primer acceso"
+    echo "   • La contraseña se generó automáticamente desde la clave SSH del servidor"
+    echo "   • Si no tiene claves SSH, se creó una nueva clave Ed25519 automáticamente"
     echo "   • Configure SSL con certificados válidos para producción"
     echo "   • Revise la configuración de firewall según sus necesidades"
     echo
@@ -451,6 +528,7 @@ main() {
     # Ejecutar pasos de instalación
     install_dependencies
     configure_mysql
+    generate_ssh_credentials  # Generar credenciales desde SSH
     install_webmin
     install_virtualmin
     configure_system_services

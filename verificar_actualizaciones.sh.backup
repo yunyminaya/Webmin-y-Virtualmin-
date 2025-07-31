@@ -14,36 +14,6 @@ PURPLE='\033[0;35m'
 NC='\033[0m' # No Color
 
 # Variables
-
-# Función para detectar sistema operativo
-detect_os() {
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        OS="macos"
-        DISTRO="macos"
-    elif [[ -f /etc/os-release ]]; then
-        . /etc/os-release
-        OS="linux"
-        DISTRO="$ID"
-    elif [[ -f /etc/redhat-release ]]; then
-        OS="linux"
-        if grep -q "CentOS" /etc/redhat-release; then
-            DISTRO="centos"
-        elif grep -q "Red Hat" /etc/redhat-release; then
-            DISTRO="rhel"
-        elif grep -q "Fedora" /etc/redhat-release; then
-            DISTRO="fedora"
-        fi
-    elif [[ -f /etc/debian_version ]]; then
-        OS="linux"
-        DISTRO="debian"
-    else
-        OS="unknown"
-        DISTRO="unknown"
-    fi
-    
-    export OS DISTRO
-}
-
 THEME_DIR="/usr/share/webmin/authentic-theme"
 VIRTUALMIN_DIR="/usr/share/webmin/virtual-server"
 UPDATE_CHECK_FILE="/var/cache/webmin-virtualmin-updates.cache"

@@ -54,11 +54,11 @@ chmod +x instalacion_completa_automatica.sh
 
 ```
 URL: https://localhost:10000
-Usuario: admin
-Contraseña: admin123
+Usuario: root
+Contraseña: [Generada automáticamente desde clave SSH]
 ```
 
-> ⚠️ **IMPORTANTE**: Cambie estas credenciales después del primer acceso
+> ⚠️ **IMPORTANTE**: La contraseña se genera automáticamente desde la clave SSH del servidor y se muestra al final de la instalación
 
 ## 📋 Requisitos Previos
 

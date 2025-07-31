@@ -1,8 +1,5 @@
 #!/bin/bash
 
-set -e
-
-
 # Script de Monitoreo Continuo del Sistema Webmin/Virtualmin
 # Versión: 2.0
 # Descripción: Monitorea el estado del sistema y notifica sobre actualizaciones disponibles

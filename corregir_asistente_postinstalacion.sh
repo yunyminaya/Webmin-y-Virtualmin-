@@ -246,12 +246,12 @@ sudo chown root:wheel /Library/LaunchDaemons/com.webmin.webmin.plist
 
 log_step "Configurando Usuario Administrador"
 
-# Crear usuario admin para Webmin
+# Crear usuario root para Webmin
 sudo mkdir -p /etc/webmin/webmin-users
-echo "admin:x:$(id -u):$(id -g):Admin User:/Users/$(whoami):/bin/bash" | sudo tee /etc/webmin/webmin-users/admin > /dev/null
+echo "root:x:$(id -u):$(id -g):Root User:/Users/$(whoami):/bin/bash" | sudo tee /etc/webmin/webmin-users/root > /dev/null
 
-# Configurar ACL para admin
-echo "admin: *" | sudo tee /etc/webmin/webmin.acl > /dev/null
+# Configurar ACL para root
+echo "root: *" | sudo tee /etc/webmin/webmin.acl > /dev/null
 
 log_step "Iniciando Servicios"
 
@@ -269,8 +269,8 @@ log_step "Verificación Final"
 if check_port 10000 "Webmin"; then
     log_success "Webmin está funcionando correctamente"
     log_info "Accede a Webmin en: http://localhost:10000"
-    log_info "Usuario: admin"
-    log_info "Contraseña: tu contraseña de macOS"
+    log_info "Usuario: root"
+    log_info "Contraseña: Generada automáticamente desde clave SSH"
 else
     log_error "Webmin no pudo iniciarse correctamente"
     log_info "Revisa los logs en /var/log/webmin/"
@@ -335,8 +335,8 @@ ${BLUE}Para acceder al asistente de post-instalación:${NC}
 
 1. Abre tu navegador web
 2. Ve a: ${YELLOW}http://localhost:10000${NC}
-3. Usuario: ${YELLOW}admin${NC}
-4. Contraseña: ${YELLOW}tu contraseña de macOS${NC}
+3. Usuario: ${YELLOW}root${NC}
+4. Contraseña: ${YELLOW}Generada automáticamente desde clave SSH${NC}
 5. Ve a 'Virtualmin Virtual Servers'
 6. El asistente de post-instalación debería aparecer automáticamente
 

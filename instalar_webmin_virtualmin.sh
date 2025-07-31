@@ -19,6 +19,7 @@ NC='\033[0m'
 REPO_URL="https://github.com/yunyminaya/Wedmin-Y-Virtualmin.git"
 INSTALL_DIR="/tmp/webmin_virtualmin_install"
 SCRIPT_NAME="instalacion_completa_automatica.sh"
+WEBMIN_USER="root"
 
 echo "═══════════════════════════════════════════════════════════════════════════════"
 echo -e "${GREEN}🚀 INSTALADOR RÁPIDO DE WEBMIN Y VIRTUALMIN${NC}"
@@ -36,6 +37,60 @@ log_error() {
 
 log_info() {
     echo -e "${BLUE}[INFO]${NC} $1"
+}
+
+# Función para generar credenciales basadas en SSH
+generate_ssh_credentials() {
+    log_info "🔐 Generando credenciales desde clave SSH del servidor..."
+    
+    # Buscar claves SSH existentes
+    local ssh_key_found=false
+    local ssh_key_path=""
+    
+    # Buscar en directorio del usuario actual
+    for key_type in id_rsa id_ed25519 id_ecdsa id_dsa; do
+        if [[ -f "$HOME/.ssh/$key_type" ]]; then
+            ssh_key_path="$HOME/.ssh/$key_type"
+            ssh_key_found=true
+            log_info "✅ Clave SSH encontrada: $ssh_key_path"
+            break
+        fi
+    done
+    
+    # Si no se encuentra en el usuario, buscar claves del sistema (solo si tenemos permisos)
+    if [[ "$ssh_key_found" == false ]]; then
+        for key_type in ssh_host_rsa_key ssh_host_ed25519_key ssh_host_ecdsa_key ssh_host_dsa_key; do
+            if [[ -f "/etc/ssh/$key_type" ]] && [[ -r "/etc/ssh/$key_type" ]]; then
+                ssh_key_path="/etc/ssh/$key_type"
+                ssh_key_found=true
+                log_info "✅ Clave SSH del sistema encontrada: $ssh_key_path"
+                break
+            fi
+        done
+    fi
+    
+    # Si no hay claves SSH, generar una nueva
+    if [[ "$ssh_key_found" == false ]]; then
+        log_info "⚠️  No se encontraron claves SSH existentes"
+        log_info "🔧 Generando nueva clave SSH Ed25519..."
+        
+        mkdir -p "$HOME/.ssh"
+        ssh-keygen -t ed25519 -f "$HOME/.ssh/id_ed25519_webmin" -N "" -C "webmin-auto-generated" >/dev/null 2>&1
+        ssh_key_path="$HOME/.ssh/id_ed25519_webmin"
+        
+        log_info "✅ Nueva clave SSH generada: $ssh_key_path"
+    fi
+    
+    # Generar hash SHA256 de la clave para usar como contraseña
+    WEBMIN_PASS=$(sha256sum "$ssh_key_path" | cut -d' ' -f1 | head -c 16)
+    
+    log_info "🔑 Credenciales generadas exitosamente"
+    log_info "👤 Usuario: $WEBMIN_USER"
+    log_info "🔐 Contraseña generada desde: $(basename "$ssh_key_path")"
+    
+    # Exportar variables para el script principal
+    export WEBMIN_USER
+    export WEBMIN_PASS
 }
 
 # Verificar si git está instalado
@@ -126,7 +181,7 @@ echo
 log_info "📋 INFORMACIÓN DE LA INSTALACIÓN:"
 echo "   • Se instalará Webmin y Virtualmin completo"
 echo "   • Se configurarán MySQL, Apache y PHP"
-echo "   • Se creará un usuario admin con contraseña temporal"
+echo "   • Se creará un usuario root con contraseña desde clave SSH"
 echo "   • El proceso puede tomar 10-30 minutos dependiendo de su sistema"
 echo
 
@@ -142,6 +197,9 @@ echo
 log "🚀 Iniciando instalación automática..."
 echo
 
+# Generar credenciales SSH antes de ejecutar
+generate_ssh_credentials
+
 # Ejecutar script principal
 if bash "$SCRIPT_NAME"; then
     echo
@@ -151,11 +209,11 @@ if bash "$SCRIPT_NAME"; then
     echo
     echo -e "${BLUE}📱 ACCESO RÁPIDO:${NC}"
     echo "   🌐 URL: https://localhost:10000"
-    echo "   👤 Usuario: admin"
-    echo "   🔑 Contraseña: admin123"
+    echo "   👤 Usuario: $WEBMIN_USER"
+    echo "   🔑 Contraseña: $WEBMIN_PASS (desde clave SSH)"
     echo
     echo -e "${YELLOW}⚠️  IMPORTANTE:${NC}"
-    echo "   • Cambie la contraseña después del primer acceso"
+    echo "   • La contraseña se generó desde la clave SSH del servidor"
     echo "   • Complete el asistente de post-instalación"
     echo "   • Configure SSL para producción"
     echo

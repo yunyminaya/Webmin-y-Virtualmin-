@@ -88,8 +88,8 @@ tail -f $(brew --prefix)/var/log/httpd/error_log
 
 ### Credenciales de Acceso
 
-- **Usuario:** `admin`
-- **Contraseña:** `admin` (o tu contraseña de macOS)
+- **Usuario:** `root`
+- **Contraseña:** Generada automáticamente desde clave SSH del servidor (se muestra al final de la instalación)
 
 ---
 
