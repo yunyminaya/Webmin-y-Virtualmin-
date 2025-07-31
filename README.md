@@ -42,29 +42,81 @@
 - 📧 **Email Server**: Sistema completo ($100/mes)
 - 💾 **Backup System**: Automático y programable ($50/mes)
 
-## 🚀 Instalación Rápida
+## 🚀 Instalación Ultra-Rápida
 
-### Opción 1: Script Automático (Recomendado)
-
+### ⚡ Instalación con Un Solo Comando (Nuevo)
 ```bash
-# Hacer ejecutable el script
-chmod +x instalacion_unificada.sh
+# Instalar todo automáticamente en menos de 20 minutos
+curl -sSL https://raw.githubusercontent.com/yunyminaya/Wedmin-Y-Virtualmin/main/instalar_webmin_virtualmin.sh | bash
+```
 
-# Ejecutar instalación completa
-sudo ./instalacion_unificada.sh
+**¿Qué incluye?**
+- ✅ Webmin 2.111 + Virtualmin GPL
+- ✅ MySQL + Apache + PHP
+- ✅ Configuración automática completa
+- ✅ SSL y seguridad
+- ✅ Listo para usar en minutos
+
+### Opción 2: Instalación Manual
+```bash
+# Descargar repositorio completo
+git clone https://github.com/yunyminaya/Wedmin-Y-Virtualmin.git
+cd Wedmin-Y-Virtualmin
+./instalacion_completa_automatica.sh
 ```
 
 ### Opción 2: Instalación Manual
-
 ```bash
-# 1. Instalar Virtualmin
-wget https://software.virtualmin.com/gpl/scripts/install.sh
-sudo sh install.sh
+# Clonar el repositorio
+git clone https://github.com/tu-usuario/authentic-virtualmin.git
+cd authentic-virtualmin
 
-# 2. Instalar Authentic Theme
-sudo cp -r authentic-theme-master /usr/share/webmin/authentic-theme
-sudo /usr/share/webmin/changepass.pl /etc/webmin root newpassword
+# Ejecutar instalador
+sudo chmod +x instalacion_unificada.sh
+sudo ./instalacion_unificada.sh
 ```
+
+### Opción 3: Comando Directo
+```bash
+curl -sSL https://raw.githubusercontent.com/tu-usuario/authentic-virtualmin/main/instalacion_unificada.sh | sudo bash
+```
+
+## 🔄 Gestión de Actualizaciones
+
+### Scripts de Actualización Incluidos
+
+#### 1. Actualización del Sistema
+```bash
+# Actualizar componentes con backup automático
+sudo ./actualizar_sistema.sh
+```
+
+#### 2. Verificación de Actualizaciones
+```bash
+# Verificar actualizaciones disponibles
+sudo ./verificar_actualizaciones.sh
+```
+
+#### 3. Monitoreo Continuo
+```bash
+# Instalar monitoreo automático
+sudo ./monitoreo_sistema.sh --install-service
+
+# Ejecutar monitoreo manual
+sudo ./monitoreo_sistema.sh --run
+
+# Generar reporte del sistema
+sudo ./monitoreo_sistema.sh --report
+```
+
+### Características del Sistema de Actualizaciones
+
+- ✅ **Backup Automático**: Crea respaldos antes de cada actualización
+- ✅ **Verificación de Integridad**: Valida la instalación post-actualización
+- ✅ **Rollback Automático**: Restaura el sistema en caso de errores
+- ✅ **Monitoreo Continuo**: Supervisa servicios, recursos y actualizaciones
+- ✅ **Notificaciones**: Alertas por email y logs detallados
+- ✅ **Gestión de Versiones**: Controla versiones de todos los componentes
 
 ## 📋 Requisitos del Sistema
 

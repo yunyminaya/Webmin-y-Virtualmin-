@@ -135,63 +135,122 @@ install_virtualmin_unified() {
     fi
 }
 
+# Verificar versión actual de Authentic Theme
+get_current_theme_version() {
+    if [[ -f "/usr/share/webmin/authentic-theme/theme.info" ]]; then
+        grep "version=" "/usr/share/webmin/authentic-theme/theme.info" | cut -d= -f2 | tr -d '"' || echo "unknown"
+    else
+        echo "not_installed"
+    fi
+}
+
 # Instalar/Actualizar Authentic Theme
 install_authentic_theme() {
     log_step "Instalando Authentic Theme como interfaz unificada..."
     
     # Directorio de temas de Webmin
     THEME_DIR="/usr/share/webmin/authentic-theme"
+    BACKUP_DIR="/var/backups/webmin-themes"
+    
+    # Crear directorio de backup
+    mkdir -p "$BACKUP_DIR"
+    
+    # Verificar versión actual
+    CURRENT_VERSION=$(get_current_theme_version)
+    log_info "Versión actual de Authentic Theme: $CURRENT_VERSION"
     
     # Si existe el directorio local, usarlo
     if [[ -d "/Users/yunyminaya/Wedmin Y Virtualmin/authentic-theme-master" ]]; then
         log_info "Usando Authentic Theme local..."
         
+        # Verificar versión del tema local
+        if [[ -f "/Users/yunyminaya/Wedmin Y Virtualmin/authentic-theme-master/theme.info" ]]; then
+            LOCAL_VERSION=$(grep "version=" "/Users/yunyminaya/Wedmin Y Virtualmin/authentic-theme-master/theme.info" | cut -d= -f2 | tr -d '"' || echo "unknown")
+            log_info "Versión local de Authentic Theme: $LOCAL_VERSION"
+        fi
+        
         # Backup del tema existente si existe
         if [[ -d "$THEME_DIR" ]]; then
-            mv "$THEME_DIR" "${THEME_DIR}.backup.$(date +%Y%m%d_%H%M%S)"
+            log_info "Creando backup del tema existente..."
+            cp -r "$THEME_DIR" "$BACKUP_DIR/authentic-theme.backup.$(date +%Y%m%d_%H%M%S)"
+            log_success "Backup creado en $BACKUP_DIR"
         fi
         
         # Copiar tema local
+        rm -rf "$THEME_DIR"
         cp -r "/Users/yunyminaya/Wedmin Y Virtualmin/authentic-theme-master" "$THEME_DIR"
         chown -R root:root "$THEME_DIR"
         chmod -R 755 "$THEME_DIR"
         
-        log_success "Authentic Theme local instalado"
+        # Verificar instalación
+        if [[ -f "$THEME_DIR/theme.info" ]]; then
+            NEW_VERSION=$(get_current_theme_version)
+            log_success "Authentic Theme local instalado - Versión: $NEW_VERSION"
+        else
+            log_error "Error en la instalación del tema local"
+            return 1
+        fi
     else
         # Descargar la última versión
         log_info "Descargando última versión de Authentic Theme..."
         
         cd /tmp
-        wget -O authentic-theme.zip https://github.com/authentic-theme/authentic-theme/archive/refs/heads/master.zip
-        
-        if [[ $? -eq 0 ]]; then
-            unzip -q authentic-theme.zip
-            
-            # Backup del tema existente si existe
-            if [[ -d "$THEME_DIR" ]]; then
-                mv "$THEME_DIR" "${THEME_DIR}.backup.$(date +%Y%m%d_%H%M%S)"
+        if wget -O authentic-theme.zip https://github.com/authentic-theme/authentic-theme/archive/refs/heads/master.zip; then
+            if unzip -q authentic-theme.zip; then
+                # Verificar versión descargada
+                if [[ -f "/tmp/authentic-theme-master/theme.info" ]]; then
+                    DOWNLOAD_VERSION=$(grep "version=" "/tmp/authentic-theme-master/theme.info" | cut -d= -f2 | tr -d '"' || echo "unknown")
+                    log_info "Versión descargada: $DOWNLOAD_VERSION"
+                fi
+                
+                # Backup del tema existente si existe
+                if [[ -d "$THEME_DIR" ]]; then
+                    log_info "Creando backup del tema existente..."
+                    cp -r "$THEME_DIR" "$BACKUP_DIR/authentic-theme.backup.$(date +%Y%m%d_%H%M%S)"
+                    log_success "Backup creado en $BACKUP_DIR"
+                fi
+                
+                # Instalar nuevo tema
+                rm -rf "$THEME_DIR"
+                mv authentic-theme-master "$THEME_DIR"
+                chown -R root:root "$THEME_DIR"
+                chmod -R 755 "$THEME_DIR"
+                
+                # Verificar instalación
+                if [[ -f "$THEME_DIR/theme.info" ]]; then
+                    NEW_VERSION=$(get_current_theme_version)
+                    log_success "Authentic Theme descargado e instalado - Versión: $NEW_VERSION"
+                else
+                    log_error "Error en la instalación del tema descargado"
+                    return 1
+                fi
+            else
+                log_error "Error al descomprimir Authentic Theme"
+                return 1
             fi
-            
-            # Instalar nuevo tema
-            mv authentic-theme-master "$THEME_DIR"
-            chown -R root:root "$THEME_DIR"
-            chmod -R 755 "$THEME_DIR"
-            
-            log_success "Authentic Theme descargado e instalado"
         else
             log_warning "No se pudo descargar Authentic Theme, usando el incluido con Virtualmin"
         fi
     fi
+    
+    # Limpiar archivos temporales
+    rm -f /tmp/authentic-theme.zip
+    rm -rf /tmp/authentic-theme-master
 }
 
 # Configurar sistema unificado
 configure_unified_system() {
     log_step "Configurando sistema unificado..."
     
+    # Crear directorio de backup para configuraciones
+    BACKUP_CONFIG_DIR="/var/backups/webmin-config"
+    mkdir -p "$BACKUP_CONFIG_DIR"
+    
     # Configurar Authentic Theme como tema por defecto
     if [[ -f "/etc/webmin/config" ]]; then
         # Backup de configuración
-        cp "/etc/webmin/config" "/etc/webmin/config.backup.$(date +%Y%m%d_%H%M%S)"
+        cp "/etc/webmin/config" "$BACKUP_CONFIG_DIR/config.backup.$(date +%Y%m%d_%H%M%S)"
+        log_info "Backup de configuración creado"
         
         # Establecer Authentic Theme
         if grep -q "^theme=" "/etc/webmin/config"; then
@@ -200,18 +259,100 @@ configure_unified_system() {
             echo "theme=authentic-theme" >> "/etc/webmin/config"
         fi
         
+        # Configuraciones adicionales para mejor rendimiento
+        if ! grep -q "^session_timeout=" "/etc/webmin/config"; then
+            echo "session_timeout=3600" >> "/etc/webmin/config"
+        fi
+        
+        if ! grep -q "^logout_time=" "/etc/webmin/config"; then
+            echo "logout_time=10" >> "/etc/webmin/config"
+        fi
+        
         log_success "Authentic Theme configurado como tema por defecto"
+    else
+        log_warning "Archivo de configuración de Webmin no encontrado"
     fi
     
     # Configurar Virtualmin para inicio automático
     if [[ -f "/etc/webmin/virtual-server/config" ]]; then
+        # Backup de configuración de Virtualmin
+        cp "/etc/webmin/virtual-server/config" "$BACKUP_CONFIG_DIR/virtual-server-config.backup.$(date +%Y%m%d_%H%M%S)"
+        
         # Habilitar características avanzadas
-        echo "show_virtualmin_tab=1" >> "/etc/webmin/virtual-server/config"
+        if ! grep -q "show_virtualmin_tab=1" "/etc/webmin/virtual-server/config"; then
+            echo "show_virtualmin_tab=1" >> "/etc/webmin/virtual-server/config"
+        fi
+        
+        # Configuraciones adicionales de Virtualmin
+        if ! grep -q "^collect_interval=" "/etc/webmin/virtual-server/config"; then
+            echo "collect_interval=60" >> "/etc/webmin/virtual-server/config"
+        fi
+        
+        if ! grep -q "^spam_delivery=" "/etc/webmin/virtual-server/config"; then
+            echo "spam_delivery=1" >> "/etc/webmin/virtual-server/config"
+        fi
+        
         log_success "Virtualmin configurado para interfaz unificada"
+    else
+        log_warning "Archivo de configuración de Virtualmin no encontrado"
+        # Crear directorio si no existe
+        mkdir -p "/etc/webmin/virtual-server"
+        cat > "/etc/webmin/virtual-server/config" << EOF
+show_virtualmin_tab=1
+collect_interval=60
+spam_delivery=1
+EOF
+        log_info "Configuración básica de Virtualmin creada"
     fi
+    
+    # Configurar permisos de archivos de configuración
+    chmod 600 /etc/webmin/config 2>/dev/null || true
+    chmod 600 /etc/webmin/virtual-server/config 2>/dev/null || true
     
     # Configurar puertos del firewall
     configure_firewall
+    
+    # Verificar configuración
+    verify_configuration
+}
+
+# Verificar configuración del sistema
+verify_configuration() {
+    log_step "Verificando configuración del sistema..."
+    
+    local config_errors=0
+    
+    # Verificar tema configurado
+    if grep -q "theme=authentic-theme" "/etc/webmin/config" 2>/dev/null; then
+        log_success "Tema Authentic configurado correctamente"
+    else
+        log_warning "Tema Authentic no configurado correctamente"
+        ((config_errors++))
+    fi
+    
+    # Verificar archivos del tema
+    if [[ -f "/usr/share/webmin/authentic-theme/theme.info" ]]; then
+        log_success "Archivos del tema Authentic encontrados"
+    else
+        log_error "Archivos del tema Authentic no encontrados"
+        ((config_errors++))
+    fi
+    
+    # Verificar configuración de Virtualmin
+    if [[ -f "/etc/webmin/virtual-server/config" ]]; then
+        log_success "Configuración de Virtualmin encontrada"
+    else
+        log_warning "Configuración de Virtualmin no encontrada"
+        ((config_errors++))
+    fi
+    
+    if [[ $config_errors -eq 0 ]]; then
+        log_success "Todas las verificaciones de configuración pasaron"
+        return 0
+    else
+        log_warning "Se encontraron $config_errors problemas de configuración"
+        return 1
+    fi
 }
 
 # Configurar firewall
