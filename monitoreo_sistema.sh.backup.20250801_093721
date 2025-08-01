@@ -1,9 +1,5 @@
 #!/bin/bash
 
-# Incluir funciones de validación de Postfix
-source "/Users/yunyminaya/Wedmin Y Virtualmin/postfix_validation_functions.sh"
-
-
 set -e
 
 

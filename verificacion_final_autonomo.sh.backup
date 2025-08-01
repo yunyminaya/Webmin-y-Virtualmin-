@@ -44,31 +44,6 @@ log_header() {
 ${PURPLE}=== $1 ===${NC}"
 }
 
-# Función para verificar si postconf está disponible
-check_postconf_available() {
-    if command -v postconf >/dev/null 2>&1; then
-        return 0
-    elif [[ -x "/usr/sbin/postconf" ]]; then
-        export PATH="$PATH:/usr/sbin"
-        return 0
-    elif [[ -x "/usr/bin/postconf" ]]; then
-        export PATH="$PATH:/usr/bin"
-        return 0
-    else
-        return 1
-    fi
-}
-
-# Función para ejecutar postconf de forma segura
-safe_postconf() {
-    if check_postconf_available; then
-        postconf "$@"
-    else
-        echo "ERROR: postconf no está disponible. Postfix no está instalado o no está en PATH." >&2
-        return 1
-    fi
-}
-
 # Verificar servicios críticos
 verify_services() {
     log_header "VERIFICACIÓN DE SERVICIOS CRÍTICOS"
@@ -218,28 +193,10 @@ verify_php() {
 verify_mail_server() {
     log_header "VERIFICACIÓN DE SERVIDOR DE CORREO"
     
-    # Verificar si Postfix está instalado
-    if ! check_postconf_available; then
-        log_warning "Postfix no está instalado o postconf no está disponible"
-        log_info "Para instalar Postfix: sudo apt-get install postfix (Ubuntu/Debian) o sudo yum install postfix (CentOS/RHEL)"
-        log_info "En macOS: sudo launchctl load -w /System/Library/LaunchDaemons/org.postfix.master.plist"
-        return
-    fi
-    
     # Test de Postfix
-    if safe_postconf mail_version >/dev/null 2>&1; then
-        local postfix_version=$(safe_postconf mail_version 2>/dev/null | cut -d'=' -f2 | tr -d ' ')
+    if postconf mail_version >/dev/null 2>&1; then
+        local postfix_version=$(postconf mail_version 2>/dev/null | cut -d'=' -f2 | tr -d ' ')
         log_success "Postfix versión $postfix_version funcionando"
-        
-        # Verificar configuración básica
-        if safe_postconf queue_directory >/dev/null 2>&1; then
-            local queue_dir=$(safe_postconf queue_directory 2>/dev/null | cut -d'=' -f2 | tr -d ' ')
-            if [[ -d "$queue_dir" ]]; then
-                log_success "Directorio de cola de Postfix: $queue_dir"
-            else
-                log_warning "Directorio de cola no existe: $queue_dir"
-            fi
-        fi
     else
         log_error "Postfix no está configurado correctamente"
     fi
