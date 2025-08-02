@@ -1,4 +1,30 @@
 #!/bin/sh
+
+# Función para verificar si safe_postconf está disponible
+check_postconf_available() {
+    if command -v safe_postconf >/dev/null 2>&1; then
+        return 0
+    elif [[ -x "/usr/sbin/postconf" ]]; then
+        export PATH="$PATH:/usr/sbin"
+        return 0
+    elif [[ -x "/usr/bin/postconf" ]]; then
+        export PATH="$PATH:/usr/bin"
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Función para ejecutar safe_postconf de forma segura
+safe_postconf() {
+    if check_postconf_available; then
+        safe_postconf "$@"
+    else
+        echo "ERROR: safe_postconf no está disponible. Postfix no está instalado o no está en PATH." >&2
+        return 1
+    fi
+}
+
 # shellcheck disable=SC2059 disable=SC2181 disable=SC2154 disable=SC2317 disable=SC2034
 # virtualmin-install.sh
 # Copyright 2005-2025 Virtualmin
@@ -609,7 +635,7 @@ is_preconfigured() {
   if command -pv mariadb 1>/dev/null 2>&1; then
     preconfigured="${preconfigured}${YELLOW}${BOLD}MariaDB${NORMAL} "
   fi
-  if postconf mail_version 1>/dev/null 2>&1; then
+  if safe_postconf mail_version 1>/dev/null 2>&1; then
     preconfigured="${preconfigured}${YELLOW}${BOLD}Postfix${NORMAL} "
   fi
   if php -v 1>/dev/null 2>&1; then

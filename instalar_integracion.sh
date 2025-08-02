@@ -162,18 +162,142 @@ configure_webmin() {
     fi
 }
 
+# Verificar versiones actuales
+check_current_versions() {
+    print_status "Verificando versiones actuales..."
+    
+    # Verificar versión de Authentic Theme
+    if [[ -f "/usr/share/webmin/authentic-theme/theme.info" ]]; then
+        local current_theme_version=$(grep "version=" "/usr/share/webmin/authentic-theme/theme.info" | cut -d'=' -f2 2>/dev/null || echo "desconocida")
+        print_status "Versión actual de Authentic Theme: $current_theme_version"
+    else
+        print_status "Authentic Theme no está instalado"
+    fi
+    
+    # Verificar versión de Virtualmin
+    if command -v virtualmin >/dev/null 2>&1; then
+        local current_virtualmin_version=$(virtualmin --version 2>/dev/null | head -1 || echo "desconocida")
+        print_status "Versión actual de Virtualmin: $current_virtualmin_version"
+    else
+        print_status "Virtualmin no está instalado"
+    fi
+    
+    # Verificar versión de Webmin
+    if [[ -f "/usr/share/webmin/version" ]]; then
+        local current_webmin_version=$(cat "/usr/share/webmin/version" 2>/dev/null || echo "desconocida")
+        print_status "Versión actual de Webmin: $current_webmin_version"
+    else
+        print_status "Webmin no está instalado"
+    fi
+}
+
+# Crear backup completo antes de actualizar
+create_full_backup() {
+    print_status "Creando backup completo del sistema..."
+    
+    local backup_dir="/var/backups/webmin-integration-$(date +%Y%m%d_%H%M%S)"
+    mkdir -p "$backup_dir"
+    
+    # Backup de Webmin completo
+    if [[ -d "/etc/webmin" ]]; then
+        cp -r "/etc/webmin" "$backup_dir/webmin-config" 2>/dev/null || true
+        print_status "Backup de configuración de Webmin creado"
+    fi
+    
+    # Backup de temas
+    if [[ -d "/usr/share/webmin" ]]; then
+        mkdir -p "$backup_dir/webmin-themes"
+        cp -r "/usr/share/webmin"/*theme* "$backup_dir/webmin-themes/" 2>/dev/null || true
+        print_status "Backup de temas de Webmin creado"
+    fi
+    
+    # Backup de módulos de Virtualmin
+    if [[ -d "/usr/share/webmin/virtual-server" ]]; then
+        cp -r "/usr/share/webmin/virtual-server" "$backup_dir/virtualmin-module" 2>/dev/null || true
+        print_status "Backup de módulo de Virtualmin creado"
+    fi
+    
+    echo "$backup_dir" > "/tmp/last_backup_path"
+    print_success "Backup completo creado en: $backup_dir"
+    return 0
+}
+
+# Verificar integridad post-instalación
+verify_installation() {
+    print_status "Verificando integridad de la instalación..."
+    
+    local errors=0
+    
+    # Verificar Webmin
+    if ! systemctl is-active --quiet webmin 2>/dev/null && ! service webmin status >/dev/null 2>&1; then
+        print_error "Webmin no está ejecutándose"
+        ((errors++))
+    else
+        print_success "Webmin está ejecutándose correctamente"
+    fi
+    
+    # Verificar archivos de Authentic Theme
+    if [[ -f "/usr/share/webmin/authentic-theme/theme.info" ]]; then
+        print_success "Authentic Theme instalado correctamente"
+    else
+        print_error "Authentic Theme no está instalado"
+        ((errors++))
+    fi
+    
+    # Verificar configuración del tema
+    if grep -q "theme=authentic-theme" "/etc/webmin/config" 2>/dev/null; then
+        print_success "Authentic Theme configurado como predeterminado"
+    else
+        print_warning "Authentic Theme no está configurado como predeterminado"
+        ((errors++))
+    fi
+    
+    # Verificar módulo de Virtualmin
+    if [[ -d "/usr/share/webmin/virtual-server" ]]; then
+        print_success "Módulo de Virtualmin encontrado"
+    else
+        print_error "Módulo de Virtualmin no encontrado"
+        ((errors++))
+    fi
+    
+    # Verificar puerto 10000
+    if netstat -tlnp 2>/dev/null | grep -q ":10000 " || ss -tlnp 2>/dev/null | grep -q ":10000 "; then
+        print_success "Puerto 10000 está abierto"
+    else
+        print_warning "Puerto 10000 no está disponible"
+        ((errors++))
+    fi
+    
+    if [[ $errors -eq 0 ]]; then
+        print_success "Todas las verificaciones pasaron correctamente"
+        return 0
+    else
+        print_warning "Se encontraron $errors problemas"
+        return 1
+    fi
+}
+
 # Función principal
 main() {
+    echo
+    print_status "=== INSTALADOR DE INTEGRACIÓN AUTHENTIC THEME + VIRTUALMIN ==="
+    
+    # Verificar versiones actuales
+    check_current_versions
+    
     echo
     print_status "Selecciona el método de instalación:"
     echo "1) Instalación automática con script oficial (Recomendado)"
     echo "2) Instalación manual de los archivos descargados"
     echo "3) Solo configurar (si ya tienes todo instalado)"
+    echo "4) Actualizar componentes existentes"
+    echo "5) Verificar instalación"
     echo
-    read -p "Ingresa tu opción (1-3): " choice
+    read -p "Ingresa tu opción (1-5): " choice
     
     case $choice in
         1)
+            create_full_backup
             if check_webmin; then
                 print_warning "Webmin ya está instalado. ¿Continuar con Virtualmin? (y/n)"
                 read -p "Respuesta: " continue_install
@@ -183,21 +307,38 @@ main() {
             else
                 install_virtualmin_official
             fi
+            configure_webmin
+            verify_installation
             ;;
         2)
+            create_full_backup
             if ! check_webmin; then
                 print_error "Webmin no está instalado. Instálalo primero o usa la opción 1."
                 exit 1
             fi
             install_manual
             configure_webmin
+            verify_installation
             ;;
         3)
+            create_full_backup
             if ! check_webmin; then
                 print_error "Webmin no está instalado."
                 exit 1
             fi
             configure_webmin
+            verify_installation
+            ;;
+        4)
+            print_status "Actualizando componentes existentes..."
+            create_full_backup
+            install_manual
+            configure_webmin
+            verify_installation
+            ;;
+        5)
+            print_status "Verificando instalación..."
+            verify_installation
             ;;
         *)
             print_error "Opción inválida"
@@ -206,7 +347,7 @@ main() {
     esac
     
     echo
-    print_success "¡Instalación completada!"
+    print_success "¡Proceso completado!"
     echo
     print_status "Próximos pasos:"
     echo "1. Accede a Webmin en: https://tu-servidor:10000"
@@ -215,6 +356,14 @@ main() {
     echo "4. Ejecuta el asistente de configuración inicial"
     echo "5. El tema Authentic Theme debería estar activo automáticamente"
     echo
+    
+    # Mostrar ubicación del backup
+    if [[ -f "/tmp/last_backup_path" ]]; then
+        local backup_path=$(cat "/tmp/last_backup_path")
+        print_status "Backup creado en: $backup_path"
+        rm -f "/tmp/last_backup_path"
+    fi
+    
     print_warning "Nota: Puede ser necesario reiniciar el servidor para que todos los servicios funcionen correctamente."
 }
 

@@ -30,9 +30,9 @@ backups/
 *.bak
 
 # Archivos de instalación temporal
-install.sh
 install.log
 setup.log
+instalacion-*.log
 
 # Archivos de certificados y claves privadas
 *.key

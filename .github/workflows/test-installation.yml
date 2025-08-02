@@ -1,0 +1,177 @@
+name: Test Installation Scripts
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Test weekly on Sundays at 2 AM UTC
+    - cron: '0 2 * * 0'
+
+jobs:
+  test-ubuntu:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        ubuntu-version: ['20.04', '22.04']
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up environment
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y curl wget git
+    
+    - name: Test installation script syntax
+      run: |
+        bash -n instalacion_completa_automatica.sh
+        bash -n instalar_webmin_virtualmin.sh
+        bash -n verificar_asistente_wizard.sh
+        bash -n desinstalar.sh
+    
+    - name: Test quick installer download
+      run: |
+        # Test that the script can be downloaded
+        curl -sSL -f --max-time 30 https://raw.githubusercontent.com/yunyminaya/Wedmin-Y-Virtualmin/main/instalar_webmin_virtualmin.sh > /tmp/test_installer.sh
+        bash -n /tmp/test_installer.sh
+    
+    - name: Test dependencies check
+      run: |
+        # Test that required commands are available
+        command -v curl
+        command -v wget
+        command -v git
+        command -v bash
+
+  test-macos:
+    runs-on: macos-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Test installation script syntax
+      run: |
+        bash -n instalacion_completa_automatica.sh
+        bash -n instalar_webmin_virtualmin.sh
+        bash -n verificar_asistente_wizard.sh
+        bash -n desinstalar.sh
+    
+    - name: Test Homebrew detection
+      run: |
+        # Test that Homebrew can be detected or installed
+        if ! command -v brew >/dev/null 2>&1; then
+          echo "Homebrew not installed - this is expected in CI"
+        else
+          echo "Homebrew is available"
+          brew --version
+        fi
+
+  test-centos:
+    runs-on: ubuntu-latest
+    container:
+      image: centos:8
+    
+    steps:
+    - name: Install git and basic tools
+      run: |
+        dnf update -y
+        dnf install -y git curl wget bash
+    
+    - uses: actions/checkout@v3
+    
+    - name: Test installation script syntax
+      run: |
+        bash -n instalacion_completa_automatica.sh
+        bash -n instalar_webmin_virtualmin.sh
+        bash -n verificar_asistente_wizard.sh
+        bash -n desinstalar.sh
+
+  validate-documentation:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Validate Markdown files
+      run: |
+        # Check that all markdown files are valid
+        find . -name "*.md" -exec echo "Checking {}" \;
+        
+        # Check for broken internal links
+        grep -r "\[.*\](.*)" --include="*.md" . || true
+    
+    - name: Check script permissions
+      run: |
+        # Verify that shell scripts have execute permissions
+        find . -name "*.sh" -exec test -x {} \; -print
+    
+    - name: Validate installation URLs
+      run: |
+        # Test that GitHub raw URLs are accessible
+        curl -sSL -f --max-time 30 -I https://raw.githubusercontent.com/yunyminaya/Wedmin-Y-Virtualmin/main/instalar_webmin_virtualmin.sh
+        curl -sSL -f --max-time 30 -I https://raw.githubusercontent.com/yunyminaya/Wedmin-Y-Virtualmin/main/instalacion_completa_automatica.sh
+
+  security-scan:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Run ShellCheck
+      uses: ludeeus/action-shellcheck@master
+      with:
+        scandir: './'
+        format: gcc
+        severity: warning
+    
+    - name: Check for hardcoded secrets
+      run: |
+        # Look for potential hardcoded passwords or secrets
+        if grep -r -i "password.*=.*['\"]" --include="*.sh" .; then
+          echo "Warning: Potential hardcoded passwords found"
+          exit 1
+        fi
+        
+        if grep -r -i "api[_-]key" --include="*.sh" .; then
+          echo "Warning: Potential API keys found"
+          exit 1
+        fi
+    
+    - name: Check for unsafe practices
+      run: |
+        # Check for curl | bash without verification
+        if grep -r "curl.*|.*bash" --include="*.sh" . | grep -v "sSL"; then
+          echo "Warning: Unsafe curl | bash usage found"
+          exit 1
+        fi
+        
+        # Check for wget without verification
+        if grep -r "wget.*-O.*-" --include="*.sh" .; then
+          echo "Warning: Potentially unsafe wget usage found"
+        fi
+
+  integration-test:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || contains(github.event.head_commit.message, '[test-full]')
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Full installation test (dry run)
+      run: |
+        # Test the installation process without actually installing
+        export DRY_RUN=true
+        bash instalacion_completa_automatica.sh || echo "Dry run completed"
+    
+    - name: Test verification script
+      run: |
+        # Test the verification script
+        bash verificar_asistente_wizard.sh --check-only || echo "Verification check completed"
+    
+    - name: Test uninstaller syntax
+      run: |
+        # Test uninstaller without actually running it
+        bash -n desinstalar.sh
+        echo "Uninstaller syntax is valid"

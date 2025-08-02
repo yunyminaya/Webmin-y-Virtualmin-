@@ -1,0 +1,74 @@
+name: 🚀 Instalación Automática Webmin + Virtualmin
+description: Instalador universal con un solo comando para Ubuntu/Debian
+title: "[BUG/FEATURE] "
+labels: ["needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Gracias por reportar un issue. Por favor completa la información solicitada.
+
+  - type: dropdown
+    id: tipo
+    attributes:
+      label: Tipo de Issue
+      description: ¿Qué tipo de issue estás reportando?
+      options:
+        - Bug/Error
+        - Feature Request
+        - Documentación
+        - Pregunta/Soporte
+    validations:
+      required: true
+
+  - type: dropdown
+    id: sistema
+    attributes:
+      label: Sistema Operativo
+      description: ¿En qué sistema operativo ocurre el problema?
+      options:
+        - Ubuntu 20.04 LTS
+        - Ubuntu 22.04 LTS
+        - Ubuntu 18.04 LTS
+        - Debian 10
+        - Debian 11
+        - Debian 12
+        - Otro (especificar en descripción)
+    validations:
+      required: true
+
+  - type: textarea
+    id: descripcion
+    attributes:
+      label: Descripción del Problem/Feature
+      description: Describe detalladamente el problema o feature solicitado
+      placeholder: Describe tu problema o solicitud...
+    validations:
+      required: true
+
+  - type: textarea
+    id: pasos
+    attributes:
+      label: Pasos para Reproducir (solo para bugs)
+      description: Lista los pasos para reproducir el problema
+      placeholder: |
+        1. Ejecuté el comando...
+        2. El error apareció cuando...
+        3. Ver error...
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs/Output
+      description: Pega aquí los logs relevantes
+      placeholder: |
+        Pega aquí el contenido de:
+        /var/log/instalacion-webmin-virtualmin.log
+      render: bash
+
+  - type: textarea
+    id: adicional
+    attributes:
+      label: Información Adicional
+      description: Cualquier otra información relevante
+      placeholder: Versiones, configuraciones especiales, etc...
