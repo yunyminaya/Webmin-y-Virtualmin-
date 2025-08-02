@@ -381,7 +381,7 @@ EOF
     a2dissite 000-default.conf || true
     
     # Configurar permisos
-    chown -R www-data:www-data /var/www/$DOMAIN
+    chown -R _www:_www /var/www/$DOMAIN
     chmod -R 755 /var/www/$DOMAIN
     
     systemctl enable apache2 || systemctl enable httpd

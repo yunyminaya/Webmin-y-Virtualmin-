@@ -116,7 +116,7 @@ tar -xzf webmin.tar.gz
 
 # Mover archivos de Webmin
 sudo cp -r webmin-${WEBMIN_VERSION}/* /usr/local/webmin/
-sudo chown -R $(whoami):staff /usr/local/webmin
+sudo chown -R root:admin /usr/local/webmin
 
 log_step "Configurando Webmin"
 

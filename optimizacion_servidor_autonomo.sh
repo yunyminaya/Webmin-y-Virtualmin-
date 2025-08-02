@@ -124,11 +124,11 @@ root hard nofile 1048576
 root soft nproc 1048576
 root hard nproc 1048576
 
-# Límites para www-data (Apache)
-www-data soft nofile 1048576
-www-data hard nofile 1048576
-www-data soft nproc 1048576
-www-data hard nproc 1048576
+# Límites para _www (Apache)
+_www soft nofile 1048576
+_www hard nofile 1048576
+_www soft nproc 1048576
+_www hard nproc 1048576
 
 # Límites para postfix
 postfix soft nofile 1048576
@@ -177,7 +177,7 @@ optimize_apache() {
     # Calcular valores óptimos basados en RAM
     TOTAL_RAM=$(free -m | awk '/^Mem:/{print $2}')
     MAX_CLIENTS=$((TOTAL_RAM * 2))
-    if [ $MAX_CLIENTS -gt 2000 ]; then
+    if [ "$MAX_CLIENTS" -gt 2000 ]; then
         MAX_CLIENTS=2000
     fi
     
@@ -321,15 +321,15 @@ optimize_mysql() {
             yum install -y mariadb-server mariadb
         fi
         MYSQL_SERVICE="mariadb"
-        systemctl enable $MYSQL_SERVICE
-        systemctl start $MYSQL_SERVICE
+        systemctl enable "$MYSQL_SERVICE"
+        systemctl start "$MYSQL_SERVICE"
     fi
     
     # Calcular valores óptimos basados en RAM
     TOTAL_RAM=$(free -m | awk '/^Mem:/{print $2}')
     INNODB_BUFFER_POOL=$((TOTAL_RAM * 70 / 100))M
     MAX_CONNECTIONS=$((TOTAL_RAM / 4))
-    if [ $MAX_CONNECTIONS -gt 500 ]; then
+    if [ "$MAX_CONNECTIONS" -gt 500 ]; then
         MAX_CONNECTIONS=500
     fi
     
@@ -448,7 +448,7 @@ EOF
     mkdir -p /var/log/mysql
     chown mysql:mysql /var/log/mysql
     
-    systemctl restart $MYSQL_SERVICE
+    systemctl restart "$MYSQL_SERVICE"
     
     log "MySQL/MariaDB optimizado para $MAX_CONNECTIONS conexiones"
 }
@@ -522,7 +522,7 @@ EOF
 
     # Crear directorio de sesiones si no existe
     mkdir -p /var/lib/php/sessions
-    chown www-data:www-data /var/lib/php/sessions
+    chown _www:_www /var/lib/php/sessions
     chmod 700 /var/lib/php/sessions
     
     systemctl restart apache2
@@ -539,7 +539,6 @@ configure_backup_system() {
     
     # Script de backup completo
     cat > /usr/local/bin/backup-servidor.sh << 'EOF'
-#!/bin/bash
 # Script de backup automático para servidor autónomo
 
 BACKUP_DIR="/var/backups/servidor-autonomo"
@@ -587,11 +586,11 @@ tar -czf "$BACKUP_DIR/logs/logs_$DATE.tar.gz" \
 
 # Limpiar backups antiguos
 log "Limpiando backups antiguos (>$RETENTION_DAYS días)..."
-find "$BACKUP_DIR" -type f -mtime +$RETENTION_DAYS -delete
+find "$BACKUP_DIR" -type f -mtime +"$RETENTION_DAYS" -delete
 
 # Verificar espacio en disco
 DISK_USAGE=$(df /var/backups | tail -1 | awk '{print $5}' | sed 's/%//')
-if [ $DISK_USAGE -gt 80 ]; then
+if [ "$DISK_USAGE" -gt 80 ]; then
     log "ADVERTENCIA: Espacio en disco para backups al $DISK_USAGE%"
 fi
 
@@ -618,7 +617,6 @@ configure_advanced_monitoring() {
     
     # Script de monitoreo en tiempo real
     cat > /usr/local/bin/monitor-servidor.sh << 'EOF'
-#!/bin/bash
 # Monitor avanzado del servidor autónomo
 
 MONITOR_LOG="/var/log/monitor-servidor.log"
@@ -642,13 +640,13 @@ fi
 
 # Monitorear memoria
 MEM_USAGE=$(free | grep Mem | awk '{printf "%.0f", $3/$2 * 100.0}')
-if [ $MEM_USAGE -gt $ALERT_THRESHOLD_MEM ]; then
+if [ "$MEM_USAGE" -gt "$ALERT_THRESHOLD_MEM" ]; then
     log_alert "Memory usage high: ${MEM_USAGE}%"
 fi
 
 # Monitorear disco
 DISK_USAGE=$(df / | tail -1 | awk '{print $5}' | sed 's/%//')
-if [ $DISK_USAGE -gt $ALERT_THRESHOLD_DISK ]; then
+if [ "$DISK_USAGE" -gt "$ALERT_THRESHOLD_DISK" ]; then
     log_alert "Disk usage high: ${DISK_USAGE}%"
 fi
 
@@ -698,7 +696,6 @@ configure_self_healing() {
     log "Configurando sistema de auto-reparación..."
     
     cat > /usr/local/bin/auto-reparacion.sh << 'EOF'
-#!/bin/bash
 # Sistema de auto-reparación para servidor autónomo
 
 REPAIR_LOG="/var/log/auto-reparacion.log"
@@ -712,7 +709,7 @@ repair_web_permissions() {
     log_repair "Reparando permisos de archivos web"
     find /var/www -type d -exec chmod 755 {} \;
     find /var/www -type f -exec chmod 644 {} \;
-    chown -R www-data:www-data /var/www
+    chown -R _www:_www /var/www
 }
 
 # Limpiar archivos temporales

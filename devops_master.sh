@@ -90,7 +90,7 @@ check_dependencies() {
         fi
     done
     
-    if [ ${#missing_deps[@]} -gt 0 ]; then
+    if [ "${#missing_deps[@]}" -gt 0 ]; then
         show_error "Dependencias faltantes: ${missing_deps[*]}"
         show_info "Para instalar en macOS: brew install ${missing_deps[*]}"
         show_info "Para instalar en Ubuntu: apt-get install ${missing_deps[*]}"
@@ -121,7 +121,7 @@ check_system_scripts() {
         fi
     done
     
-    if [ ${#missing_scripts[@]} -gt 0 ]; then
+    if [ "${#missing_scripts[@]}" -gt 0 ]; then
         show_error "Scripts faltantes: ${missing_scripts[*]}"
         return 1
     fi
@@ -143,7 +143,7 @@ get_system_status() {
     # Estado de configuraciones
     if [ -f "$agent_config" ]; then
         status="$status\"agent_configured\":true,"
-        local servers_count=$(jq '.servers | length' "$agent_config" 2>/dev/null || echo 0)
+        local servers_count=$(jq '.servers | length' "$agent_config" 2>/dev/null || echo "0")
         status="$status\"servers_configured\":$servers_count,"
     else
         status="$status\"agent_configured\":false,"
@@ -152,7 +152,7 @@ get_system_status() {
     
     if [ -f "$webhook_config" ]; then
         status="$status\"webhook_configured\":true,"
-        local webhook_port=$(jq -r '.webhook_port // 0' "$webhook_config" 2>/dev/null)
+        local webhook_port=$(jq -r '.webhook_port // "0"' "$webhook_config" 2>/dev/null)
         status="$status\"webhook_port\":$webhook_port,"
     else
         status="$status\"webhook_configured\":false,"
