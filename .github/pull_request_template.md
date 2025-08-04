@@ -6,7 +6,8 @@ Breve descripción de los cambios realizados.
 
 ## 🔧 Tipo de Cambio
 
-- [ ] Bug fix (cambio que soluciona un problema)
+soluciona un problema)
+
 - [ ] Nueva característica (cambio que añade funcionalidad)
 - [ ] Cambio disruptivo (fix o feature que causaría que funcionalidad existente no funcione como se esperaba)
 - [ ] Documentación (cambio que solo afecta documentación)

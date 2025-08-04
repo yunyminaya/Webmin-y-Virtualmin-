@@ -20,6 +20,7 @@ TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 LOG_FILE="seguridad_webmin_virtualmin_${TIMESTAMP}.log"
 REPORT_FILE="reporte_seguridad_${TIMESTAMP}.md"
 BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPORT_DIR="${BASE_DIR}/reportes"
 OS_TYPE=""
 TOTAL_CHECKS=0
 PASSED_CHECKS=0

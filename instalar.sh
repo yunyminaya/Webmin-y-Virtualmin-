@@ -3,14 +3,14 @@
 # =============================================================================
 # INSTALADOR UNIVERSAL WEBMIN + VIRTUALMIN - UN SOLO COMANDO
 # Descarga automática desde GitHub e instalación completa
-# Comando único: curl -sSL https://raw.githubusercontent.com/tu-usuario/tu-repo/master/instalar.sh | sudo bash
+# Comando único: curl -sSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/master/instalar.sh | sudo bash
 # =============================================================================
 
 set -euo pipefail
 
 # Variables globales
-REPO_URL="https://github.com/tu-usuario/tu-repo"
-RAW_URL="https://raw.githubusercontent.com/tu-usuario/tu-repo/master"
+REPO_URL="https://github.com/yunyminaya/Webmin-y-Virtualmin-"
+RAW_URL="https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/master"
 TEMP_DIR="/tmp/webmin-virtualmin-$(date +%s)"
 LOG_FILE="/var/log/instalacion-webmin-virtualmin.log"
 
