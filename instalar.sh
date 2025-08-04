@@ -115,6 +115,19 @@ setup_temp_dir() {
     log "✅ Directorio temporal: $TEMP_DIR"
 }
 
+# Agregar clave pública de Webmin (compatible Ubuntu 20.04/22.04+)
+add_webmin_key() {
+    log "🔑 Agregando clave pública de Webmin..."
+    if command -v gpg >/dev/null 2>&1; then
+        curl -fsSL https://download.webmin.com/jcameron-key.asc | gpg --dearmor | tee /usr/share/keyrings/webmin.gpg >/dev/null
+        echo "deb [signed-by=/usr/share/keyrings/webmin.gpg] https://download.webmin.com/download/repository sarge contrib" > /etc/apt/sources.list.d/webmin.list
+    else
+        curl -fsSL https://download.webmin.com/jcameron-key.asc | apt-key add -
+        echo "deb https://download.webmin.com/download/repository sarge contrib" > /etc/apt/sources.list.d/webmin.list
+    fi
+    log "✅ Clave pública de Webmin agregada correctamente"
+}
+
 # Descargar instalador principal desde GitHub
 download_installer() {
     log "⬇️ Descargando instalador desde GitHub..."
@@ -231,6 +244,7 @@ main() {
     check_root
     detect_system
     check_connectivity
+    add_webmin_key
     setup_temp_dir
     download_installer
     run_installation
