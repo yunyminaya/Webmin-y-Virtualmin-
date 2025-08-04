@@ -487,15 +487,20 @@ install_authentic_theme() {
     unzip -q authentic-theme.zip
     
     if [[ -d authentic-theme-master ]]; then
-        # Mover al directorio de temas de Webmin
-        mv authentic-theme-master /usr/share/webmin/authentic-theme
-        
+        # Manejo robusto de carpeta destino
+        THEME_DEST="/usr/share/webmin/authentic-theme/authentic-theme-master"
+        if [ -d "$THEME_DEST" ]; then
+            log "WARNING" "La carpeta destino de Authentic Theme ya existe. Eliminando para evitar conflictos..."
+            rm -rf "$THEME_DEST"
+        fi
+        mv -f authentic-theme-master "$THEME_DEST" 2>/dev/null || rsync -a --delete authentic-theme-master/ "$THEME_DEST/"
+
         # Configurar como tema predeterminado
         echo "theme=authentic-theme" >> /etc/webmin/config
-        
+
         # Reiniciar Webmin para aplicar el tema
         systemctl restart webmin
-        
+
         log "SUCCESS" "Authentic Theme instalado y configurado"
     else
         log "ERROR" "No se pudo extraer Authentic Theme"
@@ -552,14 +557,13 @@ optimize_for_production() {
 EOF
     
     # Optimizar MySQL si está instalado
+    # Optimización robusta de MySQL/MariaDB
     if systemctl is-active --quiet mysql; then
-        log "INFO" "Optimizando configuración de MySQL..."
-        
-        # Backup de configuración original
-        cp /etc/mysql/mysql.conf.d/mysqld.cnf /etc/mysql/mysql.conf.d/mysqld.cnf.backup
-        
-        # Aplicar optimizaciones básicas
-        cat >> /etc/mysql/mysql.conf.d/mysqld.cnf << 'EOF'
+        log "INFO" "Optimizando configuración de MySQL/MariaDB..."
+
+        if [ -f /etc/mysql/mysql.conf.d/mysqld.cnf ]; then
+            cp /etc/mysql/mysql.conf.d/mysqld.cnf /etc/mysql/mysql.conf.d/mysqld.cnf.backup
+            cat >> /etc/mysql/mysql.conf.d/mysqld.cnf << 'EOF'
 
 # Optimizaciones Virtualmin
 max_connections = 200
@@ -569,9 +573,25 @@ query_cache_limit = 2M
 thread_cache_size = 8
 table_open_cache = 2000
 EOF
-        
-        systemctl restart mysql
-        log "SUCCESS" "MySQL optimizado"
+            systemctl restart mysql
+            log "SUCCESS" "MySQL optimizado"
+        elif [ -f /etc/mysql/mariadb.conf.d/50-server.cnf ]; then
+            cp /etc/mysql/mariadb.conf.d/50-server.cnf /etc/mysql/mariadb.conf.d/50-server.cnf.backup
+            cat >> /etc/mysql/mariadb.conf.d/50-server.cnf << 'EOF'
+
+# Optimizaciones Virtualmin
+max_connections = 200
+innodb_buffer_pool_size = 256M
+query_cache_size = 16M
+query_cache_limit = 2M
+thread_cache_size = 8
+table_open_cache = 2000
+EOF
+            systemctl restart mysql
+            log "SUCCESS" "MariaDB optimizado"
+        else
+            log "WARNING" "No se encontró archivo de configuración de MySQL/MariaDB. Saltando optimización."
+        fi
     fi
     
     # Optimizar Apache
@@ -733,6 +753,62 @@ final_cleanup() {
     log "SUCCESS" "Limpieza completada"
 }
 
+# Funciones de autocorrección adicionales
+
+# Reparar permisos de archivos y carpetas críticos
+repair_permissions() {
+    log "INFO" "Reparando permisos de archivos y carpetas críticos..."
+    chown -R root:root /etc/webmin 2>/dev/null || true
+    chown -R root:root /usr/share/webmin 2>/dev/null || true
+    chmod -R 755 /etc/webmin 2>/dev/null || true
+    chmod -R 755 /usr/share/webmin 2>/dev/null || true
+}
+
+# Reintentar descargas críticas hasta 3 veces
+retry_download() {
+    local url="$1"
+    local output="$2"
+    local tries=0
+    while [[ $tries -lt 3 ]]; do
+        if wget -O "$output" "$url"; then
+            return 0
+        fi
+        log "WARNING" "Fallo al descargar $url, reintentando..."
+        ((tries++))
+        sleep 2
+    done
+    log "ERROR" "No se pudo descargar $url después de 3 intentos"
+    return 1
+}
+
+# Reparar servicios caídos automáticamente
+repair_services() {
+    log "INFO" "Verificando y reparando servicios críticos..."
+    local services=("webmin" "apache2" "mysql")
+    for service in "${services[@]}"; do
+        if ! systemctl is-active --quiet "$service"; then
+            log "WARNING" "Servicio $service inactivo, intentando reiniciar..."
+            systemctl restart "$service" || service "$service" restart || true
+            sleep 2
+            if systemctl is-active --quiet "$service"; then
+                log "SUCCESS" "Servicio $service reparado y activo"
+            else
+                log "ERROR" "No se pudo reparar el servicio $service"
+            fi
+        fi
+    done
+}
+
+# Reparar configuraciones problemáticas detectadas
+repair_configurations() {
+    log "INFO" "Reparando configuraciones problemáticas si es necesario..."
+    # Ejemplo: restaurar backup si la config principal de Webmin está corrupta
+    if [[ ! -f /etc/webmin/miniserv.conf && -f "$BACKUP_DIR/webmin/miniserv.conf" ]]; then
+        cp "$BACKUP_DIR/webmin/miniserv.conf" /etc/webmin/miniserv.conf
+        log "SUCCESS" "Configuración de Webmin restaurada desde backup"
+    fi
+}
+
 # Función principal
 main() {
     # Mostrar banner
@@ -753,12 +829,21 @@ main() {
     create_system_backup
     update_system
     configure_firewall
+
+    # Autocorrección antes de instalar paneles
+    repair_permissions
+
     install_webmin
     install_virtualmin
     install_authentic_theme
     configure_ssl
     optimize_for_production
-    
+
+    # Autocorrección después de instalar paneles
+    repair_permissions
+    repair_services
+    repair_configurations
+
     # Verificación final
     if final_verification; then
         log "SUCCESS" "Todas las verificaciones pasaron correctamente"
@@ -767,10 +852,10 @@ main() {
         log "WARNING" "Instalación completada con algunas advertencias"
         log "INFO" "Revise $INSTALL_LOG para más detalles"
     fi
-    
+
     # Cleanup final
     final_cleanup
-    
+
     log "SUCCESS" "¡Instalación automática completada exitosamente!"
     echo
     echo -e "${GREEN}Para acceder al panel: https://$(hostname -I | awk '{print $1}'):$WEBMIN_PORT${NC}"

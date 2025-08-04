@@ -72,7 +72,7 @@ curl -sSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/mast
 
 ### 3. Acceso al Panel
 
-```
+```text
 🌐 URL: https://TU-IP-SERVIDOR:10000
 👤 Usuario: root
 🔐 Contraseña: [tu contraseña de root]
