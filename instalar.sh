@@ -247,6 +247,5 @@ main() {
 }
 
 # Ejecutar función principal si el script se ejecuta directamente
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    main "$@"
-fi
+main "$@"
+# NOTA: Se eliminó el uso de BASH_SOURCE para compatibilidad con ejecución por tubería (| bash)
