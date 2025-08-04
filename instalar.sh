@@ -51,6 +51,14 @@ EOF
     echo
 }
 
+# Instalar dependencias críticas
+install_dependencies() {
+    log "🔧 Instalando dependencias críticas..."
+    apt-get update -y
+    apt-get install -y net-tools iproute2 curl wget sudo gnupg2 lsb-release apt-transport-https ca-certificates software-properties-common
+    log "✅ Dependencias instaladas correctamente"
+}
+
 # Verificar privilegios de root
 check_root() {
     if [[ $EUID -ne 0 ]]; then
@@ -242,6 +250,7 @@ main() {
     log "📍 Descarga desde: $REPO_URL"
     
     check_root
+    install_dependencies
     detect_system
     check_connectivity
     add_webmin_key
