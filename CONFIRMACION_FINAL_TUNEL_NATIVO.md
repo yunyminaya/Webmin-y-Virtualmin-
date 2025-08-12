@@ -86,18 +86,73 @@
 
 ### Métodos de Exposición Automática:
 
-1. **Cloudflare Tunnel (Recomendado)**
+1. **Túneles Nativos Sin Terceros (NUEVO - Recomendado para ISPs restrictivos)**
+
+   - ✅ **100% autónomo** - Sin dependencias de servicios externos
+   - ✅ **Túneles HTTP nativos** usando socat
+   - ✅ **Túneles netcat** como respaldo
+   - ✅ **Monitoreo automático** y reinicio de túneles
+   - ✅ **Servicio systemd** integrado
+   - ✅ **Funciona con restricciones de ISP** (puertos bloqueados, NAT estricto)
+   - ✅ **Acceso desde red local** garantizado
+   - 🔧 **Configuración:** `bash tunel_nativo_sin_terceros.sh --install`
+   - 📋 **Puertos:** Webmin (8080), Usermin (8081), HTTP (8082), HTTPS (8083)
+
+2. **Cloudflare Tunnel (Para casos sin restricciones)**
 
    - Sin necesidad de IP pública
    - SSL automático incluido
    - Dominio personalizado disponible
    - Configuración: `cloudflared tunnel --url localhost:10000`
 
-2. **ngrok (Alternativa)**
+3. **ngrok (Alternativa)**
 
    - URLs temporales seguras
    - HTTPS automático
    - Autenticación con token
+
+### 🆕 **TÚNELES NATIVOS SIN TERCEROS - CASOS DE USO**
+
+**Ideal para situaciones donde:**
+- ❌ El proveedor de internet bloquea puertos (80, 443, 22, etc.)
+- ❌ NAT estricto que impide port forwarding
+- ❌ Restricciones corporativas o de firewall
+- ❌ No se pueden usar servicios externos (Cloudflare, ngrok)
+- ❌ Políticas de seguridad que prohíben dependencias de terceros
+- ❌ Conectividad limitada o intermitente
+
+**Ventajas de los túneles nativos:**
+- 🔒 **Privacidad total** - Sin datos enviados a terceros
+- 🚀 **Rendimiento óptimo** - Sin latencia adicional de servicios externos
+- 💰 **Sin costos** - No requiere suscripciones o tokens
+- 🛡️ **Seguridad** - Control total sobre el tráfico
+- 🔧 **Personalizable** - Puertos y configuraciones ajustables
+- 📊 **Monitoreo integrado** - Logs y estadísticas propias
+
+**Comandos principales:**
+```bash
+# Instalar túneles nativos
+bash tunel_nativo_sin_terceros.sh --install
+
+# Ver estado y información de acceso
+bash tunel_nativo_sin_terceros.sh --status
+
+# Controlar servicio
+systemctl start tunel-nativo
+systemctl stop tunel-nativo
+systemctl restart tunel-nativo
+
+# Ver logs
+tail -f /var/log/tunel-nativo.log
+```
+
+**Acceso a servicios:**
+- 🔧 **Webmin:** http://IP_LOCAL:8080
+- 👤 **Usermin:** http://IP_LOCAL:8081  
+- 🌐 **Sitio Web HTTP:** http://IP_LOCAL:8082
+- 🔒 **Sitio Web HTTPS:** http://IP_LOCAL:8083
+- 🔄 **Respaldo Webmin:** http://IP_LOCAL:9080
+- 🔄 **Respaldo Usermin:** http://IP_LOCAL:9081
    - Configuración: `ngrok http 10000`
 
 3. **UPnP Port Forwarding**
