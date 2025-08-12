@@ -249,15 +249,15 @@ echo ""
 echo -e "${BLUE}=== VERIFICACIÓN DE CONECTIVIDAD ===${NC}"
 
 # Verificar conectividad
-echo -n "Conectividad externa (Google DNS)... "
-if ping -c 1 8.8.8.8 >/dev/null 2>&1; then
+echo -n "Conectividad externa (download.webmin.com)... "
+if curl -fsSIL --connect-timeout 5 "https://download.webmin.com/" >/dev/null 2>&1; then
     echo -e "${GREEN}OK${NC}"
 else
     echo -e "${RED}FALLO${NC}"
 fi
 
-echo -n "Conectividad local (localhost)... "
-if ping -c 1 127.0.0.1 >/dev/null 2>&1; then
+echo -n "Loopback (localhost)... "
+if getent hosts localhost >/dev/null 2>&1; then
     echo -e "${GREEN}OK${NC}"
 else
     echo -e "${RED}FALLO${NC}"
@@ -290,7 +290,7 @@ echo "Servicios activos: ${active_services}/${total_services}"
 echo "Puertos abiertos: ${open_ports}/${total_ports}"
 
 # Calcular porcentaje de salud del sistema
-local health_score=$(( (active_services * 100 / total_services + open_ports * 100 / total_ports) / 2 ))
+health_score=$(( (active_services * 100 / total_services + open_ports * 100 / total_ports) / 2 ))
 
 if [[ $health_score -ge 80 ]]; then
     echo -e "Estado del sistema: ${GREEN}EXCELENTE ($health_score%)${NC}"

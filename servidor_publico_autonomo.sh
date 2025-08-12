@@ -206,16 +206,18 @@ EOF
 $(echo $PUBLIC_IP | cut -d. -f4)     IN      PTR     $DOMAIN.
 EOF
 
-    # Configurar resolv.conf para usar DNS local
-    cat > /etc/resolv.conf << EOF
+    # Configurar DNS local de forma compatible (sin bloquear /etc/resolv.conf)
+    if command -v resolvectl >/dev/null 2>&1 || [ -L /etc/resolv.conf ]; then
+        resolvectl dns "$INTERFACE" 127.0.0.1 $PUBLIC_IP 8.8.8.8 2>/dev/null || true
+        resolvectl domain "$INTERFACE" "$DOMAIN" 2>/dev/null || true
+    else
+        cat > /etc/resolv.conf << EOF
 nameserver 127.0.0.1
 nameserver $PUBLIC_IP
 nameserver 8.8.8.8
 search $DOMAIN
 EOF
-    
-    # Hacer resolv.conf inmutable
-    chattr +i /etc/resolv.conf
+    fi
     
     systemctl enable bind9 || systemctl enable named
     systemctl restart bind9 || systemctl restart named
@@ -381,7 +383,13 @@ EOF
     a2dissite 000-default.conf || true
     
     # Configurar permisos
-    chown -R _www:_www /var/www/$DOMAIN
+    if id -u www-data >/dev/null 2>&1; then
+        chown -R www-data:www-data /var/www/$DOMAIN
+    elif id -u apache >/dev/null 2>&1; then
+        chown -R apache:apache /var/www/$DOMAIN
+    else
+        chown -R _www:_www /var/www/$DOMAIN || true
+    fi
     chmod -R 755 /var/www/$DOMAIN
     
     systemctl enable apache2 || systemctl enable httpd
@@ -517,8 +525,7 @@ configure_firewall() {
     if [[ "$OS" == "debian" ]]; then
         $PKG_INSTALL ufw
         
-        # Configuración UFW
-        ufw --force reset
+        # Configuración UFW (evitar reset para no perder acceso remoto)
         ufw default deny incoming
         ufw default allow outgoing
         
@@ -653,10 +660,17 @@ echo
 
 # Verificar puertos
 echo "🔌 PUERTOS ABIERTOS:"
-netstat -tlnp | grep -E ':(22|53|80|443|25|587|993|995|10000|20000)\s' | while read line; do
-    port=$(echo $line | awk '{print $4}' | cut -d: -f2)
-    echo "✅ Puerto $port abierto"
-done
+if command -v ss >/dev/null 2>&1; then
+    ss -tlnp | grep -E ':(22|53|80|443|25|587|993|995|10000|20000)\b' | while read line; do
+        port=$(echo "$line" | awk '{print $4}' | awk -F: '{print $NF}')
+        echo "✅ Puerto $port abierto"
+    done
+else
+    netstat -tlnp | grep -E ':(22|53|80|443|25|587|993|995|10000|20000)\s' | while read line; do
+        port=$(echo "$line" | awk '{print $4}' | awk -F: '{print $NF}')
+        echo "✅ Puerto $port abierto"
+    done
+fi
 echo
 
 # Verificar DNS

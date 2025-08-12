@@ -125,7 +125,7 @@ audit_webmin_installation() {
     
     # Verificar puerto de Webmin
     local webmin_port=$(grep "^port=" /etc/webmin/miniserv.conf 2>/dev/null | cut -d'=' -f2 || echo "10000")
-    if ! netstat -tuln | grep -q ":${webmin_port} "; then
+    if ! ss -tuln 2>/dev/null | grep -q ":${webmin_port}\b" && ! netstat -tuln 2>/dev/null | grep -q ":${webmin_port} "; then
         issues+=("Puerto Webmin $webmin_port no está en escucha")
         fixes+=("fix_webmin_port:$webmin_port")
     else
@@ -312,9 +312,9 @@ fix_webmin_issues() {
 install_webmin_complete() {
     log_info "Instalando Webmin completo..."
     
-    # Agregar repositorio oficial
-    wget -qO- https://download.webmin.com/jcameron-key.asc | apt-key add -
-    echo "deb https://download.webmin.com/download/repository sarge contrib" > /etc/apt/sources.list.d/webmin.list
+    # Agregar repositorio oficial (apt-key deprecado)
+    curl -fsSL https://download.webmin.com/jcameron-key.asc | gpg --dearmor | tee /usr/share/keyrings/webmin.gpg >/dev/null
+    echo "deb [signed-by=/usr/share/keyrings/webmin.gpg] https://download.webmin.com/download/repository sarge contrib" > /etc/apt/sources.list.d/webmin.list
     
     # Actualizar e instalar
     apt-get update
@@ -422,7 +422,7 @@ fix_webmin_port() {
     log_info "Reparando puerto Webmin: $port"
     
     # Verificar si el puerto está en uso
-    if netstat -tuln | grep -q ":${port} "; then
+    if ss -tuln 2>/dev/null | grep -q ":${port}\b" || netstat -tuln 2>/dev/null | grep -q ":${port} "; then
         log_success "Puerto $port ya está en escucha"
         return 0
     fi
@@ -432,12 +432,12 @@ fix_webmin_port() {
     
     # Esperar a que inicie
     local retries=30
-    while [[ $retries -gt 0 ]] && ! netstat -tuln | grep -q ":${port} "; do
+    while [[ $retries -gt 0 ]] && ! ss -tuln 2>/dev/null | grep -q ":${port}\b" && ! netstat -tuln 2>/dev/null | grep -q ":${port} "; do
         sleep 1
         ((retries--))
     done
     
-    if netstat -tuln | grep -q ":${port} "; then
+    if ss -tuln 2>/dev/null | grep -q ":${port}\b" || netstat -tuln 2>/dev/null | grep -q ":${port} "; then
         log_success "Puerto Webmin $port reparado"
     else
         log_error "No se pudo reparar puerto Webmin $port"
@@ -691,7 +691,7 @@ run_comprehensive_tests() {
     for port_info in "${ports[@]}"; do
         local port="${port_info%:*}"
         local name="${port_info#*:}"
-        if netstat -tuln | grep -q ":${port} "; then
+        if ss -tuln 2>/dev/null | grep -q ":${port}\b" || netstat -tuln 2>/dev/null | grep -q ":${port} "; then
             test_results+=("✅ Puerto $port ($name) abierto")
         else
             test_results+=("❌ Puerto $port ($name) cerrado")
@@ -753,7 +753,7 @@ generate_comprehensive_report() {
         for port_info in "${ports[@]}"; do
             local port="${port_info%:*}"
             local name="${port_info#*:}"
-            if netstat -tuln | grep -q ":${port} "; then
+            if ss -tuln 2>/dev/null | grep -q ":${port}\b" || netstat -tuln 2>/dev/null | grep -q ":${port} "; then
                 echo "✅ Puerto $port ($name): ABIERTO"
             else
                 echo "❌ Puerto $port ($name): CERRADO"

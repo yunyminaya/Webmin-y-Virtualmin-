@@ -8,6 +8,24 @@ LOG_FILE="/var/log/coordinador_sub_agentes.log"
 CONFIG_FILE="/etc/webmin/sub_agentes_config.conf"
 PID_FILE="/var/run/coordinador_sub_agentes.pid"
 
+# Modo estricto y entorno seguro
+set -Eeuo pipefail
+IFS=$'\n\t'
+umask 027
+
+# Utilidades básicas
+ensure_log_paths() {
+    mkdir -p "$(dirname "$LOG_FILE")" "/etc/webmin" "/var/run" "/var/backups" >/dev/null 2>&1 || true
+    touch "$LOG_FILE" 2>/dev/null || true
+}
+
+require_root() {
+    if [ "${EUID:-$(id -u)}" -ne 0 ]; then
+        log_error "Se requieren privilegios de root para esta operación"
+        exit 1
+    fi
+}
+
 # Sub-agentes disponibles
 SUBAGENTS=(
     "monitoreo:$SCRIPT_DIR/sub_agente_monitoreo.sh"
@@ -108,6 +126,14 @@ ESPECIALISTA_INTERVAL=604800
 OPTIMIZADOR_ENABLED=false
 OPTIMIZADOR_INTERVAL=2592000
 
+# Sub-agente ingeniero
+INGENIERO_ENABLED=false
+INGENIERO_INTERVAL=604800
+
+# Sub-agente verificador-backup
+VERIFICADOR_BACKUP_ENABLED=true
+VERIFICADOR_BACKUP_INTERVAL=86400
+
 # Configuración global
 ENABLE_ALERTS=true
 ALERT_EMAIL=""
@@ -130,12 +156,18 @@ execute_agent() {
     log_message "Ejecutando sub-agente: $agent_name (modo: $mode)"
     
     # Verificar si el agente está habilitado
-    local enabled_var="${agent_name^^}_ENABLED"
-    if [ "${!enabled_var}" != "true" ]; then
+    local enabled_var="$(echo "${agent_name^^}_ENABLED" | tr '-' '_')"
+    if [ "${!enabled_var:-}" != "true" ]; then
         log_message "Sub-agente $agent_name está deshabilitado"
         return 0
     fi
     
+    # Verificar script ejecutable
+    if [ ! -x "$agent_script" ]; then
+        log_error "Script de sub-agente no ejecutable o no encontrado: $agent_script"
+        return 1
+    fi
+
     # Ejecutar el sub-agente
     local start_time=$(date +%s)
     
@@ -159,8 +191,8 @@ execute_all_agents() {
     local failed_agents=()
     local successful_agents=()
     
-    if [ "$PARALLEL_EXECUTION" = "true" ]; then
-        log_message "Ejecutando sub-agentes en paralelo (máximo: $MAX_CONCURRENT_AGENTS)"
+    if [ "${PARALLEL_EXECUTION:-true}" = "true" ]; then
+        log_message "Ejecutando sub-agentes en paralelo (máximo: ${MAX_CONCURRENT_AGENTS:-3})"
         
         local pids=()
         local agent_names=()
@@ -170,7 +202,7 @@ execute_all_agents() {
             local agent_script=$(echo "$agent_info" | cut -d':' -f2)
             
             # Esperar si hay muchos procesos en paralelo
-            while [ ${#pids[@]} -ge "$MAX_CONCURRENT_AGENTS" ]; do
+            while [ ${#pids[@]} -ge "${MAX_CONCURRENT_AGENTS:-3}" ]; do
                 for i in "${!pids[@]}"; do
                     if ! kill -0 "${pids[$i]}" 2>/dev/null; then
                         wait "${pids[$i]}"
@@ -255,6 +287,8 @@ daemon_mode() {
     # Función para limpiar al salir
     cleanup() {
         log_message "Deteniendo coordinador de sub-agentes..."
+        pkill -P $$ 2>/dev/null || true
+        wait 2>/dev/null || true
         rm -f "$PID_FILE"
         exit 0
     }
@@ -279,10 +313,11 @@ daemon_mode() {
             local agent_script=$(echo "$agent_info" | cut -d':' -f2)
             
             # Verificar si es hora de ejecutar este agente
-            local interval_var="${agent_name^^}_INTERVAL"
-            local interval="${!interval_var}"
+            local interval_var="$(echo "${agent_name^^}_INTERVAL" | tr '-' '_')"
+            local enabled_var="$(echo "${agent_name^^}_ENABLED" | tr '-' '_')"
+            local interval="${!interval_var:-300}"
             
-            if [ "$current_time" -ge "${next_execution[$agent_name]}" ]; then
+            if [ "${!enabled_var:-}" = "true" ] && [ "$current_time" -ge "${next_execution[$agent_name]}" ]; then
                 log_message "Programando ejecución de $agent_name"
                 
                 # Ejecutar en background para no bloquear otros agentes
@@ -317,13 +352,13 @@ generate_status_report() {
         for agent_info in "${SUBAGENTS[@]}"; do
             local agent_name=$(echo "$agent_info" | cut -d':' -f1)
             local agent_script=$(echo "$agent_info" | cut -d':' -f2)
-            local enabled_var="${agent_name^^}_ENABLED"
-            local interval_var="${agent_name^^}_INTERVAL"
+            local enabled_var="$(echo "${agent_name^^}_ENABLED" | tr '-' '_')"
+            local interval_var="$(echo "${agent_name^^}_INTERVAL" | tr '-' '_')"
             
             echo "Sub-agente: $agent_name"
             echo "  Archivo: $agent_script"
-            echo "  Habilitado: ${!enabled_var}"
-            echo "  Intervalo: ${!interval_var} segundos"
+            echo "  Habilitado: ${!enabled_var:-false}"
+            echo "  Intervalo: ${!interval_var:-300} segundos"
             echo "  Última ejecución: $(find /var/log -name "*${agent_name}*" -type f -exec stat -c '%Y %n' {} \; 2>/dev/null | sort -nr | head -1 | awk '{print strftime("%Y-%m-%d %H:%M:%S", $1)}')"
             echo ""
         done
@@ -390,7 +425,7 @@ ExecStart=$SCRIPT_DIR/coordinador_sub_agentes.sh daemon
 ExecStop=$SCRIPT_DIR/coordinador_sub_agentes.sh stop
 Restart=always
 RestartSec=30
-PIDFile=$PID_FILE
+# PIDFile no utilizado con Type=simple
 
 [Install]
 WantedBy=multi-user.target
@@ -405,7 +440,18 @@ EOF
 
 main() {
     log_message "Iniciando coordinador de sub-agentes..."
+    ensure_log_paths
     
+    # Requiere root para operaciones privilegiadas
+    case "${1:-start}" in
+        start|daemon|stop|restart|status|install-service|test|monitoreo|seguridad|backup|actualizaciones|logs|especialista|optimizador|ingeniero|verificador-backup|check-backups|repair-all|refactor-all)
+            if [ "$EUID" -ne 0 ]; then
+                log_error "Se requieren privilegios de root para '${1:-start}'"
+                exit 1
+            fi
+            ;;
+    esac
+
     if ! check_prerequisites; then
         log_error "Fallo en verificación de prerequisitos"
         exit 1

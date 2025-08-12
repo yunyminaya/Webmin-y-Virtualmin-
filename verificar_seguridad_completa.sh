@@ -3,7 +3,9 @@
 # Script de verificación de seguridad completa para Webmin y Virtualmin
 # Este script realiza una verificación exhaustiva de la seguridad del sistema
 
-set -e
+set -euo pipefail
+IFS=$'\n\t'
+trap 'echo "[ERROR] verificar_seguridad_completa.sh fallo en línea $LINENO"; exit 1' ERR
 
 # Colores para output
 RED='\033[0;31m'
@@ -2199,6 +2201,15 @@ check_email_config() {
     echo "" >> "$REPORT_FILE"
     return 0
 }
+
+# Compatibilidad: alias de nombres llamados en main hacia las funciones existentes
+check_webmin_security() { check_webmin_config; }
+check_virtualmin_security() { check_virtualmin_config; }
+check_web_server_security() { check_web_server_config; }
+check_database_security() { check_database_config; }
+check_firewall_security() { check_firewall_config; }
+check_ssh_security() { check_ssh_config; }
+check_updates() { check_pending_updates; }
 
 # Función principal
 main() {

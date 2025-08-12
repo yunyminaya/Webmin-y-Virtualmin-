@@ -1,5 +1,9 @@
 #!/bin/bash
 
+set -euo pipefail
+IFS=$'\n\t'
+trap 'echo "[ERROR] sub_agente_monitoreo.sh fallo en línea $LINENO" >&2' ERR
+
 # Sub-Agente de Monitoreo del Sistema
 # Monitorea recursos del sistema, servicios y estado general
 
@@ -20,7 +24,7 @@ check_system_resources() {
     CPU_USAGE=$(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | cut -d'%' -f1 | cut -d',' -f1)
     log_message "Uso de CPU: ${CPU_USAGE}%"
     
-    if (( $(echo "$CPU_USAGE > $ALERT_THRESHOLD_CPU" | bc -l) )); then
+    if awk -v a="$CPU_USAGE" -v b="$ALERT_THRESHOLD_CPU" 'BEGIN{exit (a>b)?0:1}'; then
         log_message "ALERTA: Uso de CPU alto: ${CPU_USAGE}%"
         send_alert "CPU" "$CPU_USAGE"
     fi
@@ -29,7 +33,7 @@ check_system_resources() {
     MEMORY_USAGE=$(free | grep Mem | awk '{printf("%.1f", ($3/$2) * 100.0)}')
     log_message "Uso de Memoria: ${MEMORY_USAGE}%"
     
-    if (( $(echo "$MEMORY_USAGE > $ALERT_THRESHOLD_MEMORY" | bc -l) )); then
+    if awk -v a="$MEMORY_USAGE" -v b="$ALERT_THRESHOLD_MEMORY" 'BEGIN{exit (a>b)?0:1}'; then
         log_message "ALERTA: Uso de memoria alto: ${MEMORY_USAGE}%"
         send_alert "MEMORIA" "$MEMORY_USAGE"
     fi
@@ -64,14 +68,14 @@ check_services() {
 check_network_connectivity() {
     log_message "=== VERIFICACIÓN DE CONECTIVIDAD ==="
     
-    if ping -c 1 8.8.8.8 >/dev/null 2>&1; then
+    if curl -fsSIL --connect-timeout 5 "https://download.webmin.com/" >/dev/null 2>&1; then
         log_message "✓ Conectividad externa: OK"
     else
         log_message "✗ Conectividad externa: FALLO"
         send_alert "RED" "Sin conectividad externa"
     fi
     
-    if ping -c 1 localhost >/dev/null 2>&1; then
+    if getent hosts localhost >/dev/null 2>&1; then
         log_message "✓ Conectividad local: OK"
     else
         log_message "✗ Conectividad local: FALLO"
@@ -88,7 +92,7 @@ check_ports() {
         port=$(echo "$port_info" | cut -d':' -f1)
         service=$(echo "$port_info" | cut -d':' -f2)
         
-        if netstat -ln | grep ":$port " >/dev/null 2>&1; then
+        if ss -tuln 2>/dev/null | grep -q ":${port}\b" || netstat -tuln 2>/dev/null | grep -q ":${port} "; then
             log_message "✓ Puerto $port ($service): ABIERTO"
         else
             log_message "✗ Puerto $port ($service): CERRADO"

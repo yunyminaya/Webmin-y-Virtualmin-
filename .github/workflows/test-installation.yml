@@ -26,15 +26,17 @@ jobs:
     
     - name: Test installation script syntax
       run: |
-        bash -n instalacion_completa_automatica.sh
+        bash -n instalacion_un_comando.sh
         bash -n instalar_webmin_virtualmin.sh
         bash -n verificar_asistente_wizard.sh
         bash -n desinstalar.sh
+        bash -n test_sistema_completo.sh
+        bash -n test_exhaustivo_tuneles.sh
     
     - name: Test quick installer download
       run: |
         # Test that the script can be downloaded
-        curl -sSL -f --max-time 30 https://raw.githubusercontent.com/yunyminaya/Wedmin-Y-Virtualmin/main/instalar_webmin_virtualmin.sh > /tmp/test_installer.sh
+        curl -sSL -f --max-time 30 https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/master/instalar.sh > /tmp/test_installer.sh
         bash -n /tmp/test_installer.sh
     
     - name: Test dependencies check
@@ -110,8 +112,8 @@ jobs:
     - name: Validate installation URLs
       run: |
         # Test that GitHub raw URLs are accessible
-        curl -sSL -f --max-time 30 -I https://raw.githubusercontent.com/yunyminaya/Wedmin-Y-Virtualmin/main/instalar_webmin_virtualmin.sh
-        curl -sSL -f --max-time 30 -I https://raw.githubusercontent.com/yunyminaya/Wedmin-Y-Virtualmin/main/instalacion_completa_automatica.sh
+        curl -sSL -f --max-time 30 -I https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/master/instalar.sh
+        curl -sSL -f --max-time 30 -I https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/master/instalacion_un_comando.sh
 
   security-scan:
     runs-on: ubuntu-latest

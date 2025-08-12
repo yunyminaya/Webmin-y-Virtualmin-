@@ -51,6 +51,14 @@ EOF
     echo
 }
 
+# Instalar dependencias críticas
+install_dependencies() {
+    log "🔧 Instalando dependencias críticas..."
+    apt-get update -y
+    apt-get install -y net-tools iproute2 curl wget sudo gnupg2 lsb-release apt-transport-https ca-certificates software-properties-common
+    log "✅ Dependencias instaladas correctamente"
+}
+
 # Verificar privilegios de root
 check_root() {
     if [[ $EUID -ne 0 ]]; then
@@ -73,7 +81,7 @@ detect_system() {
         "ubuntu")
             if [[ "$VERSION_ID" == "20.04" ]]; then
                 log "✅ Ubuntu 20.04 LTS detectado (OPTIMIZADO)"
-            elif [[ "$VERSION_ID" > "18.04" ]]; then
+            elif dpkg --compare-versions "$VERSION_ID" ge "18.04"; then
                 log "✅ Ubuntu $VERSION_ID detectado (Compatible)"
             else
                 error "Ubuntu $VERSION_ID no soportado (mínimo: 18.04)"
@@ -113,6 +121,15 @@ setup_temp_dir() {
     mkdir -p "$TEMP_DIR"
     cd "$TEMP_DIR"
     log "✅ Directorio temporal: $TEMP_DIR"
+}
+
+# Agregar clave pública de Webmin (compatible Ubuntu 20.04/22.04+)
+add_webmin_key() {
+    log "🔑 Agregando clave pública de Webmin..."
+    # Siempre usar keyring (apt-key está deprecado)
+    curl -fsSL https://download.webmin.com/jcameron-key.asc | gpg --dearmor | tee /usr/share/keyrings/webmin.gpg >/dev/null
+    echo "deb [signed-by=/usr/share/keyrings/webmin.gpg] https://download.webmin.com/download/repository sarge contrib" > /etc/apt/sources.list.d/webmin.list
+    log "✅ Clave pública de Webmin agregada correctamente"
 }
 
 # Descargar instalador principal desde GitHub
@@ -229,8 +246,10 @@ main() {
     log "📍 Descarga desde: $REPO_URL"
     
     check_root
+    install_dependencies
     detect_system
     check_connectivity
+    add_webmin_key
     setup_temp_dir
     download_installer
     run_installation
@@ -247,6 +266,5 @@ main() {
 }
 
 # Ejecutar función principal si el script se ejecuta directamente
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    main "$@"
-fi
+main "$@"
+# NOTA: Se eliminó el uso de BASH_SOURCE para compatibilidad con ejecución por tubería (| bash)

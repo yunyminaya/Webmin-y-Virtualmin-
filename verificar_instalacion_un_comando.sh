@@ -93,7 +93,7 @@ verify_network_ports() {
         local port="${port_info%:*}"
         local service="${port_info#*:}"
         
-        if netstat -tlnp 2>/dev/null | grep ":$port " >/dev/null; then
+        if ss -tlnp 2>/dev/null | grep -q ":$port\b" || netstat -tlnp 2>/dev/null | grep -q ":$port "; then
             log_success "Puerto $port ($service): ABIERTO"
         else
             log_warning "Puerto $port ($service): CERRADO"

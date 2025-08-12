@@ -9,7 +9,7 @@
 ## ⚡ INSTALACIÓN CON UN SOLO COMANDO
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/tu-usuario/tu-repo/master/instalar.sh | sudo bash
+curl -sSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/master/instalar.sh | sudo bash
 ```
 
 ## 🎯 ¿QUÉ HACE ESTE COMANDO?
@@ -67,12 +67,12 @@ curl -sSL https://raw.githubusercontent.com/tu-usuario/tu-repo/master/instalar.s
 ### 2. Comando de Instalación
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/tu-usuario/tu-repo/master/instalar.sh | sudo bash
+curl -sSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/master/instalar.sh | sudo bash
 ```
 
 ### 3. Acceso al Panel
 
-```
+```text
 🌐 URL: https://TU-IP-SERVIDOR:10000
 👤 Usuario: root
 🔐 Contraseña: [tu contraseña de root]
@@ -209,5 +209,5 @@ Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) par
 **🚀 ¡Un comando para un servidor completo!**
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/tu-usuario/tu-repo/master/instalar.sh | sudo bash
+curl -sSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/master/instalar.sh | sudo bash
 ```

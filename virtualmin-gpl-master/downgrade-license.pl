@@ -1,1 +1,0 @@
-downgrade-licence.pl
