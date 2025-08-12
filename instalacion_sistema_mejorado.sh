@@ -386,7 +386,7 @@ verificar_estado_general() {
     "cpu_usage": $cpu_usage,
     "mem_usage": $mem_usage,
     "disk_usage": $disk_usage,
-    "alertas": [$(printf '"%s",' "${alertas[@]}" | sed 's/,$//')]]
+    "alertas": [$(printf '"%s",' "${alertas[@]}" | sed 's/,$//')]
 }
 JSONEOF
     
@@ -459,7 +459,6 @@ EOF
 EOF
     
     log "✅ Sistema de monitoreo y alertas configurado"
-}
 
 # Crear herramientas de administración
 crear_herramientas_admin() {
