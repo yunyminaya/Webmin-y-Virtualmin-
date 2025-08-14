@@ -3,17 +3,26 @@
 # Script de Integración de Authentic Theme y Virtualmin
 # Este script ayuda a integrar correctamente los componentes
 
+# Cargar biblioteca de funciones comunes
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/lib/common_functions.sh" ]]; then
+    source "$SCRIPT_DIR/lib/common_functions.sh"
+else
+    echo "❌ Error: No se encontró lib/common_functions.sh"
+    exit 1
+fi
+
 set -e
 
 echo "=== Script de Integración Authentic Theme + Virtualmin ==="
 echo
 
 # Colores para output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
 
 # Función para imprimir mensajes
 print_status() {

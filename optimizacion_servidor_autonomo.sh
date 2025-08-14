@@ -3,34 +3,43 @@
 # Script de optimización para servidor público autónomo
 # Garantiza máximo rendimiento y disponibilidad sin dependencias de terceros
 
+# Cargar biblioteca de funciones comunes
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/lib/common_functions.sh" ]]; then
+    source "$SCRIPT_DIR/lib/common_functions.sh"
+else
+    echo "❌ Error: No se encontró lib/common_functions.sh"
+    exit 1
+fi
+
 set -e
 
 # Colores para output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
 
-log() {
-    echo -e "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')]${NC} $1"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Fin de función duplicada
 
-log_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Fin de función duplicada
 
-log_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Fin de función duplicada
 
 # Verificar privilegios de root
-check_root() {
-    if [[ $EUID -ne 0 ]]; then
-        log_error "Este script debe ejecutarse como root"
-        exit 1
-    fi
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Fin de función duplicada
 
 # Optimizar kernel y sistema
 optimize_kernel() {
@@ -545,9 +554,9 @@ BACKUP_DIR="/var/backups/servidor-autonomo"
 DATE=$(date +%Y%m%d_%H%M%S)
 RETENTION_DAYS=30
 
-log() {
-    echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1" | tee -a /var/log/backup-servidor.log
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Fin de función duplicada
 
 log "Iniciando backup completo del servidor"
 
@@ -628,9 +637,9 @@ log_alert() {
     echo "[ALERT $(date +'%Y-%m-%d %H:%M:%S')] $1" | tee -a "$MONITOR_LOG"
 }
 
-log_info() {
-    echo "[INFO $(date +'%Y-%m-%d %H:%M:%S')] $1" >> "$MONITOR_LOG"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Fin de función duplicada
 
 # Monitorear CPU
 CPU_USAGE=$(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | cut -d'%' -f1)

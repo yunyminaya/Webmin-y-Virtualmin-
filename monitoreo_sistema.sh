@@ -1,6 +1,15 @@
 #!/bin/bash
 
 # Incluir funciones de validación de Postfix
+# Cargar biblioteca de funciones comunes
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/lib/common_functions.sh" ]]; then
+    source "$SCRIPT_DIR/lib/common_functions.sh"
+else
+    echo "❌ Error: No se encontró lib/common_functions.sh"
+    exit 1
+fi
+
 source "/Users/yunyminaya/Wedmin Y Virtualmin/postfix_validation_functions.sh"
 
 
@@ -12,42 +21,42 @@ set -e
 # Descripción: Monitorea el estado del sistema y notifica sobre actualizaciones disponibles
 
 # Colores para output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-PURPLE='\033[0;35m'
-CYAN='\033[0;36m'
-NC='\033[0m' # No Color
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
 
 # Funciones de logging
-log_info() {
-    echo -e "${BLUE}[INFO]${NC} $1"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Fin de función duplicada
 
-log_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Fin de función duplicada
 
-log_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Fin de función duplicada
 
-log_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Fin de función duplicada
 
 log_step() {
     echo -e "${PURPLE}[STEP]${NC} $1"
 }
 
 # Verificar privilegios de root
-check_root() {
-    if [[ $EUID -ne 0 ]]; then
-        log_error "Este script debe ejecutarse como root"
-        exit 1
-    fi
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Fin de función duplicada
 
 # Configuración
 LOG_FILE="/var/log/webmin-monitor.log"

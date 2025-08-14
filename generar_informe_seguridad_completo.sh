@@ -7,13 +7,22 @@
 # ============================================================================
 
 # Colores para la salida
-RED="\033[0;31m"
-GREEN="\033[0;32m"
-YELLOW="\033[0;33m"
-BLUE="\033[0;34m"
-MAGENTA="\033[0;35m"
-CYAN="\033[0;36m"
-NC="\033[0m" # No Color
+# Cargar biblioteca de funciones comunes
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/lib/common_functions.sh" ]]; then
+    source "$SCRIPT_DIR/lib/common_functions.sh"
+else
+    echo "❌ Error: No se encontró lib/common_functions.sh"
+    exit 1
+fi
+
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
 
 # Variables globales
 VERBOSE=false
@@ -36,44 +45,44 @@ show_banner() {
 }
 
 # Función para registrar mensajes
-log() {
-    local level=$1
-    local message=$2
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Contenido de función duplicada
     
-    case "$level" in
-        "INFO")
-            echo -e "${BLUE}[INFO]${NC} $message"
-            ;;
-        "SUCCESS")
-            echo -e "${GREEN}[SUCCESS]${NC} $message"
-            ;;
-        "WARNING")
-            echo -e "${YELLOW}[WARNING]${NC} $message"
-            ;;
-        "ERROR")
-            echo -e "${RED}[ERROR]${NC} $message"
-            ;;
-        "CRITICAL")
-            echo -e "${RED}[CRITICAL]${NC} $message"
-            ;;
-        *)
-            echo "$message"
-            ;;
-    esac
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
     
-    # Añadir al archivo de salida
-    if [ "$level" = "INFO" ]; then
-        echo "- $message" >> "$OUTPUT_FILE"
-    elif [ "$level" = "SUCCESS" ]; then
-        echo "- ✅ $message" >> "$OUTPUT_FILE"
-    elif [ "$level" = "WARNING" ]; then
-        echo "- ⚠️ $message" >> "$OUTPUT_FILE"
-    elif [ "$level" = "ERROR" ] || [ "$level" = "CRITICAL" ]; then
-        echo "- ❌ $message" >> "$OUTPUT_FILE"
-    else
-        echo "- $message" >> "$OUTPUT_FILE"
-    fi
-}
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Fin de función duplicada
 
 # Función para detectar el sistema operativo
 detect_os() {

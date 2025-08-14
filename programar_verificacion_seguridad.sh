@@ -4,41 +4,50 @@
 # y enviar los resultados por correo electrónico
 
 # Directorio de trabajo
+# Cargar biblioteca de funciones comunes
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/lib/common_functions.sh" ]]; then
+    source "$SCRIPT_DIR/lib/common_functions.sh"
+else
+    echo "❌ Error: No se encontró lib/common_functions.sh"
+    exit 1
+fi
+
 WORK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Colores para los mensajes
-RED="\033[0;31m"
-GREEN="\033[0;32m"
-YELLOW="\033[0;33m"
-BLUE="\033[0;34m"
-MAGENTA="\033[0;35m"
-CYAN="\033[0;36m"
-NC="\033[0m" # No Color
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
 
 # Función para mostrar mensajes
-log() {
-    local level="$1"
-    local message="$2"
-    local timestamp=$(date "+%Y-%m-%d %H:%M:%S")
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
     
-    case "$level" in
-        "INFO")
-            echo -e "${BLUE}[INFO]${NC} $timestamp - $message"
-            ;;
-        "SUCCESS")
-            echo -e "${GREEN}[SUCCESS]${NC} $timestamp - $message"
-            ;;
-        "WARNING")
-            echo -e "${YELLOW}[WARNING]${NC} $timestamp - $message"
-            ;;
-        "ERROR")
-            echo -e "${RED}[ERROR]${NC} $timestamp - $message"
-            ;;
-        *)
-            echo -e "$timestamp - $message"
-            ;;
-    esac
-}
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Fin de función duplicada
 
 # Función para mostrar el banner
 show_banner() {

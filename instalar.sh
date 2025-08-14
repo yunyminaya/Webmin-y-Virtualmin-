@@ -6,6 +6,15 @@
 # Comando único: curl -sSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/master/instalar.sh | sudo bash
 # =============================================================================
 
+# Cargar biblioteca de funciones comunes
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/lib/common_functions.sh" ]]; then
+    source "$SCRIPT_DIR/lib/common_functions.sh"
+else
+    echo "❌ Error: No se encontró lib/common_functions.sh"
+    exit 1
+fi
+
 set -euo pipefail
 
 # Variables globales
@@ -15,18 +24,18 @@ TEMP_DIR="/tmp/webmin-virtualmin-$(date +%s)"
 LOG_FILE="/var/log/instalacion-webmin-virtualmin.log"
 
 # Colores
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-NC='\033[0m'
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
 
 # Logging
-log() {
-    echo -e "${GREEN}[$(date '+%H:%M:%S')] $1${NC}"
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$LOG_FILE"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Fin de función duplicada
 
 error() {
     echo -e "${RED}[ERROR] $1${NC}"
@@ -60,12 +69,12 @@ install_dependencies() {
 }
 
 # Verificar privilegios de root
-check_root() {
-    if [[ $EUID -ne 0 ]]; then
-        error "Este script debe ejecutarse como root. Usa: sudo $0"
-    fi
-    log "✅ Privilegios de root verificados"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Fin de función duplicada
 
 # Detectar sistema operativo
 detect_system() {

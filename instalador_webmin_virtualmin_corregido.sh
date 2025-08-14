@@ -3,14 +3,23 @@
 # Instalador Corregido de Webmin/Virtualmin
 # Soluciona todos los problemas identificados en los scripts anteriores
 
+# Cargar biblioteca de funciones comunes
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/lib/common_functions.sh" ]]; then
+    source "$SCRIPT_DIR/lib/common_functions.sh"
+else
+    echo "❌ Error: No se encontró lib/common_functions.sh"
+    exit 1
+fi
+
 set -euo pipefail
 
 # Configuración de colores
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
 
 LOG_FILE="/var/log/instalacion_webmin_virtualmin_$(date +%Y%m%d_%H%M%S).log"
 ERROR_FILE="/var/log/errores_instalacion_$(date +%Y%m%d_%H%M%S).log"
@@ -20,21 +29,21 @@ log_message() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
 }
 
-log_error() {
-    echo -e "${RED}❌ $1${NC}" | tee -a "$LOG_FILE" | tee -a "$ERROR_FILE"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Fin de función duplicada
 
-log_success() {
-    echo -e "${GREEN}✅ $1${NC}" | tee -a "$LOG_FILE"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Fin de función duplicada
 
-log_warning() {
-    echo -e "${YELLOW}⚠️  $1${NC}" | tee -a "$LOG_FILE"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Fin de función duplicada
 
-log_info() {
-    echo -e "${BLUE}ℹ️  $1${NC}" | tee -a "$LOG_FILE"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Fin de función duplicada
 
 # Manejo de errores mejorado
 handle_error() {
@@ -144,34 +153,34 @@ check_required_ports() {
 }
 
 # 2. CREAR BACKUP DE SEGURIDAD
-create_backup() {
-    log_info "=== CREANDO BACKUP DE SEGURIDAD ==="
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
     
-    mkdir -p "$BACKUP_DIR"
+# Contenido de función duplicada
     
-    # Backup de configuraciones existentes
-    local backup_paths=(
-        "/etc/webmin"
-        "/etc/usermin"
-        "/etc/apache2"
-        "/etc/nginx"
-        "/etc/postfix"
-        "/etc/mysql"
-        "/etc/apt/sources.list"
-        "/etc/apt/sources.list.d"
-    )
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
     
-    for path in "${backup_paths[@]}"; do
-        if [[ -e "$path" ]]; then
-            local backup_name=$(basename "$path")
-            tar -czf "$BACKUP_DIR/${backup_name}_backup.tar.gz" -C "$(dirname "$path")" "$(basename "$path")" 2>/dev/null || true
-            log_success "Backup creado: ${backup_name}_backup.tar.gz"
-        fi
-    done
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
     
-    log_success "Backup completo en: $BACKUP_DIR"
-    echo ""
-}
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Fin de función duplicada
 
 # 3. ACTUALIZAR SISTEMA
 update_system_safe() {
