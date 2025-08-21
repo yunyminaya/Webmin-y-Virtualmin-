@@ -17,7 +17,7 @@ jobs:
         ubuntu-version: ['20.04', '22.04']
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v5
     
     - name: Set up environment
       run: |
@@ -51,7 +51,7 @@ jobs:
     runs-on: macos-latest
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v5
     
     - name: Test installation script syntax
       run: |
@@ -81,7 +81,7 @@ jobs:
         dnf update -y
         dnf install -y git curl wget bash
     
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v5
     
     - name: Test installation script syntax
       run: |
@@ -94,7 +94,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v5
     
     - name: Validate Markdown files
       run: |
@@ -119,7 +119,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v5
     
     - name: Run ShellCheck
       uses: ludeeus/action-shellcheck@master
@@ -159,7 +159,7 @@ jobs:
     if: github.event_name == 'schedule' || contains(github.event.head_commit.message, '[test-full]')
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v5
     
     - name: Full installation test (dry run)
       run: |
