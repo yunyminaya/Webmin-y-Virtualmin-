@@ -6,6 +6,15 @@
 # =============================================================================
 
 # Función para verificar disponibilidad de postconf
+# Cargar biblioteca de funciones comunes
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/lib/common_functions.sh" ]]; then
+    source "$SCRIPT_DIR/lib/common_functions.sh"
+else
+    echo "❌ Error: No se encontró lib/common_functions.sh"
+    exit 1
+fi
+
 check_postconf_available() {
     # Verificar si postconf está en PATH
     if command -v postconf >/dev/null 2>&1; then

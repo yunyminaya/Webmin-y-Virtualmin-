@@ -3,6 +3,15 @@
 # Sub-Agente de Seguridad
 # Realiza verificaciones automáticas de seguridad del sistema
 
+# Cargar biblioteca de funciones comunes
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/lib/common_functions.sh" ]]; then
+    source "$SCRIPT_DIR/lib/common_functions.sh"
+else
+    echo "❌ Error: No se encontró lib/common_functions.sh"
+    exit 1
+fi
+
 LOG_FILE="/var/log/sub_agente_seguridad.log"
 SECURITY_REPORT="/var/log/reporte_seguridad_$(date +%Y%m%d_%H%M%S).txt"
 CRITICAL_ALERT_FILE="/var/log/alertas_criticas_seguridad.log"

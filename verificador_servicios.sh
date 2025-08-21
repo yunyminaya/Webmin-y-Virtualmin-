@@ -4,11 +4,20 @@
 # Verifica estado de todos los servicios sin necesidad de permisos root
 
 # Configuración de colores
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
+# Cargar biblioteca de funciones comunes
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/lib/common_functions.sh" ]]; then
+    source "$SCRIPT_DIR/lib/common_functions.sh"
+else
+    echo "❌ Error: No se encontró lib/common_functions.sh"
+    exit 1
+fi
+
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
 
 echo -e "${BLUE}=== VERIFICADOR DE SERVICIOS WEBMIN/VIRTUALMIN ===${NC}"
 echo "Fecha: $(date)"
@@ -67,42 +76,42 @@ check_service() {
 }
 
 # Función para verificar comandos
-check_command() {
-    local cmd="$1"
-    local display_name="$2"
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Contenido de función duplicada
     
-    echo -n "Verificando $display_name... "
+# Contenido de función duplicada
     
-    if command -v "$cmd" >/dev/null 2>&1; then
-        echo -e "${GREEN}DISPONIBLE${NC}"
+# Contenido de función duplicada
+# Contenido de función duplicada
         
-        # Mostrar versión si es posible
-        local version
-        case "$cmd" in
-            "webmin")
-                version=$(grep "version=" /etc/webmin/version 2>/dev/null | cut -d'=' -f2 || echo "No disponible")
-                echo "  └─ Versión: $version"
-                ;;
-            "virtualmin")
-                version=$(virtualmin version 2>/dev/null | head -1 || echo "No disponible")
-                echo "  └─ Versión: $version"
-                ;;
-            "apache2")
-                version=$(apache2 -v 2>/dev/null | head -1 || echo "No disponible")
-                echo "  └─ $version"
-                ;;
-            "mysql")
-                version=$(mysql --version 2>/dev/null || echo "No disponible")
-                echo "  └─ $version"
-                ;;
-        esac
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
         
-        return 0
-    else
-        echo -e "${RED}NO DISPONIBLE${NC}"
-        return 1
-    fi
-}
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Fin de función duplicada
 
 # Función para verificar puertos
 check_port() {

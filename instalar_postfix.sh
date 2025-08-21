@@ -2,17 +2,26 @@
 
 # Script para instalar Postfix si no está disponible
 
+# Cargar biblioteca de funciones comunes
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/lib/common_functions.sh" ]]; then
+    source "$SCRIPT_DIR/lib/common_functions.sh"
+else
+    echo "❌ Error: No se encontró lib/common_functions.sh"
+    exit 1
+fi
+
 set -e
 
 # Colores
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-NC='\033[0m'
+# Variables de color definidas en common_functions.sh si se usan
+#GREEN='\033[0;32m'
+#YELLOW='\033[1;33m'
+# Colores definidos en common_functions.sh
 
-log_info() { echo -e "${YELLOW}[INFO]${NC} $1"; }
-log_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
-log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
+# DUPLICADA: log_info() { echo -e "${YELLOW}[INFO]${NC} $1"; } # Usar common_functions.sh
+# DUPLICADA: log_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; } # Usar common_functions.sh
+# DUPLICADA: log_error() { echo -e "${RED}[ERROR]${NC} $1"; } # Usar common_functions.sh
 
 # Detectar sistema operativo
 detect_os() {

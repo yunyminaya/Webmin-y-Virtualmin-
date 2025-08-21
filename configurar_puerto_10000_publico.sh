@@ -8,47 +8,56 @@
 # Versión: 1.0
 # ============================================================================
 
+# Cargar biblioteca de funciones comunes
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/lib/common_functions.sh" ]]; then
+    source "$SCRIPT_DIR/lib/common_functions.sh"
+else
+    echo "❌ Error: No se encontró lib/common_functions.sh"
+    exit 1
+fi
+
 set -euo pipefail
 
 # Colores para output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
 
 # Función de logging
-log() {
-    local level="$1"
-    local message="$2"
-    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
     
-    case "$level" in
-        "SUCCESS")
-            echo -e "${GREEN}[✓]${NC} $message"
-            ;;
-        "ERROR")
-            echo -e "${RED}[✗]${NC} $message"
-            ;;
-        "WARNING")
-            echo -e "${YELLOW}[⚠]${NC} $message"
-            ;;
-        "INFO")
-            echo -e "${BLUE}[ℹ]${NC} $message"
-            ;;
-        *)
-            echo "[$timestamp] $message"
-            ;;
-    esac
-}
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Fin de función duplicada
 
 # Verificar si se ejecuta como root
-check_root() {
-    if [[ $EUID -ne 0 ]]; then
-        log "ERROR" "Este script debe ejecutarse como root"
-        exit 1
-    fi
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Fin de función duplicada
 
 # Verificar si Webmin está instalado
 check_webmin() {

@@ -6,14 +6,23 @@
 # Uso: curl -sSL https://raw.githubusercontent.com/tu-repo/instalador.sh | bash
 # =============================================================================
 
+# Cargar biblioteca de funciones comunes
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/lib/common_functions.sh" ]]; then
+    source "$SCRIPT_DIR/lib/common_functions.sh"
+else
+    echo "❌ Error: No se encontró lib/common_functions.sh"
+    exit 1
+fi
+
 set -e
 
 # Colores
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
 
 # Variables
 REPO_URL="https://github.com/yunyminaya/Wedmin-Y-Virtualmin.git"
@@ -27,17 +36,17 @@ echo "════════════════════════�
 echo
 
 # Función para logging
-log() {
-    echo -e "${GREEN}[$(date '+%H:%M:%S')]${NC} $1"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Fin de función duplicada
 
-log_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Fin de función duplicada
 
-log_info() {
-    echo -e "${BLUE}[INFO]${NC} $1"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Fin de función duplicada
 
 # Función para generar credenciales basadas en SSH
 generate_ssh_credentials() {
@@ -200,10 +209,85 @@ echo
 # Generar credenciales SSH antes de ejecutar
 generate_ssh_credentials
 
+# Función para verificar versión de Webmin
+check_webmin_version() {
+    local current_version=$(webmin --version 2>/dev/null || echo "No instalado")
+    local latest_version=$(curl -s https://webmin.com/download/ | grep -oP 'Webmin \K[\d.]+')
+    if [[ "$current_version" != "$latest_version" ]]; then
+        log_warning "⚠️ Versión de Webmin desactualizada: $current_version (última: $latest_version)"
+        return 1
+    fi
+    log_info "✅ Webmin está en la versión más reciente: $current_version"
+    return 0
+}
+
+# Función para verificar versión de Virtualmin
+check_virtualmin_version() {
+    local current_version=$(virtualmin --version 2>/dev/null || echo "No instalado")
+    local latest_version=$(curl -s https://software.virtualmin.com/gpl/scripts/install.sh | grep -oP 'VERSION=\K[\d.]+')
+    if [[ "$current_version" != "$latest_version" ]]; then
+        log_warning "⚠️ Versión de Virtualmin desactualizada: $current_version (última: $latest_version)"
+        return 1
+    fi
+    log_info "✅ Virtualmin está en la versión más reciente: $current_version"
+    return 0
+}
+
+# Función para configurar actualizaciones automáticas
+setup_auto_updates() {
+    log_info "⚙️ Configurando actualizaciones automáticas..."
+    local cron_job="0 2 * * * /usr/bin/apt update && /usr/bin/apt upgrade -y webmin virtualmin-base"
+    (crontab -l 2>/dev/null; echo "$cron_job") | crontab -
+    log_info "✅ Cron job para actualizaciones diarias configurado"
+}
+
+# Función para detectar si la IP es pública
+define_ip_type() {
+    local ip=$(curl -s ifconfig.me)
+    if [[ $ip =~ ^(10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|192\.168\.) ]]; then
+        return 1  # Privada
+    else
+        return 0  # Pública
+    fi
+}
+
+# Función para configurar túneles si es necesario
+setup_tunnels_if_needed() {
+    if ! define_ip_type; then
+        log_info "⚠️ IP privada detectada - Configurando túneles nativos..."
+        if [[ -f "tunel_nativo_sin_terceros.sh" ]]; then
+            bash tunel_nativo_sin_terceros.sh --install
+            if [[ $? -eq 0 ]]; then
+                log_success "✅ Túneles nativos configurados exitosamente"
+            else
+                log_error "❌ Error al configurar túneles"
+            fi
+        else
+            log_warning "⚠️ Script de túneles no encontrado. Por favor, ejecute tunel_nativo_sin_terceros.sh manualmente."
+        fi
+    else
+        log_info "✅ IP pública detectada - No se necesitan túneles"
+    fi
+}
+
 # Ejecutar script principal
 if bash "$SCRIPT_NAME"; then
     echo
     log "✅ ¡Instalación completada exitosamente!"
+    
+    # Verificar versiones
+    check_webmin_version
+    check_virtualmin_version
+    
+    # Configurar túneles si es necesario
+    setup_tunnels_if_needed
+    
+    # Configurar actualizaciones automáticas si es Linux
+    if [[ "$OSTYPE" != "darwin"* ]]; then
+        setup_auto_updates
+    else
+        log_warning "⚠️ Actualizaciones automáticas no configuradas en macOS"
+    fi
     echo
     echo -e "${GREEN}🎉 WEBMIN Y VIRTUALMIN ESTÁN LISTOS${NC}"
     echo

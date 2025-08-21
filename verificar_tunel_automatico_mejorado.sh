@@ -2,6 +2,15 @@
 # Script mejorado para túnel automático con alta disponibilidad y seguridad
 # Versión 2.0 - Resistente a fallos, eficiente y seguro
 
+# Cargar biblioteca de funciones comunes
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/lib/common_functions.sh" ]]; then
+    source "$SCRIPT_DIR/lib/common_functions.sh"
+else
+    echo "❌ Error: No se encontró lib/common_functions.sh"
+    exit 1
+fi
+
 set -euo pipefail
 
 # Configuración avanzada
@@ -17,23 +26,23 @@ FAILOVER_TIMEOUT=30
 SECURITY_SCAN_INTERVAL=3600
 
 # Colores mejorados
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-PURPLE='\033[0;35m'
-CYAN='\033[0;36m'
-NC='\033[0m'
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
 
 # Crear directorios necesarios
 mkdir -p "$CONFIG_DIR" "$LOG_DIR" "$BACKUP_DIR"
 
 # Funciones de logging mejoradas
-log() {
-    local level="${2:-INFO}"
-    local timestamp=$(date +'%Y-%m-%d %H:%M:%S')
-    echo -e "${GREEN}[$timestamp]${NC} [$level] $1" | tee -a "$LOG_DIR/main.log"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Fin de función duplicada
 
 log_security() {
     local timestamp=$(date +'%Y-%m-%d %H:%M:%S')
@@ -52,13 +61,13 @@ log_failover() {
     log "🔄 FAILOVER: $1" "FAILOVER"
 }
 
-log_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1" | tee -a "$LOG_DIR/warnings.log"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Fin de función duplicada
 
-log_error() {
-    echo -e "${RED}[ERROR]${NC} $1" | tee -a "$LOG_DIR/errors.log"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Fin de función duplicada
 
 # Función de notificación por email/webhook
 enviar_notificacion() {

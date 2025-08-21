@@ -4,6 +4,15 @@
 # Revisor, reparador y optimizador especializado para Webmin/Virtualmin
 # Asegura que todos los paneles y funciones trabajen correctamente
 
+# Cargar biblioteca de funciones comunes
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/lib/common_functions.sh" ]]; then
+    source "$SCRIPT_DIR/lib/common_functions.sh"
+else
+    echo "❌ Error: No se encontró lib/common_functions.sh"
+    exit 1
+fi
+
 set -euo pipefail
 IFS=$'\n\t'
 
@@ -14,66 +23,66 @@ AUDIT_REPORT="/var/log/auditoria_codigo_$(date +%Y%m%d_%H%M%S).txt"
 BACKUP_DIR="/var/backups/pre_repair_$(date +%Y%m%d_%H%M%S)"
 
 # Configuración de colores para output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
 
 log_message() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] [ESPECIALISTA] $1" | tee -a "$LOG_FILE"
 }
 
-log_error() {
-    echo -e "${RED}[$(date '+%Y-%m-%d %H:%M:%S')] [ERROR] $1${NC}" | tee -a "$LOG_FILE"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Fin de función duplicada
 
-log_success() {
-    echo -e "${GREEN}[$(date '+%Y-%m-%d %H:%M:%S')] [ÉXITO] $1${NC}" | tee -a "$LOG_FILE"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Fin de función duplicada
 
-log_warning() {
-    echo -e "${YELLOW}[$(date '+%Y-%m-%d %H:%M:%S')] [ADVERTENCIA] $1${NC}" | tee -a "$LOG_FILE"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Fin de función duplicada
 
-log_info() {
-    echo -e "${BLUE}[$(date '+%Y-%m-%d %H:%M:%S')] [INFO] $1${NC}" | tee -a "$LOG_FILE"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Fin de función duplicada
 
-create_backup() {
-    log_info "=== CREANDO BACKUP DE SEGURIDAD ==="
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
     
-    mkdir -p "$BACKUP_DIR"
+# Contenido de función duplicada
     
-    # Backup de configuraciones críticas
-    local backup_paths=(
-        "/etc/webmin"
-        "/etc/usermin"
-        "/etc/virtualmin-domains"
-        "/etc/apache2"
-        "/etc/nginx"
-        "/etc/postfix"
-        "/etc/dovecot"
-        "/etc/bind"
-        "/etc/mysql"
-        "/etc/postgresql"
-    )
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
     
-    for path in "${backup_paths[@]}"; do
-        if [[ -d "$path" ]]; then
-            local backup_name=$(basename "$path")
-            tar -czf "$BACKUP_DIR/${backup_name}.tar.gz" -C "$(dirname "$path")" "$(basename "$path")" 2>/dev/null
-            log_success "Backup creado: ${backup_name}.tar.gz"
-        fi
-    done
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
     
-    # Backup de base de datos de configuración
-    if command -v mysqldump >/dev/null 2>&1; then
-        mysqldump --all-databases > "$BACKUP_DIR/mysql_full_backup.sql" 2>/dev/null || true
-    fi
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
     
-    log_success "Backup completo creado en: $BACKUP_DIR"
-}
+# Contenido de función duplicada
+# Fin de función duplicada
 
 audit_webmin_installation() {
     log_info "=== AUDITANDO INSTALACIÓN DE WEBMIN ==="

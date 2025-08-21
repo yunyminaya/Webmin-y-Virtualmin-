@@ -3,17 +3,26 @@
 # Script para verificar que todas las funciones PRO estén agregadas y funcionando sin errores
 # Verificación completa de características premium de Webmin y Virtualmin
 
+# Cargar biblioteca de funciones comunes
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/lib/common_functions.sh" ]]; then
+    source "$SCRIPT_DIR/lib/common_functions.sh"
+else
+    echo "❌ Error: No se encontró lib/common_functions.sh"
+    exit 1
+fi
+
 set -e
 
 # Colores para output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-PURPLE='\033[0;35m'
-CYAN='\033[0;36m'
-WHITE='\033[1;37m'
-NC='\033[0m'
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
 
 # Variables globales
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
@@ -24,34 +33,34 @@ PASSED_CHECKS=0
 FAILED_CHECKS=0
 
 # Función para logging
-log() {
-    local level="$1"
-    local message="$2"
-    local timestamp=$(date +"%Y-%m-%d %H:%M:%S")
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
     
-    case "$level" in
-        "INFO")
-            echo -e "${BLUE}[INFO]${NC} $message"
-            ;;
-        "SUCCESS")
-            echo -e "${GREEN}[✓]${NC} $message"
-            ((PASSED_CHECKS++))
-            ;;
-        "WARNING")
-            echo -e "${YELLOW}[⚠]${NC} $message"
-            ;;
-        "ERROR")
-            echo -e "${RED}[✗]${NC} $message"
-            ((FAILED_CHECKS++))
-            ;;
-        "HEADER")
-            echo -e "\n${PURPLE}=== $message ===${NC}"
-            ;;
-    esac
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
     
-    echo "[$timestamp] [$level] $message" >> "$LOG_FILE"
-    ((TOTAL_CHECKS++))
-}
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Fin de función duplicada
 
 # Función para mostrar banner
 show_banner() {
@@ -522,6 +531,10 @@ verify_devops_pro() {
 generate_final_report() {
     log "HEADER" "GENERANDO REPORTE FINAL"
     
+    local success_rate=0
+    if [[ $TOTAL_CHECKS -ne 0 ]]; then
+        success_rate=$((PASSED_CHECKS * 100 / TOTAL_CHECKS))
+    fi
     # Crear reporte en Markdown
     cat > "$REPORT_FILE" << EOF
 # 🚀 REPORTE DE VERIFICACIÓN DE FUNCIONES PRO
@@ -530,7 +543,7 @@ generate_final_report() {
 **Total de verificaciones:** $TOTAL_CHECKS  
 **Exitosas:** $PASSED_CHECKS  
 **Fallidas:** $FAILED_CHECKS  
-**Porcentaje de éxito:** $((PASSED_CHECKS * 100 / TOTAL_CHECKS))%
+**Porcentaje de éxito:** ${success_rate}%
 
 ## 📊 RESUMEN EJECUTIVO
 
@@ -599,7 +612,7 @@ generate_final_report() {
 - **Total de verificaciones:** $TOTAL_CHECKS
 - **Verificaciones exitosas:** $PASSED_CHECKS
 - **Verificaciones fallidas:** $FAILED_CHECKS
-- **Porcentaje de éxito:** $((PASSED_CHECKS * 100 / TOTAL_CHECKS))%
+- **Porcentaje de éxito:** ${success_rate}%
 
 ## 📋 DETALLES TÉCNICOS
 
@@ -644,7 +657,10 @@ main() {
         log "ERROR" "Verificaciones fallidas: $FAILED_CHECKS"
     fi
     
-    local success_percentage=$((PASSED_CHECKS * 100 / TOTAL_CHECKS))
+    local success_percentage=0
+if [[ $TOTAL_CHECKS -ne 0 ]]; then
+    success_percentage=$((PASSED_CHECKS * 100 / TOTAL_CHECKS))
+fi
     if [[ $success_percentage -eq 100 ]]; then
         log "SUCCESS" "¡TODAS LAS FUNCIONES PRO ESTÁN FUNCIONANDO SIN ERRORES! 🎉"
     else
@@ -657,4 +673,4 @@ main() {
 }
 
 # Ejecutar función principal
-main "$@" 
+main "$@"

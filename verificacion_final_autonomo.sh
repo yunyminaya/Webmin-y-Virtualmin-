@@ -3,41 +3,50 @@
 # Verificación completa del servidor público autónomo
 # Garantiza 100% de funcionalidad sin dependencias de terceros
 
+# Cargar biblioteca de funciones comunes
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/lib/common_functions.sh" ]]; then
+    source "$SCRIPT_DIR/lib/common_functions.sh"
+else
+    echo "❌ Error: No se encontró lib/common_functions.sh"
+    exit 1
+fi
+
 set -e
 
 # Colores para output
-RED='[0;31m'
-GREEN='[0;32m'
-YELLOW='[1;33m'
-BLUE='[0;34m'
-PURPLE='[0;35m'
-CYAN='[0;36m'
-NC='[0m'
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
 
 # Contadores
 TESTS_PASSED=0
 TESTS_FAILED=0
 TOTAL_TESTS=0
 
-log_success() {
-    echo -e "${GREEN}✅ $1${NC}"
-    ((TESTS_PASSED++))
-    ((TOTAL_TESTS++))
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Fin de función duplicada
 
-log_error() {
-    echo -e "${RED}❌ $1${NC}"
-    ((TESTS_FAILED++))
-    ((TOTAL_TESTS++))
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Fin de función duplicada
 
-log_warning() {
-    echo -e "${YELLOW}⚠️  $1${NC}"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Fin de función duplicada
 
-log_info() {
-    echo -e "${BLUE}ℹ️  $1${NC}"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Fin de función duplicada
 
 log_header() {
     echo -e "

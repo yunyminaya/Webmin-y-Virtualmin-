@@ -10,11 +10,20 @@
 # =============================================================================
 
 # Colores para output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+# Cargar biblioteca de funciones comunes
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/lib/common_functions.sh" ]]; then
+    source "$SCRIPT_DIR/lib/common_functions.sh"
+else
+    echo "❌ Error: No se encontró lib/common_functions.sh"
+    exit 1
+fi
+
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
 
 # Contadores
 TESTS_PASSED=0
@@ -86,18 +95,18 @@ check_connectivity() {
 }
 
 # Función para verificar comando
-check_command() {
-    local cmd="$1"
-    local description="$2"
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Contenido de función duplicada
     
-    if command -v "$cmd" > /dev/null 2>&1; then
-        log_test "PASS" "$description: $cmd"
-        return 0
-    else
-        log_test "FAIL" "$description: $cmd (no disponible)"
-        return 1
-    fi
-}
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Fin de función duplicada
 
 # Función principal de validación
 main_validation() {

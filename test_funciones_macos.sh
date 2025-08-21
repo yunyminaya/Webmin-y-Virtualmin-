@@ -1,6 +1,15 @@
 #!/bin/bash
 # Script de pruebas adaptado para macOS - Verificación de funciones del sistema de túneles
 
+# Cargar biblioteca de funciones comunes
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/lib/common_functions.sh" ]]; then
+    source "$SCRIPT_DIR/lib/common_functions.sh"
+else
+    echo "❌ Error: No se encontró lib/common_functions.sh"
+    exit 1
+fi
+
 set -euo pipefail
 
 # Configuración de pruebas
@@ -13,13 +22,13 @@ PASSED_TESTS=0
 FAILED_TESTS=0
 
 # Colores para output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-PURPLE='\033[0;35m'
-CYAN='\033[0;36m'
-NC='\033[0m'
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
 
 # Crear directorio de pruebas
 mkdir -p "$TEST_LOG_DIR"
@@ -213,14 +222,14 @@ echo -e "${CYAN}🛡️ SECCIÓN 8: Pruebas de seguridad básicas${NC}"
 echo "───────────────────────────────────────────────────────────────"
 
 # Verificar permisos de archivos
-run_test "Script principal tiene permisos seguros" "[[ $(stat -f '%A' '$SCRIPT_PRINCIPAL') -le 755 ]]"
-run_test "Script de seguridad tiene permisos seguros" "[[ $(stat -f '%A' '$SCRIPT_SEGURIDAD') -le 755 ]]"
-run_test "Script de HA tiene permisos seguros" "[[ $(stat -f '%A' '$SCRIPT_HA') -le 755 ]]"
+run_test "Script principal tiene permisos seguros" "[[ $(stat -f '%A' \"$SCRIPT_PRINCIPAL\") -le 755 ]]"
+run_test "Script de seguridad tiene permisos seguros" "[[ $(stat -f '%A' \"$SCRIPT_SEGURIDAD\") -le 755 ]]"
+run_test "Script de HA tiene permisos seguros" "[[ $(stat -f '%A' \"$SCRIPT_HA\") -le 755 ]]"
 
 # Verificar que no hay credenciales hardcodeadas
-run_test "No hay passwords hardcodeados en script principal" "! grep -i 'password=' '$SCRIPT_PRINCIPAL'"
-run_test "No hay API keys hardcodeadas en script principal" "! grep -i 'api_key=' '$SCRIPT_PRINCIPAL'"
-run_test "No hay tokens hardcodeados en script principal" "! grep -i 'token=' '$SCRIPT_PRINCIPAL'"
+run_test "No hay passwords hardcodeados en script principal" "! grep -i 'password=' \"$SCRIPT_PRINCIPAL\""
+run_test "No hay API keys hardcodeadas en script principal" "! grep -i 'api_key=' \"$SCRIPT_PRINCIPAL\""
+run_test "No hay tokens hardcodeados en script principal" "! grep -i 'token=' \"$SCRIPT_PRINCIPAL\""
 
 echo
 

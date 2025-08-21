@@ -3,6 +3,15 @@
 # Sub-Agente de Actualizaciones del Sistema
 # Gestiona actualizaciones automáticas del sistema, Webmin y aplicaciones
 
+# Cargar biblioteca de funciones comunes
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/lib/common_functions.sh" ]]; then
+    source "$SCRIPT_DIR/lib/common_functions.sh"
+else
+    echo "❌ Error: No se encontró lib/common_functions.sh"
+    exit 1
+fi
+
 LOG_FILE="/var/log/sub_agente_actualizaciones.log"
 UPDATE_REPORT="/var/log/reporte_actualizaciones_$(date +%Y%m%d_%H%M%S).txt"
 BACKUP_BEFORE_UPDATE=true
@@ -64,7 +73,7 @@ update_system_packages() {
         log_message "Instalando actualizaciones de seguridad..."
         unattended-upgrade -d 2>&1 | tee -a "$LOG_FILE"
         
-        if [ $? -eq 0 ]; then
+        if apt-get -qq upgrade; then
             log_message "✓ Actualizaciones de seguridad instaladas correctamente"
         else
             log_message "✗ Error al instalar actualizaciones de seguridad"
@@ -76,7 +85,7 @@ update_system_packages() {
     log_message "Actualizando todos los paquetes..."
     apt-get upgrade -y 2>&1 | tee -a "$LOG_FILE"
     
-    if [ $? -eq 0 ]; then
+    if apt-get -qq dist-upgrade; then
         log_message "✓ Paquetes del sistema actualizados correctamente"
     else
         log_message "✗ Error al actualizar paquetes del sistema"
@@ -96,13 +105,14 @@ update_webmin() {
     if command -v webmin >/dev/null 2>&1; then
         # Verificar si hay actualizaciones de Webmin disponibles
         if [ -f "/etc/webmin/webmin/update-from" ]; then
-            local current_version=$(grep "version=" /etc/webmin/version | cut -d'=' -f2)
+            local current_version
+            current_version=$(grep "version=" /etc/webmin/version | cut -d'=' -f2)
             log_message "Versión actual de Webmin: $current_version"
             
             # Intentar actualizar Webmin
-            /etc/webmin/update-webmin.pl >/dev/null 2>&1
-            if [ $? -eq 0 ]; then
-                local new_version=$(grep "version=" /etc/webmin/version | cut -d'=' -f2)
+            if /etc/webmin/update-webmin.pl >/dev/null 2>&1; then
+                local new_version
+                new_version=$(grep "version=" /etc/webmin/version | cut -d'=' -f2)
                 if [ "$current_version" != "$new_version" ]; then
                     log_message "✓ Webmin actualizado de $current_version a $new_version"
                 else
@@ -125,14 +135,14 @@ update_virtualmin() {
         virtualmin update-available >/dev/null 2>&1
         
         # Verificar si hay actualizaciones disponibles
-        local updates=$(virtualmin list-available | grep -v "No updates" | wc -l)
+        local updates
+        updates=$(virtualmin list-available | grep -v "No updates" | wc -l)
         
         if [ "$updates" -gt 0 ]; then
             log_message "Actualizaciones de Virtualmin disponibles: $updates"
             
             # Actualizar Virtualmin
-            virtualmin update-all >/dev/null 2>&1
-            if [ $? -eq 0 ]; then
+            if virtualmin update-all >/dev/null 2>&1; then
                 log_message "✓ Virtualmin actualizado correctamente"
             else
                 log_message "✗ Error al actualizar Virtualmin"
@@ -150,8 +160,7 @@ update_ssl_certificates() {
     
     # Renovar certificados Let's Encrypt
     if command -v certbot >/dev/null 2>&1; then
-        certbot renew --quiet 2>&1 | tee -a "$LOG_FILE"
-        if [ $? -eq 0 ]; then
+        if certbot renew --quiet 2>&1 | tee -a "$LOG_FILE"; then
             log_message "✓ Certificados SSL renovados correctamente"
         else
             log_message "✗ Error al renovar certificados SSL"
@@ -162,8 +171,7 @@ update_ssl_certificates() {
     
     # Verificar certificados próximos a vencer
     if [ -d "/etc/letsencrypt/live" ]; then
-        find /etc/letsencrypt/live -name "cert.pem" -exec openssl x509 -in {} -noout -checkend 2592000 \; | grep -q "will expire"
-        if [ $? -eq 0 ]; then
+        if find /etc/letsencrypt/live -name "cert.pem" -exec openssl x509 -in {} -noout -checkend 2592000 \; | grep -q "will expire"; then
             log_message "ADVERTENCIA: Hay certificados que vencerán en los próximos 30 días"
         fi
     fi
@@ -172,8 +180,10 @@ update_ssl_certificates() {
 check_kernel_updates() {
     log_message "=== VERIFICANDO ACTUALIZACIONES DEL KERNEL ==="
     
-    local current_kernel=$(uname -r)
-    local latest_kernel=$(dpkg -l | grep linux-image | sort -V | tail -1 | awk '{print $2}' | sed 's/linux-image-//')
+    local current_kernel
+    current_kernel=$(uname -r)
+    local latest_kernel
+    latest_kernel=$(dpkg -l | grep linux-image | sort -V | tail -1 | awk '{print $2}' | sed 's/linux-image-//')
     
     log_message "Kernel actual: $current_kernel"
     log_message "Kernel más reciente instalado: $latest_kernel"

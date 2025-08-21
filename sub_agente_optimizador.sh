@@ -3,6 +3,15 @@
 # Sub-Agente Optimizador de Rendimiento
 # Optimiza Webmin, Virtualmin y el sistema para máximo rendimiento
 
+# Cargar biblioteca de funciones comunes
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/lib/common_functions.sh" ]]; then
+    source "$SCRIPT_DIR/lib/common_functions.sh"
+else
+    echo "❌ Error: No se encontró lib/common_functions.sh"
+    exit 1
+fi
+
 set -euo pipefail
 IFS=$'\n\t'
 
@@ -19,13 +28,13 @@ log_message() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] [OPTIMIZADOR] $1" | tee -a "$LOG_FILE"
 }
 
-log_success() {
-    echo -e "${GREEN}[$(date '+%Y-%m-%d %H:%M:%S')] [OPTIMIZADO] $1${NC}" | tee -a "$LOG_FILE"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Fin de función duplicada
 
-log_info() {
-    echo -e "${BLUE}[$(date '+%Y-%m-%d %H:%M:%S')] [INFO] $1${NC}" | tee -a "$LOG_FILE"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Fin de función duplicada
 
 optimize_webmin_performance() {
     log_info "=== OPTIMIZANDO RENDIMIENTO DE WEBMIN ==="

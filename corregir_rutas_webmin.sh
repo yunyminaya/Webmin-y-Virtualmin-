@@ -3,6 +3,15 @@
 # Script para corregir rutas incorrectas de Webmin en todos los archivos
 # Creado por el Agente Ingeniero de Código
 
+# Cargar biblioteca de funciones comunes
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/lib/common_functions.sh" ]]; then
+    source "$SCRIPT_DIR/lib/common_functions.sh"
+else
+    echo "❌ Error: No se encontró lib/common_functions.sh"
+    exit 1
+fi
+
 set -euo pipefail
 
 # Configuración
@@ -11,16 +20,16 @@ LOG_FILE="$SCRIPT_DIR/correccion_rutas_$(date +%Y%m%d_%H%M%S).log"
 BACKUP_DIR="$SCRIPT_DIR/backup_antes_correccion"
 
 # Colores para output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
 
 # Función de logging
-log() {
-    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Fin de función duplicada
 
 print_header() {
     echo -e "${BLUE}================================${NC}"
@@ -29,32 +38,32 @@ print_header() {
 }
 
 # Crear backup de archivos
-create_backup() {
-    log "Creando backup de archivos originales..."
-    mkdir -p "$BACKUP_DIR"
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Contenido de función duplicada
     
-    # Lista de archivos a corregir
-    local files_to_backup=(
-        "sub_agente_monitoreo.sh"
-        "sub_agente_seguridad.sh"
-        "sub_agente_backup.sh"
-        "sub_agente_actualizaciones.sh"
-        "sub_agente_logs.sh"
-        "coordinador_sub_agentes.sh"
-        "sub_agente_ingeniero_codigo.sh"
-        "sub_agente_verificador_backup.sh"
-        "instalacion_completa_automatica.sh"
-        "verificacion_final_autonomo.sh"
-        "diagnostico_servidores_virtuales.sh"
-    )
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
     
-    for file in "${files_to_backup[@]}"; do
-        if [[ -f "$SCRIPT_DIR/$file" ]]; then
-            cp "$SCRIPT_DIR/$file" "$BACKUP_DIR/" 2>/dev/null || true
-            log "✅ Backup creado: $file"
-        fi
-    done
-}
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Fin de función duplicada
 
 # Función para corregir rutas en un archivo
 fix_paths_in_file() {

@@ -3,6 +3,15 @@
 # Script para corregir errores comunes de markdownlint
 # Corrige MD022, MD032, MD031, MD024, y MD036
 
+# Cargar biblioteca de funciones comunes
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/lib/common_functions.sh" ]]; then
+    source "$SCRIPT_DIR/lib/common_functions.sh"
+else
+    echo "❌ Error: No se encontró lib/common_functions.sh"
+    exit 1
+fi
+
 set -euo pipefail
 
 LOG_FILE="correccion_markdown.log"

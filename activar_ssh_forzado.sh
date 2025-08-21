@@ -1,13 +1,22 @@
 #!/bin/bash
 
+# Cargar biblioteca de funciones comunes
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/lib/common_functions.sh" ]]; then
+    source "$SCRIPT_DIR/lib/common_functions.sh"
+else
+    echo "❌ Error: No se encontró lib/common_functions.sh"
+    exit 1
+fi
+
 echo "🔧 ACTIVANDO SSH EN macOS DE FORMA FORZADA"
 echo "=========================================="
 echo ""
 
 echo "📊 Estado inicial:"
-echo "SSH Agent: $(launchctl list | grep ssh-agent | wc -l) procesos"
-echo "SSH Daemon: $(ps aux | grep -c [s]shd) procesos"
-echo "Puerto 22: $(netstat -an | grep -c :22.*LISTEN) en escucha"
+echo "SSH Agent: $(launchctl list | grep -c ssh-agent) procesos"
+echo "SSH Daemon: $(pgrep -c sshd) procesos"
+echo "Puerto 22: $(netstat -an | grep -c ':22.*LISTEN') en escucha"
 echo ""
 
 echo "🚀 Intentando activar SSH..."

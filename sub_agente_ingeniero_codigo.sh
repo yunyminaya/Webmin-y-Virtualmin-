@@ -3,6 +3,15 @@
 # Sub-Agente Ingeniero de Código
 # Refactoriza, optimiza y elimina código duplicado en todo el sistema
 
+# Cargar biblioteca de funciones comunes
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/lib/common_functions.sh" ]]; then
+    source "$SCRIPT_DIR/lib/common_functions.sh"
+else
+    echo "❌ Error: No se encontró lib/common_functions.sh"
+    exit 1
+fi
+
 set -euo pipefail
 IFS=$'\n\t'
 
@@ -12,32 +21,32 @@ REFACTOR_REPORT="/var/log/refactoring_report_$(date +%Y%m%d_%H%M%S).txt"
 BACKUP_DIR="/var/backups/refactoring_backup_$(date +%Y%m%d_%H%M%S)"
 
 # Configuración de colores
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-PURPLE='\033[0;35m'
-NC='\033[0m'
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
 
 log_message() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] [INGENIERO] $1" | tee -a "$LOG_FILE"
 }
 
-log_error() {
-    echo -e "${RED}❌ $1${NC}" | tee -a "$LOG_FILE"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Fin de función duplicada
 
-log_success() {
-    echo -e "${GREEN}✅ $1${NC}" | tee -a "$LOG_FILE"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Fin de función duplicada
 
-log_warning() {
-    echo -e "${YELLOW}⚠️  $1${NC}" | tee -a "$LOG_FILE"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Fin de función duplicada
 
-log_info() {
-    echo -e "${BLUE}ℹ️  $1${NC}" | tee -a "$LOG_FILE"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Fin de función duplicada
 
 echo -e "${PURPLE}============================================${NC}"
 echo -e "${PURPLE}    SUB-AGENTE INGENIERO DE CÓDIGO         ${NC}"
@@ -59,21 +68,21 @@ SCRIPTS_TO_REFACTOR=(
     "verificador_servicios.sh"
 )
 
-create_backup() {
-    log_info "=== CREANDO BACKUP DE CÓDIGO ACTUAL ==="
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
     
-    mkdir -p "$BACKUP_DIR"
+# Contenido de función duplicada
     
-    for script in "${SCRIPTS_TO_REFACTOR[@]}"; do
-        if [[ -f "$SCRIPT_DIR/$script" ]]; then
-            cp "$SCRIPT_DIR/$script" "$BACKUP_DIR/"
-            log_success "Backup creado: $script"
-        fi
-    done
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
     
-    log_success "Backup completo en: $BACKUP_DIR"
-    echo ""
-}
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Fin de función duplicada
 
 create_common_library() {
     log_info "=== CREANDO BIBLIOTECA COMÚN ==="
@@ -112,29 +121,29 @@ log_message() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] [$agent_name] [$level] $message" | tee -a "$log_file"
 }
 
-log_error() {
-    setup_colors
-    echo -e "${RED}❌ $1${NC}" | tee -a "${LOG_FILE:-/var/log/system.log}"
-    log_message "ERROR" "$1"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Fin de función duplicada
 
-log_success() {
-    setup_colors
-    echo -e "${GREEN}✅ $1${NC}" | tee -a "${LOG_FILE:-/var/log/system.log}"
-    log_message "SUCCESS" "$1"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Fin de función duplicada
 
-log_warning() {
-    setup_colors
-    echo -e "${YELLOW}⚠️  $1${NC}" | tee -a "${LOG_FILE:-/var/log/system.log}"
-    log_message "WARNING" "$1"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Fin de función duplicada
 
-log_info() {
-    setup_colors
-    echo -e "${BLUE}ℹ️  $1${NC}" | tee -a "${LOG_FILE:-/var/log/system.log}"
-    log_message "INFO" "$1"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Fin de función duplicada
 
 # Verificación de permisos root
 check_root_permissions() {
@@ -731,10 +740,10 @@ EOF
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib_common.sh" 2>/dev/null || {
     # Fallback si no existe lib_common.sh
-    log_info() { echo "ℹ️  $1"; }
-    log_success() { echo "✅ $1"; }
-    log_error() { echo "❌ $1"; }
-    log_warning() { echo "⚠️  $1"; }
+# DUPLICADA:     log_info() { echo "ℹ️  $1"; } # Usar common_functions.sh
+# DUPLICADA:     log_success() { echo "✅ $1"; } # Usar common_functions.sh
+# DUPLICADA:     log_error() { echo "❌ $1"; } # Usar common_functions.sh
+# DUPLICADA:     log_warning() { echo "⚠️  $1"; } # Usar common_functions.sh
 }
 
 check_ssh_status() {

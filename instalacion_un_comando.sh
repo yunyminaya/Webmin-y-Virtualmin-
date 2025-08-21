@@ -6,18 +6,27 @@
 # Comando único: curl -sSL https://tu-url/install.sh | sudo bash
 # =============================================================================
 
+# Cargar biblioteca de funciones comunes
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/lib/common_functions.sh" ]]; then
+    source "$SCRIPT_DIR/lib/common_functions.sh"
+else
+    echo "❌ Error: No se encontró lib/common_functions.sh"
+    exit 1
+fi
+
 set -euo pipefail  # Salir inmediatamente si hay errores
 export TERM=${TERM:-xterm}
 
 # Colores para output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-PURPLE='\033[0;35m'
-CYAN='\033[0;36m'
-WHITE='\033[1;37m'
-NC='\033[0m'
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
 
 # Variables globales
 SCRIPT_VERSION="2.0"
@@ -36,34 +45,34 @@ CONFIGURE_FIREWALL=true
 OPTIMIZE_FOR_PRODUCTION=true
 
 # Funciones de logging mejoradas
-log() {
-    local level="$1"
-    shift
-    local message="$*"
-    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
     
-    case "$level" in
-        "INFO")
-            echo -e "${BLUE}[INFO]${NC} $message"
-            ;;
-        "SUCCESS")
-            echo -e "${GREEN}[✓]${NC} $message"
-            ;;
-        "WARNING")
-            echo -e "${YELLOW}[⚠]${NC} $message"
-            ;;
-        "ERROR")
-            echo -e "${RED}[✗]${NC} $message"
-            ;;
-        "HEADER")
-            echo
-            echo -e "${PURPLE}=== $message ===${NC}"
-            ;;
-    esac
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
     
-    # Escribir al log también
-    echo "[$timestamp] [$level] $message" >> "$INSTALL_LOG"
-}
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Fin de función duplicada
 
 # Función para manejo de errores
 error_handler() {
@@ -165,14 +174,14 @@ detect_system() {
 }
 
 # Verificar privilegios de root
-check_root() {
-    if [[ $EUID -ne 0 ]]; then
-        log "ERROR" "Este script debe ejecutarse como root"
-        log "INFO" "Uso: sudo $0"
-        exit 1
-    fi
-    log "SUCCESS" "Privilegios de root verificados"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Fin de función duplicada
 
 # Verificar conectividad de red
 check_network() {

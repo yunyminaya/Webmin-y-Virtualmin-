@@ -3,6 +3,15 @@
 # Sub-Agente de Análisis y Monitoreo de Logs
 # Analiza logs del sistema, detecta patrones y genera alertas
 
+# Cargar biblioteca de funciones comunes
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/lib/common_functions.sh" ]]; then
+    source "$SCRIPT_DIR/lib/common_functions.sh"
+else
+    echo "❌ Error: No se encontró lib/common_functions.sh"
+    exit 1
+fi
+
 LOG_FILE="/var/log/sub_agente_logs.log"
 ANALYSIS_REPORT="/var/log/analisis_logs_$(date +%Y%m%d_%H%M%S).txt"
 ALERT_THRESHOLD_ERRORS=100

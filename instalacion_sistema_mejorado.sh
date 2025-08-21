@@ -3,6 +3,15 @@
 # Integra seguridad avanzada, alta disponibilidad y monitoreo inteligente
 # Versión 3.0 - Sistema completo contra fallos
 
+# Cargar biblioteca de funciones comunes
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/lib/common_functions.sh" ]]; then
+    source "$SCRIPT_DIR/lib/common_functions.sh"
+else
+    echo "❌ Error: No se encontró lib/common_functions.sh"
+    exit 1
+fi
+
 set -euo pipefail
 
 # Configuración global
@@ -17,38 +26,38 @@ SYSTEM_VERSION="3.0"
 INSTALL_DATE=$(date +'%Y-%m-%d %H:%M:%S')
 
 # Colores para output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-PURPLE='\033[0;35m'
-CYAN='\033[0;36m'
-BOLD='\033[1m'
-NC='\033[0m'
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
 
 # Crear directorios base
 mkdir -p "$CONFIG_BASE_DIR" "$LOG_BASE_DIR" "$BACKUP_BASE_DIR"
 
 # Funciones de logging
-log() {
-    local timestamp=$(date +'%Y-%m-%d %H:%M:%S')
-    echo -e "${GREEN}[$timestamp]${NC} $1" | tee -a "$INSTALL_LOG"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Fin de función duplicada
 
-log_error() {
-    local timestamp=$(date +'%Y-%m-%d %H:%M:%S')
-    echo -e "${RED}[$timestamp] ERROR:${NC} $1" | tee -a "$INSTALL_LOG"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Fin de función duplicada
 
-log_warning() {
-    local timestamp=$(date +'%Y-%m-%d %H:%M:%S')
-    echo -e "${YELLOW}[$timestamp] WARNING:${NC} $1" | tee -a "$INSTALL_LOG"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Fin de función duplicada
 
-log_info() {
-    local timestamp=$(date +'%Y-%m-%d %H:%M:%S')
-    echo -e "${BLUE}[$timestamp] INFO:${NC} $1" | tee -a "$INSTALL_LOG"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Fin de función duplicada
 
 # Función para mostrar banner
 mostrar_banner() {
@@ -386,7 +395,7 @@ verificar_estado_general() {
     "cpu_usage": $cpu_usage,
     "mem_usage": $mem_usage,
     "disk_usage": $disk_usage,
-    "alertas": [$(printf '"%s",' "${alertas[@]}" | sed 's/,$//')]]
+    "alertas": [$(printf '"%s",' "${alertas[@]}" | sed 's/,$//')]
 }
 JSONEOF
     
@@ -459,7 +468,6 @@ EOF
 EOF
     
     log "✅ Sistema de monitoreo y alertas configurado"
-}
 
 # Crear herramientas de administración
 crear_herramientas_admin() {
@@ -474,11 +482,11 @@ CONFIG_BASE_DIR="/etc/auto-tunnel"
 LOG_BASE_DIR="/var/log/auto-tunnel"
 
 # Colores
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
 
 show_status() {
     echo -e "${BLUE}═══════════════════════════════════════════════════════════════${NC}"

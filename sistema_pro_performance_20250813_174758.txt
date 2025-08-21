@@ -1,0 +1,243 @@
+═══════════════════════════════════════════════════════════════════════════════
+REPORTE DE RENDIMIENTO DEL SISTEMA PRO
+Generado: Wed Aug 13 17:47:58 EDT 2025
+Sistema: macos
+Directorio: /Users/yunyminaya/Wedmin Y Virtualmin
+═══════════════════════════════════════════════════════════════════════════════
+
+ESTADÍSTICAS DEL SISTEMA:
+CPU: 19.91%
+Disco: 
+
+SCRIPTS DISPONIBLES:
+activar_ssh_forzado.sh (-rw-r--r--@)
+activar_ssh_macos.sh (-rw-r--r--@)
+actualizar_sistema.sh (-rw-r--r--@)
+agente_devops_webmin.sh (-rw-r--r--@)
+agregar_funciones_pro_faltantes.sh (-rw-r--r--@)
+alta_disponibilidad_tunnel.sh (-rw-r--r--@)
+analisis_codigo_funciones.sh (-rw-r--r--@)
+analizar_duplicaciones.sh (-rw-r--r--@)
+aplicar_configuraciones_seguridad.sh (-rw-r--r--@)
+asegurar_paneles_webmin_virtualmin.sh (-rw-r--r--@)
+completar_seguridad_macos.sh (-rw-r--r--@)
+completar_seguridad_webmin_virtualmin.sh (-rw-r--r--@)
+configuracion_personalizada.sh (-rw-r--r--@)
+configuracion_post_instalacion.sh (-rw-r--r--@)
+configurar_agente_devops.sh (-rw-r--r--@)
+configurar_puerto_10000_publico.sh (-rw-r--r--@)
+coordinador_sub_agentes.sh (-rw-r--r--@)
+correccion_markdown.sh (-rw-r--r--@)
+correccion_total_errores.sh (-rw-r--r--@)
+corregir_advertencias.sh (-rw-r--r--@)
+corregir_asistente_postinstalacion.sh (-rw-r--r--@)
+corregir_error_postfix.sh (-rw-r--r--@)
+corregir_errores_sintaxis.sh (-rwxr-xr-x@)
+corregir_problemas_seguridad.sh (-rw-r--r--@)
+corregir_rutas_webmin.sh (-rw-r--r--@)
+corregir_tuneles_100_efectividad.sh (-rw-r--r--@)
+desinstalar.sh (-rw-r--r--@)
+devops_master.sh (-rw-r--r--@)
+diagnosticar_y_corregir_errores.sh (-rw-r--r--@)
+diagnostico_completo.sh (-rw-r--r--@)
+diagnostico_servidores_virtuales.sh (-rw-r--r--@)
+diagnostico_ubuntu_webmin.sh (-rw-r--r--@)
+generar_informe_seguridad_completo.sh (-rw-r--r--@)
+generar_reporte_devops_final.sh (-rw-r--r--@)
+github_webhook_integration.sh (-rw-r--r--@)
+identificar_funciones_duplicadas.sh (-rwxr-xr-x@)
+implementar_seguridad_pro_completa.sh (-rw-r--r--@)
+implementar_seguridad_pro_macos.sh (-rw-r--r--@)
+instalacion_github_unico.sh (-rw-r--r--@)
+instalacion_sistema_mejorado.sh (-rw-r--r--@)
+instalacion_un_comando.sh (-rw-r--r--@)
+instalador_webmin_virtualmin_corregido.sh (-rw-r--r--@)
+instalar_devops_completo.sh (-rw-r--r--@)
+instalar_integracion.sh (-rw-r--r--@)
+instalar_modulos_faltantes.sh (-rw-r--r--@)
+instalar_postfix.sh (-rw-r--r--@)
+instalar_webmin_virtualmin.sh (-rw-r--r--@)
+instalar.sh (-rw-r--r--@)
+integrar_validaciones_postfix.sh (-rw-r--r--@)
+limpiar_duplicados_seguro.sh (-rwxr-xr-x@)
+mantenimiento_sistema.sh (-rw-r--r--@)
+monitor_despliegues.sh (-rw-r--r--@)
+monitoreo_sistema.sh (-rw-r--r--@)
+optimizacion_servidor_autonomo.sh (-rw-r--r--@)
+optimizar_codigo_duplicado.sh (-rwxr-xr-x@)
+orquestador_seguridad_pro.sh (-rw-r--r--@)
+orquestador_verificacion_pro.sh (-rw-r--r--@)
+postfix_validation_functions.sh (-rw-r--r--@)
+preparar_github.sh (-rw-r--r--@)
+programar_verificacion_seguridad.sh (-rw-r--r--@)
+prueba_exhaustiva_paneles_macos.sh (-rwxr-xr-x@)
+remediacion_total_webmin_virtualmin.sh (-rw-r--r--@)
+reparador_ubuntu_webmin.sh (-rw-r--r--@)
+revision_completa_master.sh (-rw-r--r--@)
+revision_completa_sistema.sh (-rw-r--r--@)
+revision_funciones_webmin.sh (-rw-r--r--@)
+seguridad_avanzada_tunnel.sh (-rw-r--r--@)
+servidor_publico_autonomo.sh (-rw-r--r--@)
+sub_agente_actualizaciones.sh (-rw-r--r--@)
+sub_agente_especialista_codigo.sh (-rw-r--r--@)
+sub_agente_ingeniero_codigo.sh (-rw-r--r--@)
+sub_agente_logs.sh (-rw-r--r--@)
+sub_agente_monitoreo.sh (-rw-r--r--@)
+sub_agente_optimizador.sh (-rw-r--r--@)
+sub_agente_seguridad.sh (-rw-r--r--@)
+test_exhaustivo_tuneles.sh (-rw-r--r--@)
+test_funciones_macos.sh (-rw-r--r--@)
+test_sistema_completo.sh (-rw-r--r--@)
+tunel_nativo_sin_terceros.sh (-rw-r--r--@)
+validacion_final_sistema.sh (-rw-r--r--@)
+verificacion_completa_funciones.sh (-rw-r--r--@)
+verificacion_final_autonomo.sh (-rw-r--r--@)
+verificacion_final_completa_ubuntu_debian.sh (-rw-r--r--@)
+verificacion_final_completa.sh (-rw-r--r--@)
+verificacion_profunda_paneles.sh (-rwxr-xr-x@)
+verificacion_rapida_estado.sh (-rw-r--r--@)
+verificacion_seguridad_produccion.sh (-rw-r--r--@)
+verificacion_total_automatizada.sh (-rw-r--r--@)
+verificador_servicios.sh (-rw-r--r--@)
+verificar_actualizaciones.sh (-rw-r--r--@)
+verificar_asistente_wizard.sh (-rw-r--r--@)
+verificar_funcionamiento_completo_ubuntu_debian.sh (-rw-r--r--@)
+verificar_funciones_pro_completas.sh (-rw-r--r--@)
+verificar_funciones_pro_nativas_completo.sh (-rwxr-xr-x@)
+verificar_funciones_pro_nativas.sh (-rw-r--r--@)
+verificar_instalacion_un_comando.sh (-rw-r--r--@)
+verificar_optimizacion.sh (-rwxr-xr-x@)
+verificar_postfix_webmin.sh (-rw-r--r--@)
+verificar_pro_simple.sh (-rw-r--r--@)
+verificar_seguridad_completa.sh (-rw-r--r--@)
+verificar_seguridad_webmin_virtualmin.sh (-rw-r--r--@)
+verificar_sistema_pro.sh (-rw-r--r--@)
+verificar_tunel_automatico_mejorado.sh (-rw-r--r--@)
+verificar_tunel_automatico.sh (-rw-r--r--@)
+virtualmin_postfix_check.sh (-rw-r--r--@)
+webmin_postfix_check.sh (-rw-r--r--@)
+
+TEMAS Y EXTENSIONES:
+✅ Authentic Theme:       52 archivos
+✅ Virtualmin GPL:      271 módulos
+
+FUNCIONES CRÍTICAS:
+activar_ssh_forzado.sh: 0
+0 funciones
+activar_ssh_macos.sh: 1 funciones
+actualizar_sistema.sh: 13 funciones
+agente_devops_webmin.sh: 24 funciones
+agregar_funciones_pro_faltantes.sh: 10 funciones
+alta_disponibilidad_tunnel.sh: 40 funciones
+analisis_codigo_funciones.sh: 13 funciones
+analizar_duplicaciones.sh: 5 funciones
+aplicar_configuraciones_seguridad.sh: 11 funciones
+asegurar_paneles_webmin_virtualmin.sh: 0
+0 funciones
+completar_seguridad_macos.sh: 11 funciones
+completar_seguridad_webmin_virtualmin.sh: 11 funciones
+configuracion_personalizada.sh: 12 funciones
+configuracion_post_instalacion.sh: 12 funciones
+configurar_agente_devops.sh: 15 funciones
+configurar_puerto_10000_publico.sh: 10 funciones
+coordinador_sub_agentes.sh: 12 funciones
+correccion_markdown.sh: 1 funciones
+correccion_total_errores.sh: 0
+0 funciones
+corregir_advertencias.sh: 9 funciones
+corregir_asistente_postinstalacion.sh: 3 funciones
+corregir_error_postfix.sh: 14 funciones
+corregir_errores_sintaxis.sh: 6 funciones
+corregir_problemas_seguridad.sh: 18 funciones
+corregir_rutas_webmin.sh: 4 funciones
+corregir_tuneles_100_efectividad.sh: 10 funciones
+desinstalar.sh: 12 funciones
+devops_master.sh: 16 funciones
+diagnosticar_y_corregir_errores.sh: 10 funciones
+diagnostico_completo.sh: 15 funciones
+diagnostico_servidores_virtuales.sh: 10 funciones
+diagnostico_ubuntu_webmin.sh: 16 funciones
+generar_informe_seguridad_completo.sh: 17 funciones
+generar_reporte_devops_final.sh: 16 funciones
+github_webhook_integration.sh: 14 funciones
+identificar_funciones_duplicadas.sh: 5 funciones
+implementar_seguridad_pro_completa.sh: 14 funciones
+implementar_seguridad_pro_macos.sh: 12 funciones
+instalacion_github_unico.sh: 0
+0 funciones
+instalacion_sistema_mejorado.sh: 20 funciones
+instalacion_un_comando.sh: 27 funciones
+instalador_webmin_virtualmin_corregido.sh: 14 funciones
+instalar_devops_completo.sh: 15 funciones
+instalar_integracion.sh: 12 funciones
+instalar_modulos_faltantes.sh: 0
+0 funciones
+instalar_postfix.sh: 2 funciones
+instalar_webmin_virtualmin.sh: 1 funciones
+instalar.sh: 13 funciones
+integrar_validaciones_postfix.sh: 19 funciones
+limpiar_duplicados_seguro.sh: 0
+0 funciones
+mantenimiento_sistema.sh: 10 funciones
+monitor_despliegues.sh: 19 funciones
+monitoreo_sistema.sh: 15 funciones
+optimizacion_servidor_autonomo.sh: 16 funciones
+optimizar_codigo_duplicado.sh: 11 funciones
+orquestador_seguridad_pro.sh: 0
+0 funciones
+orquestador_verificacion_pro.sh: 0
+0 funciones
+postfix_validation_functions.sh: 8 funciones
+preparar_github.sh: 0
+0 funciones
+programar_verificacion_seguridad.sh: 11 funciones
+prueba_exhaustiva_paneles_macos.sh: 13 funciones
+remediacion_total_webmin_virtualmin.sh: 0
+0 funciones
+reparador_ubuntu_webmin.sh: 12 funciones
+revision_completa_master.sh: 12 funciones
+revision_completa_sistema.sh: 13 funciones
+revision_funciones_webmin.sh: 12 funciones
+seguridad_avanzada_tunnel.sh: 20 funciones
+servidor_publico_autonomo.sh: 11 funciones
+sub_agente_actualizaciones.sh: 12 funciones
+sub_agente_especialista_codigo.sh: 22 funciones
+sub_agente_ingeniero_codigo.sh: 30 funciones
+sub_agente_logs.sh: 14 funciones
+sub_agente_monitoreo.sh: 9 funciones
+sub_agente_optimizador.sh: 14 funciones
+sub_agente_seguridad.sh: 12 funciones
+test_exhaustivo_tuneles.sh: 22 funciones
+test_funciones_macos.sh: 6 funciones
+test_sistema_completo.sh: 9 funciones
+tunel_nativo_sin_terceros.sh: 20 funciones
+validacion_final_sistema.sh: 6 funciones
+verificacion_completa_funciones.sh: 20 funciones
+verificacion_final_autonomo.sh: 18 funciones
+verificacion_final_completa_ubuntu_debian.sh: 19 funciones
+verificacion_final_completa.sh: 0
+0 funciones
+verificacion_profunda_paneles.sh: 0
+0 funciones
+verificacion_rapida_estado.sh: 11 funciones
+verificacion_seguridad_produccion.sh: 4 funciones
+verificacion_total_automatizada.sh: 0
+0 funciones
+verificador_servicios.sh: 2 funciones
+verificar_actualizaciones.sh: 12 funciones
+verificar_asistente_wizard.sh: 8 funciones
+verificar_funcionamiento_completo_ubuntu_debian.sh: 8 funciones
+verificar_funciones_pro_completas.sh: 14 funciones
+verificar_funciones_pro_nativas_completo.sh: 9 funciones
+verificar_funciones_pro_nativas.sh: 8 funciones
+verificar_instalacion_un_comando.sh: 15 funciones
+verificar_optimizacion.sh: 11 funciones
+verificar_postfix_webmin.sh: 13 funciones
+verificar_pro_simple.sh: 1 funciones
+verificar_seguridad_completa.sh: 28 funciones
+verificar_seguridad_webmin_virtualmin.sh: 14 funciones
+verificar_sistema_pro.sh: 12 funciones
+verificar_tunel_automatico_mejorado.sh: 18 funciones
+verificar_tunel_automatico.sh: 12 funciones
+virtualmin_postfix_check.sh: 2 funciones
+webmin_postfix_check.sh: 1 funciones

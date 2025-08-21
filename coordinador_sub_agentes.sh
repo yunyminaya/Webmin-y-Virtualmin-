@@ -3,6 +3,15 @@
 # Coordinador Principal de Sub-Agentes
 # Gestiona y coordina todos los sub-agentes del sistema
 
+# Cargar biblioteca de funciones comunes
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/lib/common_functions.sh" ]]; then
+    source "$SCRIPT_DIR/lib/common_functions.sh"
+else
+    echo "❌ Error: No se encontró lib/common_functions.sh"
+    exit 1
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOG_FILE="/var/log/coordinador_sub_agentes.log"
 CONFIG_FILE="/etc/webmin/sub_agentes_config.conf"
@@ -43,9 +52,9 @@ log_message() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] [COORDINADOR] $1" | tee -a "$LOG_FILE"
 }
 
-log_error() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [ERROR] $1" | tee -a "$LOG_FILE" >&2
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Fin de función duplicada
 
 check_prerequisites() {
     log_message "=== VERIFICANDO PREREQUISITOS ==="

@@ -3,15 +3,24 @@
 # Reparador automático de Webmin/Virtualmin para Ubuntu
 # Soluciona automáticamente los problemas más comunes
 
+# Cargar biblioteca de funciones comunes
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/lib/common_functions.sh" ]]; then
+    source "$SCRIPT_DIR/lib/common_functions.sh"
+else
+    echo "❌ Error: No se encontró lib/common_functions.sh"
+    exit 1
+fi
+
 set -euo pipefail
 
 # Configuración de colores
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-PURPLE='\033[0;35m'
-NC='\033[0m'
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
 
 LOG_FILE="/var/log/reparacion_webmin_$(date +%Y%m%d_%H%M%S).log"
 BACKUP_DIR="/var/backups/webmin_repair_$(date +%Y%m%d_%H%M%S)"
@@ -20,21 +29,21 @@ log_message() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
 }
 
-log_error() {
-    echo -e "${RED}❌ $1${NC}" | tee -a "$LOG_FILE"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Fin de función duplicada
 
-log_success() {
-    echo -e "${GREEN}✅ $1${NC}" | tee -a "$LOG_FILE"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Fin de función duplicada
 
-log_info() {
-    echo -e "${BLUE}ℹ️  $1${NC}" | tee -a "$LOG_FILE"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Fin de función duplicada
 
-log_warning() {
-    echo -e "${YELLOW}⚠️  $1${NC}" | tee -a "$LOG_FILE"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Fin de función duplicada
 
 echo -e "${PURPLE}============================================${NC}"
 echo -e "${PURPLE}    REPARADOR WEBMIN/VIRTUALMIN UBUNTU     ${NC}"
@@ -42,29 +51,29 @@ echo -e "${PURPLE}============================================${NC}"
 echo ""
 
 # Verificar permisos root
-check_root() {
-    if [[ $EUID -ne 0 ]]; then
-        log_error "Este script debe ejecutarse como root"
-        echo "Ejecutar: sudo $0"
-        exit 1
-    fi
-    log_success "Ejecutándose con permisos root"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Fin de función duplicada
 
 # Crear backup de seguridad
-create_backup() {
-    log_info "=== CREANDO BACKUP DE SEGURIDAD ==="
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
     
-    mkdir -p "$BACKUP_DIR"
+# Contenido de función duplicada
     
-    # Backup de configuraciones existentes
-    [[ -d "/etc/webmin" ]] && cp -r /etc/webmin "$BACKUP_DIR/" 2>/dev/null || true
-    [[ -f "/etc/apt/sources.list" ]] && cp /etc/apt/sources.list "$BACKUP_DIR/" 2>/dev/null || true
-    [[ -d "/etc/apt/sources.list.d" ]] && cp -r /etc/apt/sources.list.d "$BACKUP_DIR/" 2>/dev/null || true
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
     
-    log_success "Backup creado en: $BACKUP_DIR"
-    echo ""
-}
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Fin de función duplicada
 
 # 1. Actualizar sistema
 update_system() {

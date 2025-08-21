@@ -186,7 +186,7 @@ directory. This is strongly \e[3mnot advised\e[0m for any production system!"
         # Restart Webmin/Usermin in case it's running
         if [ "$2" != "-no-restart" ]; then
           if ps aux | grep -v grep | grep "$PROD"/miniserv.pl >/dev/null; then
-            echo -e "\e[49;3;37;182mRestarting "${PROD^}"..\e[0m"
+            echo -e "\e[49;3;37;182mRestarting \"${PROD^}\"..\e[0m"
             service "$PROD" restart >/dev/null 2>&1
           fi
         fi

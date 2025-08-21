@@ -4,16 +4,25 @@
 # Despliegue seguro automático sin tumbar sitios
 # Estrategia: backup → actualizar → recarga suave → pruebas → rollback si falla
 
+# Cargar biblioteca de funciones comunes
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/lib/common_functions.sh" ]]; then
+    source "$SCRIPT_DIR/lib/common_functions.sh"
+else
+    echo "❌ Error: No se encontró lib/common_functions.sh"
+    exit 1
+fi
+
 set -e
 
 # Colores para output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-PURPLE='\033[0;35m'
-CYAN='\033[0;36m'
-NC='\033[0m' # No Color
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
+# Colores definidos en common_functions.sh
 
 # Configuración por defecto (puede ser sobrescrita por parámetros)
 SERVERS='[
@@ -45,12 +54,12 @@ log_message() {
 }
 
 # Función para mostrar encabezados
-show_header() {
-    echo -e "\n${PURPLE}═══════════════════════════════════════════════════════════════════════════════${NC}"
-    echo -e "${CYAN}🚀 $1${NC}"
-    echo -e "${PURPLE}═══════════════════════════════════════════════════════════════════════════════${NC}\n"
-    log_message "INFO" "$1"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Fin de función duplicada
 
 # Función para mostrar pasos
 show_step() {
@@ -71,10 +80,10 @@ show_info() {
 }
 
 # Función para mostrar errores
-show_error() {
-    echo -e "${RED}[ERROR]${NC} ❌ $1"
-    log_message "ERROR" "$1"
-}
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Fin de función duplicada
 
 # Función para verificar ventana de tiempo
 check_time_window() {
@@ -239,37 +248,37 @@ check_vhost_health() {
 }
 
 # Función para crear backup
-create_backup() {
-    local host="$1"
-    local user="$2"
-    local port="$3"
+# DUPLICADA: Función reemplazada por common_functions.sh
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
     
-    show_step "Creando backup en $host"
+# Contenido de función duplicada
     
-    local backup_cmd="
-        TS=\$(date +%F_%H%M)
-        DEST=$BACKUP_DIR_BASE/\$TS
-        sudo mkdir -p \"\$DEST\"
-        sudo virtualmin backup-domain --all-domains --dest \"\$DEST\" --all-features --newformat || true
-        echo \"\$TS\"
-    "
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
     
-    if [ "$MODO" = "simulacion" ]; then
-        show_info "[SIMULACIÓN] Crearía backup en $BACKUP_DIR_BASE/$TIMESTAMP"
-        echo "$TIMESTAMP"
-        return 0
-    else
-        local backup_id=$(ssh -o ConnectTimeout=10 -p "$port" "$user@$host" "$backup_cmd" 2>/dev/null | tail -1)
-        if [ -n "$backup_id" ]; then
-            show_success "Backup creado: $backup_id"
-            echo "$backup_id"
-            return 0
-        else
-            show_error "Falló la creación del backup"
-            return 1
-        fi
-    fi
-}
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Contenido de función duplicada
+# Fin de función duplicada
 
 # Función para proteger paquetes
 hold_packages() {
