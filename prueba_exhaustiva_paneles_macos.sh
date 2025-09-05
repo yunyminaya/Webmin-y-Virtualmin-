@@ -32,10 +32,7 @@ readonly REPORT_DIR="${SCRIPT_DIR}/reportes"
 readonly TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 readonly REPORT_FILE="${REPORT_DIR}/prueba_exhaustiva_paneles_${TIMESTAMP}.md"
 
-# Función de logging
-# DUPLICADA: log() { # Usar common_functions.sh
-    echo -e "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')]${NC} $1"
-}
+# Función de logging: usar log() de lib/common_functions.sh
 
 error() {
     echo -e "${RED}[ERROR]${NC} $1" >&2
@@ -52,16 +49,7 @@ info() {
 # Crear directorio de reportes
 mkdir -p "$REPORT_DIR"
 
-# Función para verificar disponibilidad de comandos
-# DUPLICADA: check_command() { # Usar common_functions.sh
-    if command -v "$1" >/dev/null 2>&1; then
-        echo "✅ $1 está disponible"
-        return 0
-    else
-        echo "❌ $1 no está disponible"
-        return 1
-    fi
-}
+# Verificar comandos: usar check_command() de lib/common_functions.sh si es necesario
 
 # Función para simular verificación de servicios
 check_services() {

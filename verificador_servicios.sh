@@ -3,6 +3,13 @@
 # Verificador de Servicios Webmin/Virtualmin
 # Verifica estado de todos los servicios sin necesidad de permisos root
 
+STRICT=0 # --strict hace que el script salga con código !=0 si hay problemas
+for arg in "$@"; do
+  case "$arg" in
+    --strict) STRICT=1 ;;
+  esac
+done
+
 # Configuración de colores
 # Cargar biblioteca de funciones comunes
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -45,7 +52,8 @@ check_service() {
         
         # Verificar puerto si se especifica
         if [[ -n "$port" ]]; then
-            if netstat -tuln 2>/dev/null | grep -q ":${port} " || ss -tuln 2>/dev/null | grep -q ":${port} "; then
+            # Preferir ss sobre netstat
+            if ss -tuln 2>/dev/null | grep -q ":${port} " || netstat -tuln 2>/dev/null | grep -q ":${port} "; then
                 echo "  └─ Puerto $port: ${GREEN}ABIERTO${NC}"
             else
                 echo "  └─ Puerto $port: ${RED}CERRADO${NC}"
@@ -125,10 +133,10 @@ check_port() {
         
         # Mostrar procesos escuchando en el puerto
         local process
-        if command -v netstat >/dev/null 2>&1; then
-            process=$(netstat -tulnp 2>/dev/null | grep ":${port} " | awk '{print $7}' | head -1)
-        elif command -v ss >/dev/null 2>&1; then
+        if command -v ss >/dev/null 2>&1; then
             process=$(ss -tulnp 2>/dev/null | grep ":${port} " | awk -F'users:' '{print $2}' | head -1)
+        elif command -v netstat >/dev/null 2>&1; then
+            process=$(netstat -tulnp 2>/dev/null | grep ":${port} " | awk '{print $7}' | head -1)
         fi
         
         if [[ -n "$process" && "$process" != "-" ]]; then
@@ -220,6 +228,7 @@ echo ""
 echo -e "${BLUE}=== VERIFICACIÓN DE CONFIGURACIONES ===${NC}"
 
 # Verificar archivos de configuración importantes
+config_errors=0
 configs=(
     "/etc/webmin/miniserv.conf:Configuración Webmin"
     "/etc/webmin/config:Configuración base Webmin"
@@ -246,11 +255,13 @@ for config_info in "${configs[@]}"; do
         local size=$(stat -c "%s" "$config_file" 2>/dev/null || echo "0")
         if [[ "$size" -eq 0 ]]; then
             echo "  └─ ${RED}ARCHIVO VACÍO${NC}"
+            config_errors=$((config_errors + 1))
         else
             echo "  └─ Tamaño: $(( size / 1024 ))KB"
         fi
     else
         echo -e "${RED}NO EXISTE${NC}"
+        config_errors=$((config_errors + 1))
     fi
 done
 
@@ -297,6 +308,7 @@ echo -e "${BLUE}=== ESTADO GENERAL ===${NC}"
 
 echo "Servicios activos: ${active_services}/${total_services}"
 echo "Puertos abiertos: ${open_ports}/${total_ports}"
+echo "Configs OK: $(( ${#configs[@]} - config_errors ))/${#configs[@]}"
 
 # Calcular porcentaje de salud del sistema
 health_score=$(( (active_services * 100 / total_services + open_ports * 100 / total_ports) / 2 ))
@@ -335,3 +347,11 @@ echo "  ./coordinador_sub_agentes.sh repair-all"
 
 echo ""
 echo -e "${GREEN}Verificación completada.${NC}"
+
+# Salir con código según modo estricto
+if [[ $STRICT -eq 1 ]]; then
+    if [[ $active_services -lt $total_services ]] || [[ $open_ports -lt $total_ports ]] || [[ $config_errors -gt 0 ]]; then
+        exit 1
+    fi
+fi
+exit 0

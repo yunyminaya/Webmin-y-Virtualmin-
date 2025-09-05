@@ -46,6 +46,13 @@ SUBAGENTS=(
     "optimizador:$SCRIPT_DIR/sub_agente_optimizador.sh"
     "ingeniero:$SCRIPT_DIR/sub_agente_ingeniero_codigo.sh"
     "verificador-backup:$SCRIPT_DIR/sub_agente_verificador_backup.sh"
+    "detector-duplicados:$SCRIPT_DIR/sub_agente_detector_duplicados.sh"
+    "tunel-inteligente:$SCRIPT_DIR/sub_agente_tunel_inteligente.sh"
+    "monitor-virtuales:$SCRIPT_DIR/sub_agente_monitor_servidores_virtuales.sh"
+    "seguridad-virtuales:$SCRIPT_DIR/sub_agente_seguridad_servidores_virtuales.sh"
+    "auto-instalador:$SCRIPT_DIR/sub_agente_auto_instalador_ip_privada.sh"
+    "alto-trafico:$SCRIPT_DIR/sub_agente_alto_trafico.sh"
+    "wordpress-laravel:$SCRIPT_DIR/sub_agente_wordpress_laravel.sh"
 )
 
 log_message() {
@@ -143,11 +150,33 @@ INGENIERO_INTERVAL=604800
 VERIFICADOR_BACKUP_ENABLED=true
 VERIFICADOR_BACKUP_INTERVAL=86400
 
+# Nuevos sub-agentes especializados
+DETECTOR_DUPLICADOS_ENABLED=true
+DETECTOR_DUPLICADOS_INTERVAL=604800
+
+TUNEL_INTELIGENTE_ENABLED=true
+TUNEL_INTELIGENTE_INTERVAL=300
+
+MONITOR_VIRTUALES_ENABLED=true
+MONITOR_VIRTUALES_INTERVAL=600
+
+SEGURIDAD_VIRTUALES_ENABLED=true
+SEGURIDAD_VIRTUALES_INTERVAL=1800
+
+AUTO_INSTALADOR_ENABLED=false
+AUTO_INSTALADOR_INTERVAL=86400
+
+ALTO_TRAFICO_ENABLED=true
+ALTO_TRAFICO_INTERVAL=3600
+
+WORDPRESS_LARAVEL_ENABLED=true
+WORDPRESS_LARAVEL_INTERVAL=7200
+
 # Configuración global
 ENABLE_ALERTS=true
 ALERT_EMAIL=""
 PARALLEL_EXECUTION=true
-MAX_CONCURRENT_AGENTS=3
+MAX_CONCURRENT_AGENTS=5
 EOF
         log_message "Configuración por defecto creada: $CONFIG_FILE"
     fi
@@ -520,18 +549,57 @@ main() {
         verificador-backup)
             execute_agent "verificador-backup" "$SCRIPT_DIR/sub_agente_verificador_backup.sh" "${2:-start}"
             ;;
+        detector-duplicados)
+            execute_agent "detector-duplicados" "$SCRIPT_DIR/sub_agente_detector_duplicados.sh" "${2:-scan}"
+            ;;
+        tunel-inteligente)
+            execute_agent "tunel-inteligente" "$SCRIPT_DIR/sub_agente_tunel_inteligente.sh" "${2:-auto}"
+            ;;
+        monitor-virtuales)
+            execute_agent "monitor-virtuales" "$SCRIPT_DIR/sub_agente_monitor_servidores_virtuales.sh" "${2:-monitor}"
+            ;;
+        seguridad-virtuales)
+            execute_agent "seguridad-virtuales" "$SCRIPT_DIR/sub_agente_seguridad_servidores_virtuales.sh" "${2:-full}"
+            ;;
+        auto-instalador)
+            execute_agent "auto-instalador" "$SCRIPT_DIR/sub_agente_auto_instalador_ip_privada.sh" "${2:-auto-install}"
+            ;;
+        alto-trafico)
+            execute_agent "alto-trafico" "$SCRIPT_DIR/sub_agente_alto_trafico.sh" "${2:-start}"
+            ;;
+        wordpress-laravel)
+            execute_agent "wordpress-laravel" "$SCRIPT_DIR/sub_agente_wordpress_laravel.sh" "${2:-start}"
+            ;;
         check-backups)
             log_message "=== VERIFICACIÓN COMPLETA DE BACKUPS ==="
             execute_agent "verificador-backup" "$SCRIPT_DIR/sub_agente_verificador_backup.sh" "start"
             ;;
+        fix-duplicates)
+            log_message "=== CORRECCIÓN DE DUPLICADOS ==="
+            execute_agent "detector-duplicados" "$SCRIPT_DIR/sub_agente_detector_duplicados.sh" "fix"
+            ;;
+        setup-tunnels)
+            log_message "=== CONFIGURACIÓN DE TÚNELES ==="
+            execute_agent "tunel-inteligente" "$SCRIPT_DIR/sub_agente_tunel_inteligente.sh" "setup"
+            ;;
+        monitor-virtual-full)
+            log_message "=== MONITOREO COMPLETO SERVIDORES VIRTUALES ==="
+            execute_agent "monitor-virtuales" "$SCRIPT_DIR/sub_agente_monitor_servidores_virtuales.sh" "full"
+            ;;
+        security-virtual-full)
+            log_message "=== SEGURIDAD COMPLETA SERVIDORES VIRTUALES ==="
+            execute_agent "seguridad-virtuales" "$SCRIPT_DIR/sub_agente_seguridad_servidores_virtuales.sh" "full"
+            ;;
         refactor-all)
             log_message "=== MODO REFACTORIZACIÓN COMPLETA ==="
+            execute_agent "detector-duplicados" "$SCRIPT_DIR/sub_agente_detector_duplicados.sh" "fix"
             execute_agent "ingeniero" "$SCRIPT_DIR/sub_agente_ingeniero_codigo.sh" "start"
             ;;
         repair-all)
             log_message "=== MODO REPARACIÓN COMPLETA ==="
             execute_agent "especialista" "$SCRIPT_DIR/sub_agente_especialista_codigo.sh" "repair"
             execute_agent "optimizador" "$SCRIPT_DIR/sub_agente_optimizador.sh" "start"
+            execute_agent "seguridad-virtuales" "$SCRIPT_DIR/sub_agente_seguridad_servidores_virtuales.sh" "full"
             ;;
         *)
             echo "Coordinador de Sub-Agentes Webmin/Virtualmin"

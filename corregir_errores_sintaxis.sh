@@ -21,18 +21,8 @@ set -euo pipefail
 # Colores definidos en common_functions.sh
 # Colores definidos en common_functions.sh
 
-# Función de logging
-# DUPLICADA: log() { # Usar common_functions.sh
-    echo -e "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')]${NC} $1"
-}
-
-# DUPLICADA: log_error() { # Usar common_functions.sh
-    echo -e "${RED}[$(date +'%Y-%m-%d %H:%M:%S')] ERROR:${NC} $1"
-}
-
-# DUPLICADA: log_warning() { # Usar common_functions.sh
-    echo -e "${YELLOW}[$(date +'%Y-%m-%d %H:%M:%S')] WARNING:${NC} $1"
-}
+# Funciones de logging: usar las de lib/common_functions.sh
+# (Se removieron restos de funciones duplicadas que causaban errores de sintaxis)
 
 # Función para corregir errores de sintaxis comunes
 corregir_errores_sintaxis() {
