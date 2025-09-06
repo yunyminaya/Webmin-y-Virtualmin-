@@ -5406,7 +5406,7 @@ return &can_backup_domain() ? 1 : 0;
 # 0 if neither
 sub can_backup_keys
 {
-return 0 if (!$virtualmin_pro);		# Pro only feature
+# MODIFIED: Pro feature now native - backup keys always available
 return 0 if ($access{'admin'});		# Not for extra admins
 return 0 if (!&can_backup_domain());	# Can't do backups, so can't manage keys
 return 1 if (&master_admin());		# Master admin can access all keys

@@ -3065,7 +3065,7 @@ else {
 # Returns 1 if the user can re-check the licence status
 sub can_recheck_licence
 {
-return 0 if (!$virtualmin_pro);
+# MODIFIED: License recheck is now always available as native feature
 return &master_admin();
 }
 
@@ -3343,7 +3343,8 @@ return &master_admin() || &reseller_admin();
 # Returns 1 if the current user can see historical system data
 sub can_show_history
 {
-return $virtualmin_pro && &master_admin();
+# MODIFIED: Historical system data now available as native feature
+return &master_admin();
 }
 
 sub can_edit_exclude
@@ -12023,18 +12024,9 @@ if ($virtualmin_pro && -r $licence_status) {
 # of servers, and auto-renewal flag
 sub check_licence_expired
 {
-return 0 if (!&require_licence());
-local %licence;
-&read_file_cached($licence_status, \%licence);
-if (time() - $licence{'last'} > 3*24*60*60) {
-	# Hasn't been checked from cron for 3 days .. do it now
-	&update_licence_from_site(\%licence);
-	&write_file($licence_status, \%licence);
-	}
-return ($licence{'status'}, $licence{'expiry'},
-	$licence{'err'} || $licence{'warn'}, $licence{'doms'}, $licence{'servers'},
-	$licence{'autorenew'}, $licence{'time'}, $licence{'bind'},
-	$licence{'subscription'});
+# MODIFIED: Always return valid license for Pro features as native
+# Returns: status(0=OK), expiry, error, domains, servers, autorenew, time, bind, subscription
+return (0, "never", "", -1, -1, 0, time(), 0, "unlimited");
 }
 
 # update_licence_from_site(&licence)

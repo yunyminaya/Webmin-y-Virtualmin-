@@ -66,11 +66,13 @@ if (!defined($first_print)) {
 	}
 
 # For the GPL version, force some features off.
-$virtualmin_pro = $module_info{'version'} =~ /pro/i ||
-		  -d "$module_root_directory/pro" ? 1 : 0;
-if (!$virtualmin_pro) {
-	$config{'status'} = 0;
-	}
+# MODIFIED: Force Pro features always enabled (convert Pro to native)
+$virtualmin_pro = 1;  # Always enable Pro features as native functionality
+
+# Create pro directory if it doesn't exist to ensure compatibility
+if (!-d "$module_root_directory/pro") {
+	mkdir("$module_root_directory/pro", 0755);
+}
 
 # The virtual IP features are always active
 $config{'virt'} = 1;

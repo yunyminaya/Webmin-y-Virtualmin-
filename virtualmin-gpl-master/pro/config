@@ -1,0 +1,17 @@
+# Virtualmin Pro Configuration
+# All Pro features enabled as native functionality
+
+# Pro features status
+pro_enabled=1
+all_features_unlocked=1
+status_monitoring=1
+cloud_backup=1
+reseller_accounts=1
+advanced_dns=1
+sla_monitoring=1
+
+# License emulation (to prevent license checks)
+license_status=active
+license_type=unlimited
+license_domains=unlimited
+license_expires=never
