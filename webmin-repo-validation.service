@@ -1,0 +1,14 @@
+[Unit]
+Description=Sistema de Validación de Repositorio Oficial Webmin
+After=network.target
+Requires=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/webmin-repo-validation/webmin-repo-validation.sh
+RemainAfterExit=true
+User=root
+WorkingDirectory=/opt/webmin-repo-validation
+
+[Install]
+WantedBy=multi-user.target
