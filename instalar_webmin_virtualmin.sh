@@ -1,324 +1,319 @@
 #!/bin/bash
 
 # =============================================================================
-# INSTALADOR RÁPIDO DE WEBMIN Y VIRTUALMIN
+# INSTALADOR AUTOMÁTICO DE WEBMIN Y VIRTUALMIN
+# Sistema Enterprise Pro con Auto-Reparación Inteligente
 # Un solo comando para instalar todo el panel completo
-# Uso: curl -sSL https://raw.githubusercontent.com/tu-repo/instalador.sh | bash
+#
+# Uso: curl -sSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/instalar_webmin_virtualmin.sh | bash
+#
+# Desarrollado por: Yuny Minaya
+# Repositorio: https://github.com/yunyminaya/Webmin-y-Virtualmin-
+# Versión: Enterprise Pro v2.0
 # =============================================================================
-
-# Cargar biblioteca de funciones comunes
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-if [[ -f "$SCRIPT_DIR/lib/common_functions.sh" ]]; then
-    source "$SCRIPT_DIR/lib/common_functions.sh"
-else
-    echo "❌ Error: No se encontró lib/common_functions.sh"
-    exit 1
-fi
 
 set -e
 
-# Colores
-# Colores definidos en common_functions.sh
-# Colores definidos en common_functions.sh
-# Colores definidos en common_functions.sh
-# Colores definidos en common_functions.sh
-# Colores definidos en common_functions.sh
+# Colores para output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+CYAN='\033[0;36m'
+NC='\033[0m' # No Color
 
-# Variables
-REPO_URL="https://github.com/yunyminaya/Wedmin-Y-Virtualmin.git"
-INSTALL_DIR="/tmp/webmin_virtualmin_install"
-SCRIPT_NAME="instalacion_completa_automatica.sh"
-WEBMIN_USER="root"
-
-echo "═══════════════════════════════════════════════════════════════════════════════"
-echo -e "${GREEN}🚀 INSTALADOR RÁPIDO DE WEBMIN Y VIRTUALMIN${NC}"
-echo "═══════════════════════════════════════════════════════════════════════════════"
-echo
-
-# Función para logging
-# DUPLICADA: Función reemplazada por common_functions.sh
-# Contenido de función duplicada
-# Fin de función duplicada
-
-# DUPLICADA: Función reemplazada por common_functions.sh
-# Contenido de función duplicada
-# Fin de función duplicada
-
-# DUPLICADA: Función reemplazada por common_functions.sh
-# Contenido de función duplicada
-# Fin de función duplicada
-
-# Función para generar credenciales basadas en SSH
-generate_ssh_credentials() {
-    log_info "🔐 Generando credenciales desde clave SSH del servidor..."
-    
-    # Buscar claves SSH existentes
-    local ssh_key_found=false
-    local ssh_key_path=""
-    
-    # Buscar en directorio del usuario actual
-    for key_type in id_rsa id_ed25519 id_ecdsa id_dsa; do
-        if [[ -f "$HOME/.ssh/$key_type" ]]; then
-            ssh_key_path="$HOME/.ssh/$key_type"
-            ssh_key_found=true
-            log_info "✅ Clave SSH encontrada: $ssh_key_path"
-            break
-        fi
-    done
-    
-    # Si no se encuentra en el usuario, buscar claves del sistema (solo si tenemos permisos)
-    if [[ "$ssh_key_found" == false ]]; then
-        for key_type in ssh_host_rsa_key ssh_host_ed25519_key ssh_host_ecdsa_key ssh_host_dsa_key; do
-            if [[ -f "/etc/ssh/$key_type" ]] && [[ -r "/etc/ssh/$key_type" ]]; then
-                ssh_key_path="/etc/ssh/$key_type"
-                ssh_key_found=true
-                log_info "✅ Clave SSH del sistema encontrada: $ssh_key_path"
-                break
-            fi
-        done
-    fi
-    
-    # Si no hay claves SSH, generar una nueva
-    if [[ "$ssh_key_found" == false ]]; then
-        log_info "⚠️  No se encontraron claves SSH existentes"
-        log_info "🔧 Generando nueva clave SSH Ed25519..."
-        
-        mkdir -p "$HOME/.ssh"
-        ssh-keygen -t ed25519 -f "$HOME/.ssh/id_ed25519_webmin" -N "" -C "webmin-auto-generated" >/dev/null 2>&1
-        ssh_key_path="$HOME/.ssh/id_ed25519_webmin"
-        
-        log_info "✅ Nueva clave SSH generada: $ssh_key_path"
-    fi
-    
-    # Generar hash SHA256 de la clave para usar como contraseña
-    WEBMIN_PASS=$(sha256sum "$ssh_key_path" | cut -d' ' -f1 | head -c 16)
-    
-    log_info "🔑 Credenciales generadas exitosamente"
-    log_info "👤 Usuario: $WEBMIN_USER"
-    log_info "🔐 Contraseña generada desde: $(basename "$ssh_key_path")"
-    
-    # Exportar variables para el script principal
-    export WEBMIN_USER
-    export WEBMIN_PASS
+# Función de logging
+log() {
+    local level="$1"
+    local message="$2"
+    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    echo -e "${timestamp} [${level}] ${message}"
 }
 
-# Verificar si git está instalado
-if ! command -v git >/dev/null 2>&1; then
-    log_error "Git no está instalado. Instalando..."
-    
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        # macOS
-        if command -v brew >/dev/null 2>&1; then
-            brew install git
-        else
-            log_error "Homebrew no está instalado. Por favor instale git manualmente."
-            exit 1
-        fi
-    elif command -v apt-get >/dev/null 2>&1; then
-        # Ubuntu/Debian
-        sudo apt-get update && sudo apt-get install -y git
-    elif command -v yum >/dev/null 2>&1; then
-        # CentOS/RHEL
-        sudo yum install -y git
-    elif command -v dnf >/dev/null 2>&1; then
-        # Fedora
-        sudo dnf install -y git
-    else
-        log_error "No se pudo instalar git automáticamente. Por favor instálelo manualmente."
+# Función de logging con colores
+log_color() {
+    local level="$1"
+    local message="$2"
+    local color="$3"
+    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    echo -e "${color}${timestamp} [${level}] ${message}${NC}"
+}
+
+# Función para mostrar banner
+show_banner() {
+    echo -e "${CYAN}"
+    cat << 'EOF'
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    INSTALACIÓN AUTOMÁTICA                                  ║
+║                    WEBMIN & VIRTUALMIN                                    ║
+║                                                                          ║
+║  🚀 Sistema Enterprise Pro con Auto-Reparación Inteligente               ║
+║  🛡️  Detección Avanzada de Ataques y Auto-Defensa                        ║
+║  🔄 Auto-Recuperación Inteligente de Servidores                           ║
+║  📊 Monitoreo Continuo 24/7 y Alertas en Tiempo Real                     ║
+║  ⚡ Instalación Ultra-Rápida con Un Solo Comando                         ║
+║                                                                          ║
+║  Desarrollado por: Yuny Minaya                                           ║
+║  Repositorio: https://github.com/yunyminaya/Webmin-y-Virtualmin-          ║
+║  Versión: Enterprise Pro v2.0 con Auto-Reparación                        ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+EOF
+    echo -e "${NC}"
+}
+
+# Función para verificar requisitos del sistema
+check_system_requirements() {
+    log_color "INFO" "🔍 Verificando requisitos del sistema..." "$BLUE"
+
+    # Verificar si estamos en root o sudo
+    if [[ $EUID -ne 0 ]]; then
+        echo -e "${RED}❌ ERROR: Este script debe ejecutarse como root o con sudo${NC}"
+        echo -e "${YELLOW}💡 Use: sudo $0${NC}"
         exit 1
     fi
-fi
 
-# Limpiar directorio anterior si existe
-if [[ -d "$INSTALL_DIR" ]]; then
-    log "Limpiando instalación anterior..."
-    rm -rf "$INSTALL_DIR"
-fi
+    # Verificar distribución de Linux
+    if [[ -f /etc/os-release ]]; then
+        . /etc/os-release
+        log_color "SUCCESS" "✅ Sistema detectado: $PRETTY_NAME" "$GREEN"
 
-# Crear directorio temporal
-log "Creando directorio temporal..."
-mkdir -p "$INSTALL_DIR"
-cd "$INSTALL_DIR"
+        # Verificar distribuciones soportadas
+        case "$ID" in
+            ubuntu|debian|centos|rhel|fedora|almalinux|rocky)
+                log_color "SUCCESS" "✅ Distribución soportada: $ID" "$GREEN"
+                ;;
+            *)
+                log_color "WARNING" "⚠️  Distribución no probada: $ID - Continuando de todos modos..." "$YELLOW"
+                ;;
+        esac
+    else
+        log_color "WARNING" "⚠️  No se pudo detectar la distribución del sistema" "$YELLOW"
+    fi
 
-# Clonar repositorio
-log "Descargando archivos de instalación..."
-if git clone "$REPO_URL" .; then
-    log "✅ Repositorio descargado correctamente"
-else
-    log_error "❌ Error al descargar el repositorio"
-    log_info "Intentando descarga alternativa..."
-    
-    # Método alternativo usando curl
-    if command -v curl >/dev/null 2>&1; then
-        curl -sSL "https://github.com/yunyminaya/Wedmin-Y-Virtualmin/archive/main.zip" -o repo.zip
-        if command -v unzip >/dev/null 2>&1; then
-            unzip -q repo.zip
-            mv Wedmin-Y-Virtualmin-main/* .
-            rm -rf Wedmin-Y-Virtualmin-main repo.zip
-        else
-            log_error "unzip no está disponible. Instalando..."
-            if [[ "$OSTYPE" == "darwin"* ]]; then
-                # En macOS unzip viene preinstalado
-                unzip -q repo.zip
-            elif command -v apt-get >/dev/null 2>&1; then
-                sudo apt-get install -y unzip
-                unzip -q repo.zip
+    # Verificar conectividad a internet
+    log_color "INFO" "🌐 Verificando conectividad a internet..." "$BLUE"
+    if ! ping -c 1 -W 5 8.8.8.8 >/dev/null 2>&1; then
+        log_color "ERROR" "❌ Sin conectividad a internet" "$RED"
+        log_color "INFO" "💡 Verifique su conexión e intente nuevamente" "$BLUE"
+        exit 1
+    fi
+    log_color "SUCCESS" "✅ Conectividad a internet verificada" "$GREEN"
+
+    # Verificar espacio en disco
+    local disk_space=$(df / | tail -1 | awk '{print $4}')
+    if [[ $disk_space -lt 5242880 ]]; then  # Menos de 5GB
+        log_color "WARNING" "⚠️  Espacio en disco bajo: $(($disk_space/1024))MB disponibles" "$YELLOW"
+        log_color "INFO" "💡 Se recomienda al menos 5GB de espacio libre" "$BLUE"
+    fi
+
+    log_color "SUCCESS" "✅ Todos los requisitos verificados correctamente" "$GREEN"
+}
+
+# Función para mostrar información del sistema
+show_system_info() {
+    echo -e "${PURPLE}📋 INFORMACIÓN DEL SISTEMA:${NC}"
+    echo -e "${CYAN}  • Usuario:${NC} $(whoami)"
+    echo -e "${CYAN}  • Hostname:${NC} $(hostname)"
+    echo -e "${CYAN}  • Kernel:${NC} $(uname -r)"
+    echo -e "${CYAN}  • Arquitectura:${NC} $(uname -m)"
+    echo -e "${CYAN}  • Memoria RAM:${NC} $(free -h | grep '^Mem:' | awk '{print $2}')"
+    echo -e "${CYAN}  • Disco disponible:${NC} $(df -h / | tail -1 | awk '{print $4}')"
+    echo ""
+}
+
+# Función para mostrar opciones de instalación
+show_installation_options() {
+    echo -e "${YELLOW}🚀 OPCIONES DE INSTALACIÓN DISPONIBLES:${NC}"
+    echo -e "${GREEN}  1.${NC} Instalación Completa Enterprise (Webmin + Virtualmin + Auto-Reparación)"
+    echo -e "${GREEN}  2.${NC} Solo Webmin con Sistema de Auto-Defensa"
+    echo -e "${GREEN}  3.${NC} Solo Virtualmin con Protección Avanzada"
+    echo -e "${GREEN}  4.${NC} Sistema de Monitoreo y Alertas Inteligentes"
+    echo -e "${GREEN}  5.${NC} Verificación y Optimización del Sistema Actual"
+    echo ""
+    echo -e "${BLUE}💡 Por defecto: Instalación Completa Enterprise${NC}"
+    echo ""
+}
+
+# Función para descargar el script principal
+download_main_script() {
+    log_color "INFO" "📥 Descargando script principal de instalación..." "$BLUE"
+
+    local repo_url="https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main"
+    local main_script="instalacion_un_comando.sh"
+    local temp_script="/tmp/webmin_virtualmin_installer_$(date +%s).sh"
+
+    # Descargar el script principal
+    if curl -sSL "${repo_url}/${main_script}" -o "$temp_script"; then
+        log_color "SUCCESS" "✅ Script principal descargado exitosamente" "$GREEN"
+
+        # Verificar que el script se descargó correctamente
+        if [[ -s "$temp_script" ]]; then
+            log_color "INFO" "🔍 Verificando integridad del script..." "$BLUE"
+            chmod +x "$temp_script"
+
+            # Verificar que el script tiene contenido válido
+            if head -n 1 "$temp_script" | grep -q "#!/bin/bash"; then
+                log_color "SUCCESS" "✅ Script validado y listo para ejecución" "$GREEN"
             else
-                log_error "No se pudo extraer el archivo. Por favor instale unzip."
+                log_color "ERROR" "❌ El script descargado no es válido" "$RED"
+                rm -f "$temp_script"
                 exit 1
             fi
+        else
+            log_color "ERROR" "❌ El script descargado está vacío" "$RED"
+            exit 1
         fi
     else
-        log_error "No se pudo descargar el repositorio. Verifique su conexión a internet."
+        log_color "ERROR" "❌ No se pudo descargar el script principal" "$RED"
+        log_color "INFO" "💡 Verifique su conexión a internet e intente nuevamente" "$BLUE"
+        log_color "INFO" "🔗 URL utilizada: ${repo_url}/${main_script}" "$BLUE"
         exit 1
     fi
-fi
 
-# Verificar que el script principal existe
-if [[ ! -f "$SCRIPT_NAME" ]]; then
-    log_error "❌ Script de instalación no encontrado: $SCRIPT_NAME"
-    log_info "Archivos disponibles:"
-    ls -la
-    exit 1
-fi
-
-# Hacer ejecutable el script
-chmod +x "$SCRIPT_NAME"
-
-# Mostrar información antes de ejecutar
-echo
-log_info "📋 INFORMACIÓN DE LA INSTALACIÓN:"
-echo "   • Se instalará Webmin y Virtualmin completo"
-echo "   • Se configurarán MySQL, Apache y PHP"
-echo "   • Se creará un usuario root con contraseña desde clave SSH"
-echo "   • El proceso puede tomar 10-30 minutos dependiendo de su sistema"
-echo
-
-# Preguntar confirmación
-read -p "¿Desea continuar con la instalación? (s/N): " -n 1 -r
-echo
-if [[ ! $REPLY =~ ^[SsYy]$ ]]; then
-    log "Instalación cancelada por el usuario"
-    exit 0
-fi
-
-echo
-log "🚀 Iniciando instalación automática..."
-echo
-
-# Generar credenciales SSH antes de ejecutar
-generate_ssh_credentials
-
-# Función para verificar versión de Webmin
-check_webmin_version() {
-    local current_version=$(webmin --version 2>/dev/null || echo "No instalado")
-    local latest_version=$(curl -s https://webmin.com/download/ | grep -oP 'Webmin \K[\d.]+')
-    if [[ "$current_version" != "$latest_version" ]]; then
-        log_warning "⚠️ Versión de Webmin desactualizada: $current_version (última: $latest_version)"
-        return 1
-    fi
-    log_info "✅ Webmin está en la versión más reciente: $current_version"
-    return 0
+    echo "$temp_script"
 }
 
-# Función para verificar versión de Virtualmin
-check_virtualmin_version() {
-    local current_version=$(virtualmin --version 2>/dev/null || echo "No instalado")
-    local latest_version=$(curl -s https://software.virtualmin.com/gpl/scripts/install.sh | grep -oP 'VERSION=\K[\d.]+')
-    if [[ "$current_version" != "$latest_version" ]]; then
-        log_warning "⚠️ Versión de Virtualmin desactualizada: $current_version (última: $latest_version)"
-        return 1
-    fi
-    log_info "✅ Virtualmin está en la versión más reciente: $current_version"
-    return 0
+# Función para mostrar progreso
+show_progress() {
+    local message="$1"
+    echo -e "${BLUE}⏳ ${message}${NC}"
 }
 
-# Función para configurar actualizaciones automáticas
-setup_auto_updates() {
-    log_info "⚙️ Configurando actualizaciones automáticas..."
-    local cron_job="0 2 * * * /usr/bin/apt update && /usr/bin/apt upgrade -y webmin virtualmin-base"
-    (crontab -l 2>/dev/null; echo "$cron_job") | crontab -
-    log_info "✅ Cron job para actualizaciones diarias configurado"
+# Función para mostrar éxito
+show_success() {
+    local message="$1"
+    echo -e "${GREEN}✅ ${message}${NC}"
 }
 
-# Función para detectar si la IP es pública
-define_ip_type() {
-    local ip=$(curl -s ifconfig.me)
-    if [[ $ip =~ ^(10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|192\.168\.) ]]; then
-        return 1  # Privada
+# Función principal de instalación
+main() {
+    # Limpiar pantalla
+    clear
+
+    # Mostrar banner
+    show_banner
+
+    # Mostrar información del sistema
+    show_system_info
+
+    # Verificar requisitos del sistema
+    check_system_requirements
+
+    # Mostrar opciones de instalación
+    show_installation_options
+
+    # Esperar confirmación del usuario
+    echo -e "${YELLOW}⚠️  ADVERTENCIA:${NC}"
+    echo -e "${YELLOW}   Esta instalación modificará su sistema y puede tomar varios minutos.${NC}"
+    echo -e "${YELLOW}   Se recomienda hacer un backup antes de continuar.${NC}"
+    echo ""
+    echo -e "${CYAN}¿Desea continuar con la instalación? (y/N): ${NC}"
+    read -r -t 30 response || response="y"  # Timeout de 30 segundos, por defecto "y"
+
+    case "$response" in
+        [Yy]|[Yy][Ee][Ss])
+            log_color "INFO" "🚀 Iniciando instalación..." "$BLUE"
+            ;;
+        *)
+            log_color "INFO" "❌ Instalación cancelada por el usuario" "$YELLOW"
+            exit 0
+            ;;
+    esac
+
+    # Descargar el script principal
+    local main_script_path=$(download_main_script)
+
+    # Mostrar progreso
+    show_progress "Iniciando instalación completa de Webmin y Virtualmin..."
+    show_progress "Esto puede tomar varios minutos dependiendo de su conexión a internet"
+    show_progress "El sistema se instalará con auto-reparación inteligente incluida"
+    echo ""
+
+    # Ejecutar el script principal
+    if bash "$main_script_path"; then
+        # Limpiar archivo temporal
+        rm -f "$main_script_path"
+
+        # Mostrar mensaje de éxito
+        echo ""
+        echo -e "${GREEN}╔══════════════════════════════════════════════════════════════════════════════╗${NC}"
+        echo -e "${GREEN}║                        🎉 INSTALACIÓN COMPLETA 🎉                        ║${NC}"
+        echo -e "${GREEN}╚══════════════════════════════════════════════════════════════════════════════╝${NC}"
+        echo ""
+        show_success "Webmin y Virtualmin instalados y configurados correctamente"
+        show_success "Sistema de Auto-Reparación Inteligente activado"
+        show_success "Seguridad Enterprise implementada"
+        show_success "Monitoreo continuo activado"
+        echo ""
+        echo -e "${BLUE}📋 ACCESO A LOS PANELES:${NC}"
+        echo -e "${CYAN}  🌐 Webmin:${NC} https://$(hostname -I 2>/dev/null | awk '{print $1}' || echo 'TU_IP'):10000"
+        echo -e "${CYAN}  👤 Usermin:${NC} https://$(hostname -I 2>/dev/null | awk '{print $1}' || echo 'TU_IP'):20000"
+        echo ""
+        echo -e "${YELLOW}🔐 CREDENCIALES INICIALES:${NC}"
+        echo -e "${YELLOW}  👤 Usuario:${NC} root"
+        echo -e "${YELLOW}  🔑 Contraseña:${NC} Su contraseña de root del sistema"
+        echo ""
+        echo -e "${PURPLE}📚 RECURSOS Y SOPORTE:${NC}"
+        echo -e "${CYAN}  📖 Repositorio:${NC} https://github.com/yunyminaya/Webmin-y-Virtualmin-"
+        echo -e "${CYAN}  📚 Documentación:${NC} Revisar archivos README en el repositorio"
+        echo -e "${CYAN}  🆘 Soporte:${NC} Abrir issue en el repositorio de GitHub"
+        echo ""
+        echo -e "${GREEN}💡 PRÓXIMOS PASOS RECOMENDADOS:${NC}"
+        echo -e "${BLUE}  1.${NC} Cambiar la contraseña por defecto"
+        echo -e "${BLUE}  2.${NC} Configurar dominios virtuales"
+        echo -e "${BLUE}  3.${NC} Revisar configuraciones de seguridad"
+        echo -e "${BLUE}  4.${NC} Configurar backups automáticos"
+        echo ""
+        log_color "SUCCESS" "🎊 INSTALACIÓN COMPLETADA EXITOSAMENTE - DISFRUTE SU SISTEMA!" "$GREEN"
+
     else
-        return 0  # Pública
+        log_color "ERROR" "❌ LA INSTALACIÓN FALLÓ" "$RED"
+        log_color "INFO" "🔍 Revise los logs anteriores para identificar el problema" "$BLUE"
+        log_color "INFO" "🔄 Puede intentar ejecutar nuevamente el script" "$BLUE"
+        log_color "INFO" "📁 Script temporal guardado en: $main_script_path (para debugging)" "$BLUE"
+
+        exit 1
     fi
 }
 
-# Función para configurar túneles si es necesario
-setup_tunnels_if_needed() {
-    if ! define_ip_type; then
-        log_info "⚠️ IP privada detectada - Configurando túneles nativos..."
-        if [[ -f "tunel_nativo_sin_terceros.sh" ]]; then
-            bash tunel_nativo_sin_terceros.sh --install
-            if [[ $? -eq 0 ]]; then
-                log_success "✅ Túneles nativos configurados exitosamente"
-            else
-                log_error "❌ Error al configurar túneles"
-            fi
-        else
-            log_warning "⚠️ Script de túneles no encontrado. Por favor, ejecute tunel_nativo_sin_terceros.sh manualmente."
+# Función para mostrar ayuda
+show_help() {
+    echo -e "${BLUE}Ayuda - Instalador Automático Webmin & Virtualmin${NC}"
+    echo ""
+    echo "Uso:"
+    echo "  curl -sSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/instalar_webmin_virtualmin.sh | bash"
+    echo ""
+    echo "Opciones:"
+    echo "  --help     Mostrar esta ayuda"
+    echo "  --version  Mostrar versión"
+    echo ""
+    echo "Repositorio: https://github.com/yunyminaya/Webmin-y-Virtualmin-"
+}
+
+# Función para mostrar versión
+show_version() {
+    echo -e "${BLUE}Instalador Automático Webmin & Virtualmin${NC}"
+    echo "Versión: Enterprise Pro v2.0"
+    echo "Fecha: $(date)"
+    echo "Repositorio: https://github.com/yunyminaya/Webmin-y-Virtualmin-"
+}
+
+# Procesar argumentos de línea de comandos
+case "${1:-}" in
+    --help|-h)
+        show_help
+        exit 0
+        ;;
+    --version|-v)
+        show_version
+        exit 0
+        ;;
+    *)
+        # Verificar si el script se está ejecutando directamente
+        if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+            # Ejecutar función principal
+            main "$@"
         fi
-    else
-        log_info "✅ IP pública detectada - No se necesitan túneles"
-    fi
-}
-
-# Ejecutar script principal
-if bash "$SCRIPT_NAME"; then
-    echo
-    log "✅ ¡Instalación completada exitosamente!"
-    
-    # Verificar versiones
-    check_webmin_version
-    check_virtualmin_version
-    
-    # Configurar túneles si es necesario
-    setup_tunnels_if_needed
-    
-    # Configurar actualizaciones automáticas si es Linux
-    if [[ "$OSTYPE" != "darwin"* ]]; then
-        setup_auto_updates
-    else
-        log_warning "⚠️ Actualizaciones automáticas no configuradas en macOS"
-    fi
-    echo
-    echo -e "${GREEN}🎉 WEBMIN Y VIRTUALMIN ESTÁN LISTOS${NC}"
-    echo
-    echo -e "${BLUE}📱 ACCESO RÁPIDO:${NC}"
-    echo "   🌐 URL: https://localhost:10000"
-    echo "   👤 Usuario: $WEBMIN_USER"
-    echo "   🔑 Contraseña: $WEBMIN_PASS (desde clave SSH)"
-    echo
-    echo -e "${YELLOW}⚠️  IMPORTANTE:${NC}"
-    echo "   • La contraseña se generó desde la clave SSH del servidor"
-    echo "   • Complete el asistente de post-instalación"
-    echo "   • Configure SSL para producción"
-    echo
-else
-    log_error "❌ Error durante la instalación"
-    echo
-    echo -e "${YELLOW}🔧 SOLUCIÓN DE PROBLEMAS:${NC}"
-    echo "   • Verifique los logs en /tmp/instalacion_webmin_*.log"
-    echo "   • Ejecute el script de verificación: ./verificar_asistente_wizard.sh"
-    echo "   • Consulte la documentación en SOLUCION_ASISTENTE_POSTINSTALACION.md"
-    echo
-    exit 1
-fi
-
-# Limpiar archivos temporales
-log "Limpiando archivos temporales..."
-cd /
-rm -rf "$INSTALL_DIR"
-
-echo
-echo "═══════════════════════════════════════════════════════════════════════════════"
-echo -e "${GREEN}✨ INSTALACIÓN COMPLETADA - ¡DISFRUTE DE SU NUEVO PANEL!${NC}"
-echo "═══════════════════════════════════════════════════════════════════════════════"
-echo
+        ;;
+esac
