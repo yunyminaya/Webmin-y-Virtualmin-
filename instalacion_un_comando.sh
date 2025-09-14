@@ -36,13 +36,13 @@ BACKUP_DIR="/root/webmin-virtualmin-backup-$(date +%Y%m%d_%H%M%S)"
 DISTRO=""
 VERSION=""
 PACKAGE_MANAGER=""
-WEBMIN_PORT="10000"
+WEBMIN_PORT=10000
 VIRTUALMIN_LICENSE_KEY=""
 SKIP_CONFIRMATION=false
-ENABLE_SSL=true
-INSTALL_AUTHENTIC_THEME=true
-CONFIGURE_FIREWALL=true
-OPTIMIZE_FOR_PRODUCTION=true
+ENABLE_SSL=false
+INSTALL_AUTHENTIC_THEME=false
+CONFIGURE_FIREWALL=false
+OPTIMIZE_FOR_PRODUCTION=false
 
 # Funciones de logging mejoradas
 # DUPLICADA: Función reemplazada por common_functions.sh
@@ -51,9 +51,6 @@ OPTIMIZE_FOR_PRODUCTION=true
 # Contenido de función duplicada
 # Contenido de función duplicada
     
-# Contenido de función duplicada
-# Contenido de función duplicada
-# Contenido de función duplicada
 # Contenido de función duplicada
 # Contenido de función duplicada
 # Contenido de función duplicada
@@ -173,15 +170,6 @@ detect_system() {
     log "INFO" "Gestor de paquetes: $PACKAGE_MANAGER"
 }
 
-# Verificar privilegios de root
-# DUPLICADA: Función reemplazada por common_functions.sh
-# Contenido de función duplicada
-# Contenido de función duplicada
-# Contenido de función duplicada
-# Contenido de función duplicada
-# Contenido de función duplicada
-# Contenido de función duplicada
-# Fin de función duplicada
 
 # Verificar conectividad de red
 check_network() {
@@ -912,25 +900,69 @@ configure_webmin_public_access() {
     local wcfg="/etc/webmin/miniserv.conf"
     local ucfg="/etc/usermin/miniserv.conf"
 
-    # Solo exponer públicamente si el firewall está activo o hay reglas
-    local FIREWALL_OK="false"
-    if command -v ufw >/dev/null 2>&1 && ufw status 2>/dev/null | grep -qi "Status: active"; then
-        FIREWALL_OK="true"
-    elif command -v firewall-cmd >/dev/null 2>&1 && firewall-cmd --state 2>/dev/null | grep -qi running; then
-        FIREWALL_OK="true"
-    elif command -v iptables >/dev/null 2>&1 && iptables -S 2>/dev/null | grep -qE '^-P (INPUT|FORWARD|OUTPUT)'; then
-        FIREWALL_OK="true"
-    fi
+    # Verificar firewall de forma más robusta
+    verify_firewall_protection() {
+        local FIREWALL_OK="false"
+        
+        # Verificar UFW
+        if command -v ufw >/dev/null 2>&1; then
+            if ufw status 2>/dev/null | grep -qi "Status: active"; then
+                # Verificar que UFW esté configurado correctamente
+                if ufw status 2>/dev/null | grep -q "10000/tcp.*ALLOW" && ufw status 2>/dev/null | grep -q "20000/tcp.*ALLOW"; then
+                    FIREWALL_OK="true"
+                    log "SUCCESS" "Firewall UFW activo y configurado para Webmin/Usermin"
+                else
+                    log "WARNING" "Firewall UFW activo pero sin reglas específicas para Webmin"
+                fi
+            fi
+        
+        # Verificar firewalld
+        elif command -v firewall-cmd >/dev/null 2>&1; then
+            if firewall-cmd --state 2>/dev/null | grep -qi running; then
+                # Verificar zonas y reglas
+                if firewall-cmd --list-all 2>/dev/null | grep -q "10000/tcp" && firewall-cmd --list-all 2>/dev/null | grep -q "20000/tcp"; then
+                    FIREWALL_OK="true"
+                    log "SUCCESS" "Firewall firewalld activo y configurado para Webmin/Usermin"
+                else
+                    log "WARNING" "Firewall firewalld activo pero sin reglas específicas para Webmin"
+                fi
+            fi
+        
+        # Verificar iptables de forma más detallada
+        elif command -v iptables >/dev/null 2>&1; then
+            # Verificar política por defecto
+            local input_policy=$(iptables -S 2>/dev/null | grep "^-P INPUT" | awk '{print $3}')
+            if [[ "$input_policy" == "DROP" ]]; then
+                # Verificar reglas específicas para Webmin
+                if iptables -S 2>/dev/null | grep -q "--dport 10000" && iptables -S 2>/dev/null | grep -q "--dport 20000"; then
+                    FIREWALL_OK="true"
+                    log "SUCCESS" "Firewall iptables configurado con política DROP y reglas específicas"
+                else
+                    log "WARNING" "Firewall iptables con política DROP pero sin reglas específicas para Webmin"
+                fi
+            elif [[ "$input_policy" == "ACCEPT" ]]; then
+                log "WARNING" "Firewall iptables con política ACCEPT - no seguro para exposición pública"
+            else
+                log "INFO" "Firewall iptables detectado, política: $input_policy"
+            fi
+        fi
+        
+        echo "$FIREWALL_OK"
+    }
+
+    # Solo exponer públicamente si el firewall está activo y correctamente configurado
+    local FIREWALL_OK=$(verify_firewall_protection)
 
     if [[ -f "$wcfg" ]]; then
         grep -q '^port=' "$wcfg" || echo "port=10000" >> "$wcfg"
         if [[ "$FIREWALL_OK" == "true" ]]; then
             sed -i 's/^bind=.*/bind=0.0.0.0/' "$wcfg" 2>/dev/null || true
             grep -q '^bind=' "$wcfg" || echo "bind=0.0.0.0" >> "$wcfg"
+            log "SUCCESS" "Webmin configurado para acceso público (0.0.0.0)"
         else
             sed -i 's/^bind=.*/bind=127.0.0.1/' "$wcfg" 2>/dev/null || true
             grep -q '^bind=' "$wcfg" || echo "bind=127.0.0.1" >> "$wcfg"
-            log "WARNING" "Firewall no activo; Webmin permanecerá en bind=127.0.0.1 por seguridad"
+            log "WARNING" "Firewall no activo o mal configurado; Webmin limitado a localhost (127.0.0.1) por seguridad"
         fi
     fi
     if [[ -f "$ucfg" ]]; then
@@ -938,6 +970,7 @@ configure_webmin_public_access() {
         if [[ "$FIREWALL_OK" == "true" ]]; then
             sed -i 's/^bind=.*/bind=0.0.0.0/' "$ucfg" 2>/dev/null || true
             grep -q '^bind=' "$ucfg" || echo "bind=0.0.0.0" >> "$ucfg"
+            log "SUCCESS" "Usermin configurado para acceso público (0.0.0.0)"
         else
             sed -i 's/^bind=.*/bind=127.0.0.1/' "$ucfg" 2>/dev/null || true
             grep -q '^bind=' "$ucfg" || echo "bind=127.0.0.1" >> "$ucfg"
