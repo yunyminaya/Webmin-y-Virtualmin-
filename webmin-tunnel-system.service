@@ -1,0 +1,17 @@
+[Unit]
+Description=Sistema de Túneles Automáticos Webmin - IP Pública Virtual
+After=network.target webmin.service
+Requires=network.target
+
+[Service]
+Type=simple
+ExecStart=/opt/webmin-tunnels/webmin-tunnel-system.sh start
+ExecStop=/opt/webmin-tunnels/webmin-tunnel-system.sh stop
+ExecReload=/opt/webmin-tunnels/webmin-tunnel-system.sh restart
+Restart=always
+RestartSec=10
+User=root
+WorkingDirectory=/opt/webmin-tunnels
+
+[Install]
+WantedBy=multi-user.target
