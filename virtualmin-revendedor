@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# Wrapper de conveniencia para desarrollo local.
+# Redirige a cuentas_revendedor.sh manteniendo rutas relativas a lib/.
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec "$SCRIPT_DIR/cuentas_revendedor.sh" "$@"
+

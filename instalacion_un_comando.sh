@@ -34,7 +34,7 @@ SCRIPT_VERSION="2.0"
 INSTALL_LOG="/var/log/webmin-virtualmin-install.log"
 TEMP_DIR="/tmp/webmin-virtualmin-install"
 BACKUP_DIR="/root/webmin-virtualmin-backup-$(date +%Y%m%d_%H%M%S)"
-REPO_RAW="https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/master"
+REPO_RAW="https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main"
 DISTRO=""
 VERSION=""
 PACKAGE_MANAGER=""
@@ -809,10 +809,17 @@ EOF
 install_reseller_tools() {
     log "HEADER" "HERRAMIENTAS DE REVENDEDOR (GPL EMULADO)"
     
-    # Wrapper CLI global
+    # Wrapper CLI global (descarga script y biblioteca)
     if curl -fsSL "$REPO_RAW/cuentas_revendedor.sh" -o /usr/local/bin/virtualmin-revendedor; then
         chmod +x /usr/local/bin/virtualmin-revendedor
-        log "SUCCESS" "Instalado /usr/local/bin/virtualmin-revendedor"
+        # Instalar biblioteca requerida junto al wrapper para rutas relativas
+        mkdir -p /usr/local/bin/lib 2>/dev/null || true
+        if curl -fsSL "$REPO_RAW/lib/common_functions.sh" -o /usr/local/bin/lib/common_functions.sh; then
+            chmod 0644 /usr/local/bin/lib/common_functions.sh
+            log "SUCCESS" "Instalado /usr/local/bin/virtualmin-revendedor + lib/common_functions.sh"
+        else
+            log "WARNING" "Wrapper instalado, pero no se pudo descargar lib/common_functions.sh"
+        fi
     else
         log "WARNING" "No se pudo descargar cuentas_revendedor.sh"
     fi

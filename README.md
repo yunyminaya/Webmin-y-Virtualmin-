@@ -139,6 +139,11 @@ sudo bash instalacion_un_comando.sh
 - Cada revendedor gestiona sub-servidores bajo un dominio base (paraguas).
 - Script: `cuentas_revendedor.sh`
 
+Instalación y acceso
+- El instalador configura el wrapper CLI `virtualmin-revendedor` en `/usr/local/bin/` y el módulo Webmin `revendedor-gpl`.
+- Acceso en Webmin: Navega a `/revendedor-gpl/` (o desde Favoritos si se añadió automáticamente).
+- Comando CLI (equivalente): `sudo /usr/local/bin/virtualmin-revendedor ...`
+
 Ejemplo de creación:
 
 ```bash
@@ -151,6 +156,10 @@ sudo ./cuentas_revendedor.sh crear \
 Notas:
 - En GPL la creación es bajo un dominio base. Para “resellers” con creación
   de servidores top‑level en todo el sistema se requiere Virtualmin Pro.
+
+Validación automática de repositorios
+- Se instala y habilita el timer `webmin-repo-validation.timer` y su servicio asociado para verificar que las actualizaciones provengan del repositorio oficial.
+- Logs: `/var/log/webmin-repo-validation.log`.
 
 ## 📁 Estructura del Proyecto
 

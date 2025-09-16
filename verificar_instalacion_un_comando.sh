@@ -321,6 +321,37 @@ verify_mail_system() {
     fi
 }
 
+# Verificar herramientas de revendedor (GPL emulado)
+verify_reseller_tools() {
+    log_header "VERIFICACIÓN DE HERRAMIENTAS DE REVENDEDOR"
+
+    # CLI wrapper
+    if [[ -x "/usr/local/bin/virtualmin-revendedor" ]]; then
+        log_success "CLI virtualmin-revendedor: INSTALADO"
+        ((TESTS_PASSED++))
+        # Biblioteca
+        if [[ -f "/usr/local/bin/lib/common_functions.sh" ]]; then
+            log_success "Biblioteca común (lib/common_functions.sh): PRESENTE"
+            ((TESTS_PASSED++))
+        else
+            log_warning "Biblioteca común: AUSENTE (se recomienda para mejor logging)"
+            ((WARNINGS++))
+        fi
+    else
+        log_warning "CLI virtualmin-revendedor: NO INSTALADO"
+        ((WARNINGS++))
+    fi
+
+    # Módulo Webmin
+    if [[ -d "/usr/share/webmin/revendedor-gpl" ]]; then
+        log_success "Módulo Webmin 'revendedor-gpl': INSTALADO"
+        ((TESTS_PASSED++))
+    else
+        log_warning "Módulo Webmin 'revendedor-gpl': AUSENTE"
+        ((WARNINGS++))
+    fi
+}
+
 # Verificar firewall
 verify_firewall() {
     log_header "VERIFICACIÓN DEL FIREWALL"
@@ -479,6 +510,7 @@ main() {
     verify_ssl_certificates
     verify_system_resources
     verify_external_connectivity
+    verify_reseller_tools
     
     # Mostrar resumen
     show_summary
