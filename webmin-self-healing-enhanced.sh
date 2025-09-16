@@ -10,6 +10,9 @@ LOCK_FILE="/tmp/webmin-self-healing.lock"
 SECURITY_LOG="/var/log/webmin-security-events.log"
 ATTACK_LOG="/var/log/webmin-attack-detection.log"
 MONITOR_INTERVAL=30  # Reducido para detección más rápida de ataques
+STATE_DIR="/var/run/webmin-self-healing"
+LAST_VALIDATE_FILE="$STATE_DIR/last_validate"
+VALIDATE_INTERVAL=600  # Validar dominios cada 10 minutos como mínimo
 MAX_FAILED_ATTEMPTS=5
 BLOCK_TIME=3600  # 1 hora de bloqueo
 
@@ -31,6 +34,7 @@ log_attack() {
 }
 
 # Verificar si ya está ejecutándose
+mkdir -p "$STATE_DIR" 2>/dev/null || true
 if [[ -f "$LOCK_FILE" ]]; then
     pid=$(cat "$LOCK_FILE" 2>/dev/null)
     if kill -0 "$pid" 2>/dev/null; then
@@ -40,6 +44,12 @@ if [[ -f "$LOCK_FILE" ]]; then
     fi
 fi
 echo $$ > "$LOCK_FILE"
+
+# Modo one-shot (salir tras una iteración)
+ONESHOT=0
+if [[ "${1:-}" == "--oneshot" ]]; then
+    ONESHOT=1
+fi
 
 # Función principal de monitoreo con detección de ataques
 monitor_and_repair() {
@@ -73,6 +83,9 @@ monitor_and_repair() {
         # VERIFICACIÓN DE SEGURIDAD
         verify_security_hardening
 
+        if [[ "$ONESHOT" == "1" ]]; then
+            break
+        fi
         sleep "$MONITOR_INTERVAL"
     done
 }
@@ -650,7 +663,91 @@ check_virtual_servers_integrity() {
         if [[ "$domain_count" -gt 0 ]]; then
             log_self_healing "INFO" "Encontrados $domain_count dominios virtuales"
         fi
+
+        # Validación y reparación de dominios (con control de frecuencia)
+        validate_and_repair_virtualmin_domains
     fi
+}
+
+# Validar y reparar dominios de Virtualmin automáticamente
+validate_and_repair_virtualmin_domains() {
+    command -v virtualmin >/dev/null 2>&1 || return 0
+
+    # Controlar frecuencia de ejecución para evitar carga
+    local now=$(date +%s)
+    local last=0
+    if [[ -f "$LAST_VALIDATE_FILE" ]]; then
+        last=$(cat "$LAST_VALIDATE_FILE" 2>/dev/null || echo 0)
+    fi
+    if [[ "${FORCE_VALIDATE_NOW:-0}" != "1" ]] && (( now - last < VALIDATE_INTERVAL )); then
+        return 0
+    fi
+
+    echo "$now" > "$LAST_VALIDATE_FILE" 2>/dev/null || true
+
+    # Ejecutar validación de dominios
+    local output tmpfile
+    tmpfile=$(mktemp /tmp/vmin-validate.XXXXXX)
+    if virtualmin validate-domains --all-domains --all-features --problems --multiline >"$tmpfile" 2>&1; then
+        # Sin problemas reportados
+        rm -f "$tmpfile" 2>/dev/null || true
+        return 0
+    fi
+
+    # Parseo y reparaciones básicas por dominio/feature
+    local current_dom=""
+    while IFS= read -r line; do
+        # Dominio: línea sin espacios iniciales
+        if [[ "$line" != "    "* && -n "$line" ]]; then
+            current_dom="$line"
+            continue
+        fi
+        # Errores del dominio (indentados)
+        [[ -z "$current_dom" ]] && continue
+
+        # Acciones por tipo de error
+        if echo "$line" | grep -qiE "apache|web|website|httpd|vhost"; then
+            log_self_healing "WARNING" "[$current_dom] Problema web detectado. Re-creando feature web"
+            backup_before_repair
+            virtualmin disable-feature --domain "$current_dom" --web >/dev/null 2>&1 || true
+            virtualmin enable-feature  --domain "$current_dom" --web >/dev/null 2>&1 || true
+            systemctl restart apache2 2>/dev/null || true
+        elif echo "$line" | grep -qiE "dns|bind|zone"; then
+            log_self_healing "WARNING" "[$current_dom] Problema DNS detectado. Re-creando feature DNS"
+            backup_before_repair
+            virtualmin disable-feature --domain "$current_dom" --dns >/dev/null 2>&1 || true
+            virtualmin enable-feature  --domain "$current_dom" --dns >/dev/null 2>&1 || true
+            systemctl restart bind9 2>/dev/null || systemctl restart named 2>/dev/null || true
+        elif echo "$line" | grep -qiE "mail|postfix|dovecot|smtp|imap|pop3"; then
+            log_self_healing "WARNING" "[$current_dom] Problema MAIL detectado. Re-creando feature mail"
+            backup_before_repair
+            virtualmin disable-feature --domain "$current_dom" --mail >/dev/null 2>&1 || true
+            virtualmin enable-feature  --domain "$current_dom" --mail >/dev/null 2>&1 || true
+            newaliases >/dev/null 2>&1 || true
+            systemctl restart postfix 2>/dev/null || true
+            systemctl restart dovecot 2>/dev/null || true
+        elif echo "$line" | grep -qiE "ssl|certificate|let'?s encrypt"; then
+            log_self_healing "WARNING" "[$current_dom] Problema SSL detectado. Intentando emitir/renovar Let's Encrypt"
+            virtualmin generate-letsencrypt-cert --domain "$current_dom" --renew 2>/dev/null || \
+            virtualmin generate-letsencrypt-cert --domain "$current_dom" 2>/dev/null || true
+        elif echo "$line" | grep -qiE "php|fpm"; then
+            log_self_healing "WARNING" "[$current_dom] Problema PHP/FPM detectado. Reiniciando pools"
+            # Reiniciar servicios PHP-FPM instalados
+            if command -v systemctl >/dev/null 2>&1; then
+                systemctl list-units --type=service 'php*-fpm.service' 2>/dev/null | awk '/php.*-fpm\.service/ {print $1}' | \
+                xargs -r -n1 systemctl restart 2>/dev/null || true
+            fi
+        fi
+
+        # Validar nuevamente el dominio específico
+        if virtualmin validate-domains --domain "$current_dom" --all-features --problems >/dev/null 2>&1; then
+            log_self_healing "SUCCESS" "[$current_dom] Validación OK tras reparaciones"
+        else
+            log_self_healing "ERROR" "[$current_dom] Persisten problemas tras reparaciones básicas"
+        fi
+    done < "$tmpfile"
+
+    rm -f "$tmpfile" 2>/dev/null || true
 }
 
 # Verificar conectividad de red

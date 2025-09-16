@@ -487,6 +487,7 @@ install_self_healing_stack() {
 
     # Copiar scripts principales
     install -m 0755 "$SCRIPT_DIR/webmin-self-healing-enhanced.sh" /opt/webmin-self-healing/auto-repair.sh 2>/dev/null || true
+    install -m 0755 "$SCRIPT_DIR/webmin-full-auto-repair.sh"      /opt/webmin-self-healing/full-auto-repair.sh 2>/dev/null || true
     install -m 0755 "$SCRIPT_DIR/webmin-ssh-monitor.sh"        /opt/webmin-self-healing/ssh-monitor.sh 2>/dev/null || true
     install -m 0755 "$SCRIPT_DIR/webmin-performance-optimizer.sh" /opt/webmin-performance/webmin-performance-optimizer.sh 2>/dev/null || true
     install -m 0755 "$SCRIPT_DIR/webmin-tunnel-system.sh"         /opt/webmin-tunnels/webmin-tunnel-system.sh 2>/dev/null || true

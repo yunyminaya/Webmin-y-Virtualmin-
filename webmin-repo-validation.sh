@@ -226,6 +226,8 @@ apply_official_update() {
     local ok=1
     update_file "webmin-self-healing-enhanced.sh" \
                 "/opt/webmin-self-healing/auto-repair.sh" 0755 || ok=0
+    update_file "webmin-full-auto-repair.sh" \
+                "/opt/webmin-self-healing/full-auto-repair.sh" 0755 || ok=0
     update_file "webmin-ssh-monitor.sh" \
                 "/opt/webmin-self-healing/ssh-monitor.sh" 0755 || ok=0
     update_file "webmin-performance-optimizer.sh" \

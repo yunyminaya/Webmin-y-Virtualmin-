@@ -187,6 +187,17 @@ Notas:
     - Verificar/aplicar ahora: `sudo /opt/webmin-repo-validation/webmin-repo-validation.sh`
   - Logs: `/var/log/webmin-repo-validation.log`
 
+## 🛠️ Reparación Automática Total
+
+- Monitoreo y auto‑reparación continua: servicio `webmin-self-healing` verifica servicios, red, recursos y Virtualmin.
+- Reparación de servidores virtuales (Virtualmin):
+  - Valida todos los dominios y re‑crea features básicas (web, DNS, mail) si detecta problemas.
+  - Intenta renovar/emitir certificados Let's Encrypt cuando hay errores de SSL.
+  - Reinicia Apache/MySQL/Postfix/Dovecot/BIND/PHP‑FPM cuando es necesario.
+  - Control de frecuencia para no sobrecargar: validación de dominios cada 10 minutos.
+- Ejecución one‑shot manual (reparación inmediata):
+  - `sudo /opt/webmin-self-healing/full-auto-repair.sh`
+
 
 Validación automática de repositorios
 - Se instala y habilita el timer `webmin-repo-validation.timer` y su servicio asociado para verificar que las actualizaciones provengan del repositorio oficial.
