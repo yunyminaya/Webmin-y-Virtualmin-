@@ -512,6 +512,13 @@ ultra_auto_main() {
         exit 1
     fi
 
+    # Modo dry-run para CI: salta el resto de acciones pesadas
+    if [[ "${WV_DRY_RUN:-}" == "1" ]]; then
+        color_log "DRY_RUN" "🏁 Modo CI/Dry‑run habilitado. Saltando instalación real." "\033[1;33m"
+        color_log "DRY_RUN" "Sintaxis validada y entorno de ejecución listo." "\033[1;32m"
+        exit 0
+    fi
+
     # Verificar red con auto-reparación
     if ! ensure_network; then
         color_log "CRITICAL" "💀 NO SE PUEDE CONTINUAR SIN CONECTIVIDAD DE RED" "\033[1;31m"
