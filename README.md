@@ -3,6 +3,8 @@
 **Sistema de Servidores Web Completo con Auto-Reparación Inteligente**
 
 [![Versión](https://img.shields.io/badge/Versión-Enterprise%20Pro-blue.svg)](https://github.com/yunyminaya/Webmin-y-Virtualmin-)
+[![Release](https://img.shields.io/github/v/tag/yunyminaya/Webmin-y-Virtualmin-?label=release)](https://github.com/yunyminaya/Webmin-y-Virtualmin-/releases)
+[![CI](https://github.com/yunyminaya/Webmin-y-Virtualmin-/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/yunyminaya/Webmin-y-Virtualmin-/actions/workflows/ci.yml)
 [![Estado](https://img.shields.io/badge/Estado-Estábil-green.svg)](https://github.com/yunyminaya/Webmin-y-Virtualmin-)
 [![Licencia](https://img.shields.io/badge/Licencia-MIT-blue.svg)](LICENSE)
 

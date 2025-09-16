@@ -5,6 +5,30 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto adhiere al [Versionado Semántico](https://semver.org/spec/v2.0.0.html).
 
+## [v3.0-ultra] - 2025-09-16
+
+### ✨ Añadido
+- Instalación 1-comando 100% no interactiva (`instalar_webmin_virtualmin.sh`).
+- Herramientas de revendedor (GPL emulado): CLI `virtualmin-revendedor` y módulo Webmin `revendedor-gpl`.
+- Validación de repositorio oficial: servicio + timer (`webmin-repo-validation.*`).
+- Auto‑reparación mejorada: integra `virtualmin check-config` con intentos de corrección.
+- Optimización de performance: servicio one‑shot con métricas básicas.
+- CI de humo (GitHub Actions): sintaxis, shellcheck básico y ejecución dry‑run.
+
+### 🔄 Cambiado
+- `instalacion_un_comando.sh`: fija `REPO_RAW` a rama `main` y añade comprobaciones/contadores.
+- `verificar_instalacion_un_comando.sh`: verifica también revendedor (CLI y módulo Webmin).
+- README: instrucciones claras (sudo bash), SO soportados, badges de Release y CI.
+
+### 🛡️ Seguridad
+- APT en modo no interactivo con `--force-confdef/--force-confold` para evitar prompts.
+- Validación y bloqueo de actualizaciones de fuentes no oficiales.
+
+### 🧩 Compatibilidad
+- Enfoque en Ubuntu (18.04+) y Debian (10+).
+
+---
+
 ## [1.0.0] - 2024-12-19
 
 ### ✨ Añadido
