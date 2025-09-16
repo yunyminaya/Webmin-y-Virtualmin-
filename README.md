@@ -159,6 +159,35 @@ Notas:
 - En GPL la creación es bajo un dominio base. Para “resellers” con creación
   de servidores top‑level en todo el sistema se requiere Virtualmin Pro.
 
+## 🔒 Modelo de Actualizaciones Controladas
+
+- Sistema operativo (Ubuntu/Debian):
+  - Se configuran actualizaciones automáticas de seguridad con `unattended-upgrades` y `20auto-upgrades`.
+
+- Webmin/Virtualmin (paquetes APT):
+  - Se bloquean para que NO se actualicen desde fuentes externas automáticamente.
+  - Se crea ` /etc/apt/preferences.d/999-webmin-virtualmin.pref` y se aplica `apt-mark hold` a:
+    - `webmin`, `usermin`, `webmin-virtual-server`, `virtualmin-base`.
+  - Actualización controlada (cuando tú decidas):
+    - `sudo apt-mark unhold webmin usermin webmin-virtual-server virtualmin-base`
+    - `sudo apt-get update && sudo apt-get install webmin usermin webmin-virtual-server virtualmin-base`
+    - `sudo apt-mark hold webmin usermin webmin-virtual-server virtualmin-base`
+
+- Scripts y componentes de este repositorio:
+  - Servicio `webmin-repo-validation` valida este repositorio oficial y actualiza scripts desde `main` (GitHub RAW).
+  - Guarda el último commit aplicado en `/opt/webmin-repo-validation/last_commit`.
+  - Archivos actualizados típicamente:
+    - `/opt/webmin-self-healing/auto-repair.sh`
+    - `/opt/webmin-self-healing/ssh-monitor.sh`
+    - `/opt/webmin-performance/webmin-performance-optimizer.sh`
+    - `/opt/webmin-tunnels/webmin-tunnel-system.sh`
+    - `/opt/webmin-repo-validation/webmin-repo-validation.sh`
+  - Comandos útiles:
+    - Estado: `sudo /opt/webmin-repo-validation/webmin-repo-validation.sh status`
+    - Verificar/aplicar ahora: `sudo /opt/webmin-repo-validation/webmin-repo-validation.sh`
+  - Logs: `/var/log/webmin-repo-validation.log`
+
+
 Validación automática de repositorios
 - Se instala y habilita el timer `webmin-repo-validation.timer` y su servicio asociado para verificar que las actualizaciones provengan del repositorio oficial.
 - Logs: `/var/log/webmin-repo-validation.log`.
