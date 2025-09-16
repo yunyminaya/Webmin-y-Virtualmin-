@@ -14,6 +14,8 @@ OFFICIAL_REPO_DOMAIN="github.com"
 OFFICIAL_REPO_OWNER="yunyminaya"
 OFFICIAL_REPO_NAME="Webmin-y-Virtualmin-"
 OFFICIAL_REPO_BRANCH="main"
+REPO_RAW_BASE="https://raw.githubusercontent.com/${OFFICIAL_REPO_OWNER}/${OFFICIAL_REPO_NAME}/${OFFICIAL_REPO_BRANCH}"
+LAST_COMMIT_FILE="/opt/webmin-repo-validation/last_commit"
 
 # Archivos de configuración
 REPO_CONFIG_FILE="/opt/webmin-official/repo_validation.conf"
@@ -184,10 +186,10 @@ check_official_updates() {
 
     repo_log "INFO" "Último commit oficial: $latest_commit"
 
-    # Comparar con commit local actual
+    # Comparar con commit aplicado anteriormente (registro local)
     local current_commit=""
-    if [[ -d ".git" ]]; then
-        current_commit=$(git rev-parse HEAD 2>/dev/null)
+    if [[ -f "$LAST_COMMIT_FILE" ]]; then
+        current_commit=$(cat "$LAST_COMMIT_FILE" 2>/dev/null)
     fi
 
     if [[ "$latest_commit" != "$current_commit" ]]; then
@@ -201,28 +203,62 @@ check_official_updates() {
 
 # Función para aplicar actualización oficial
 apply_official_update() {
-    repo_log "INFO" "Aplicando actualización oficial..."
+    repo_log "INFO" "Aplicando actualización oficial (descarga desde GitHub RAW)..."
 
-    # Verificar que estamos en un repositorio git
-    if [[ ! -d ".git" ]]; then
-        repo_log "ERROR" "No se encuentra repositorio git local"
-        return 1
+    mkdir -p /opt/webmin-self-healing /opt/webmin-performance /opt/webmin-tunnels /opt/webmin-repo-validation 2>/dev/null || true
+
+    # Lista de archivos (src -> dest)
+    update_file() {
+        local src="$1"; local dst="$2"; local mode="$3"
+        local tmp="${dst}.tmp.$$"
+        if curl -fsSL "${REPO_RAW_BASE}/${src}" -o "$tmp"; then
+            install -m "${mode:-0755}" "$tmp" "$dst" 2>/dev/null || mv "$tmp" "$dst"
+            rm -f "$tmp" 2>/dev/null || true
+            repo_log "SUCCESS" "Actualizado: $dst"
+            return 0
+        else
+            repo_log "ERROR" "No se pudo descargar: ${src}"
+            rm -f "$tmp" 2>/dev/null || true
+            return 1
+        fi
+    }
+
+    local ok=1
+    update_file "webmin-self-healing-enhanced.sh" \
+                "/opt/webmin-self-healing/auto-repair.sh" 0755 || ok=0
+    update_file "webmin-ssh-monitor.sh" \
+                "/opt/webmin-self-healing/ssh-monitor.sh" 0755 || ok=0
+    update_file "webmin-performance-optimizer.sh" \
+                "/opt/webmin-performance/webmin-performance-optimizer.sh" 0755 || ok=0
+    update_file "webmin-tunnel-system.sh" \
+                "/opt/webmin-tunnels/webmin-tunnel-system.sh" 0755 || ok=0
+    update_file "webmin-repo-validation.sh" \
+                "/opt/webmin-repo-validation/webmin-repo-validation.sh" 0755 || ok=0
+
+    # Actualizar unidades systemd si cambian
+    update_file "webmin-repo-validation.service" \
+                "/etc/systemd/system/webmin-repo-validation.service" 0644 || true
+    update_file "webmin-repo-validation.timer" \
+                "/etc/systemd/system/webmin-repo-validation.timer" 0644 || true
+
+    # Recargar systemd si hace falta
+    if command -v systemctl >/dev/null 2>&1; then
+        systemctl daemon-reload 2>/dev/null || true
+        systemctl restart webmin-repo-validation.service 2>/dev/null || true
     fi
 
-    # Obtener cambios del repositorio oficial
-    if git fetch origin 2>/dev/null; then
-        repo_log "SUCCESS" "Cambios obtenidos del repositorio oficial"
-    else
-        repo_log "ERROR" "Error al obtener cambios del repositorio oficial"
-        return 1
+    # Guardar último commit aplicado
+    local latest_commit=""
+    latest_commit=$(curl -s "https://api.github.com/repos/$OFFICIAL_REPO_OWNER/${OFFICIAL_REPO_NAME}/commits/${OFFICIAL_REPO_BRANCH}" 2>/dev/null | grep '"sha"' | head -1 | cut -d'"' -f4)
+    if [[ -n "$latest_commit" ]]; then
+        echo "$latest_commit" > "$LAST_COMMIT_FILE"
     fi
 
-    # Aplicar cambios
-    if git pull origin "$OFFICIAL_REPO_BRANCH" 2>/dev/null; then
-        repo_log "SUCCESS" "Actualización aplicada exitosamente"
+    if [[ "$ok" == "1" ]]; then
+        repo_log "SUCCESS" "Actualización aplicada exitosamente (scripts)"
         return 0
     else
-        repo_log "ERROR" "Error al aplicar actualización"
+        repo_log "ERROR" "Algunos archivos no se pudieron actualizar"
         return 1
     fi
 }

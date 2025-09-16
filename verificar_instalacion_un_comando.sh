@@ -452,6 +452,29 @@ verify_external_connectivity() {
     done
 }
 
+# Verificar guardas de actualización para Webmin/Virtualmin
+verify_package_guard() {
+    log_header "VERIFICACIÓN DE BLOQUEO DE ACTUALIZACIONES (WEBMIN/VIRTUALMIN)"
+
+    local pref="/etc/apt/preferences.d/999-webmin-virtualmin.pref"
+    if [[ -f "$pref" ]]; then
+        log_success "Preferencias APT presentes: $pref"
+        ((TESTS_PASSED++))
+    else
+        log_warning "Preferencias APT no encontradas (se recomienda bloquear paquetes)"
+        ((WARNINGS++))
+    fi
+
+    local holds
+    holds=$(apt-mark showhold 2>/dev/null | grep -E '^(webmin|usermin|webmin-virtual-server|virtualmin-base)$' || true)
+    if [[ -n "$holds" ]]; then
+        log_success "Paquetes en hold: $(echo "$holds" | tr '\n' ' ')"
+        ((TESTS_PASSED++))
+    else
+        log_warning "No hay paquetes Webmin/Virtualmin en hold"
+        ((WARNINGS++))
+    fi
+}
 # Mostrar resumen final
 show_summary() {
     log_header "RESUMEN DE VERIFICACIÓN"
@@ -510,6 +533,7 @@ main() {
     verify_ssl_certificates
     verify_system_resources
     verify_external_connectivity
+    verify_package_guard
     verify_reseller_tools
     
     # Mostrar resumen

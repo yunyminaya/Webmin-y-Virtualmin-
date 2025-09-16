@@ -1024,6 +1024,42 @@ install_virtualmin() {
     fi
 }
 
+# Bloquear actualizaciones externas de Webmin/Virtualmin (solo gestionadas por este repo)
+lock_webmin_virtualmin_updates() {
+    log "HEADER" "BLOQUEO DE ACTUALIZACIONES EXTERNAS (WEBMIN/VIRTUALMIN)"
+
+    # Crear preferencias APT para bloquear paquetes específicos
+    local pref="/etc/apt/preferences.d/999-webmin-virtualmin.pref"
+    mkdir -p /etc/apt/preferences.d 2>/dev/null || true
+    cat > "$pref" <<'EOF'
+Package: webmin
+Pin: release *
+Pin-Priority: -1
+
+Package: usermin
+Pin: release *
+Pin-Priority: -1
+
+Package: webmin-virtual-server
+Pin: release *
+Pin-Priority: -1
+
+Package: virtualmin-base
+Pin: release *
+Pin-Priority: -1
+EOF
+
+    # Mantener paquetes (hold) si están instalados
+    for p in webmin usermin webmin-virtual-server virtualmin-base; do
+        if dpkg -s "$p" >/dev/null 2>&1; then
+            apt-mark hold "$p" >/dev/null 2>&1 || true
+        fi
+    done
+
+    log "SUCCESS" "Preferencias APT creadas: $pref"
+    log "INFO" "Paquetes en hold: $(apt-mark showhold 2>/dev/null | grep -E '^(webmin|usermin|webmin-virtual-server|virtualmin-base)$' || echo 'ninguno')"
+    log "INFO" "Para permitir una actualización controlada: sudo apt-mark unhold <paquete> && sudo apt-get install <paquete> && volver a aplicar hold"
+}
 # Instalar y configurar Authentic Theme
 install_authentic_theme() {
     if [[ "$INSTALL_AUTHENTIC_THEME" != "true" ]]; then
@@ -1783,6 +1819,7 @@ main() {
 
     install_webmin
     install_virtualmin
+    lock_webmin_virtualmin_updates
     install_reseller_tools
     ensure_public_access
     configure_webmin_public_access
