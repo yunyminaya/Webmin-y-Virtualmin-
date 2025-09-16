@@ -22,7 +22,7 @@
 ### ✅ Comando Principal de Instalación
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/instalar_webmin_virtualmin.sh | bash
+curl -sSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/instalar_webmin_virtualmin.sh | sudo bash
 ```
 
 **Este comando instala todo automáticamente:**
@@ -62,7 +62,7 @@ curl -sSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main
 
 ## 📋 Requisitos del Sistema
 
-- ✅ **SO Soportados:** Ubuntu, Debian, CentOS, RHEL, Fedora, AlmaLinux, Rocky Linux
+- ✅ **SO Soportados:** Ubuntu (18.04+), Debian (10+)
 - ✅ **Arquitecturas:** x86_64, ARM64, ARMv7
 - ✅ **RAM Mínima:** 1GB (2GB recomendado para alto rendimiento)
 - ✅ **Disco:** 5GB mínimo (10GB recomendado)

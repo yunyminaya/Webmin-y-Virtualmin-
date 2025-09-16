@@ -21,6 +21,10 @@
 # Versión: Ultra-Auto v3.0 con Auto-Reparación Total
 # =============================================================================
 
+# Configuración de entorno no interactivo y auto-reparación
+export DEBIAN_FRONTEND=${DEBIAN_FRONTEND:-noninteractive}
+APT_OPTS=(-y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold")
+
 # Configuración de auto-reparación
 MAX_RETRIES=3
 RETRY_DELAY=5
@@ -321,7 +325,7 @@ auto_update_system() {
         fi
 
         # Actualizar paquetes
-        if ! auto_repair "apt-get upgrade -y"; then
+        if ! auto_repair "apt-get upgrade ${APT_OPTS[*]}"; then
             color_log "UPDATE" "⚠️ No se pudieron actualizar paquetes, continuando..." "\033[1;33m"
         fi
 
@@ -329,7 +333,7 @@ auto_update_system() {
         local basic_deps=("curl" "wget" "git" "perl" "python3" "openssl" "openssh-server")
         for dep in "${basic_deps[@]}"; do
             if ! command -v "$dep" >/dev/null 2>&1; then
-                auto_repair "apt-get install -y $dep"
+                auto_repair "apt-get install ${APT_OPTS[*]} $dep"
             fi
         done
     fi
