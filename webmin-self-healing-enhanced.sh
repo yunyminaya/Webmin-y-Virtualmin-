@@ -617,6 +617,19 @@ check_critical_services() {
 # Verificar integridad de servidores virtuales
 check_virtual_servers_integrity() {
     if command -v virtualmin >/dev/null 2>&1; then
+        # Validar configuración general de Virtualmin
+        if ! virtualmin check-config >/dev/null 2>&1; then
+            log_self_healing "WARNING" "Virtualmin check-config detecta problemas; intentando corregir"
+            systemctl restart webmin 2>/dev/null || true
+            systemctl restart apache2 2>/dev/null || true
+            systemctl restart mysql 2>/dev/null || true
+            sleep 3
+            if virtualmin check-config >/dev/null 2>&1; then
+                log_self_healing "SUCCESS" "Virtualmin check-config OK tras reinicios"
+            else
+                log_self_healing "ERROR" "Persisten problemas reportados por check-config"
+            fi
+        fi
         # Verificar que Virtualmin responde
         if ! virtualmin list-domains >/dev/null 2>&1; then
             log_self_healing "WARNING" "Virtualmin no responde, intentando reparar"

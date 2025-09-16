@@ -17,6 +17,7 @@ fi
 
 set -euo pipefail  # Salir inmediatamente si hay errores
 export TERM=${TERM:-xterm}
+export DEBIAN_FRONTEND=${DEBIAN_FRONTEND:-noninteractive}
 
 # Colores para output
 # Colores definidos en common_functions.sh
@@ -33,6 +34,7 @@ SCRIPT_VERSION="2.0"
 INSTALL_LOG="/var/log/webmin-virtualmin-install.log"
 TEMP_DIR="/tmp/webmin-virtualmin-install"
 BACKUP_DIR="/root/webmin-virtualmin-backup-$(date +%Y%m%d_%H%M%S)"
+REPO_RAW="https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/master"
 DISTRO=""
 VERSION=""
 PACKAGE_MANAGER=""
@@ -41,8 +43,16 @@ VIRTUALMIN_LICENSE_KEY=""
 SKIP_CONFIRMATION=false
 ENABLE_SSL=false
 INSTALL_AUTHENTIC_THEME=false
-CONFIGURE_FIREWALL=false
+CONFIGURE_FIREWALL=true
 OPTIMIZE_FOR_PRODUCTION=false
+
+# Inicializar logging a archivo específico del instalador
+if [[ $EUID -eq 0 ]]; then
+    mkdir -p "$(dirname "$INSTALL_LOG")" 2>/dev/null || true
+    touch "$INSTALL_LOG" 2>/dev/null || true
+    chmod 0644 "$INSTALL_LOG" 2>/dev/null || true
+    export LOG_FILE="$INSTALL_LOG"
+fi
 
 # Funciones de logging mejoradas
 # DUPLICADA: Función reemplazada por common_functions.sh
@@ -191,7 +201,7 @@ check_network() {
     done
     
     # Verificar DNS
-    if nslookup google.com >/dev/null 2>&1; then
+    if getent hosts google.com >/dev/null 2>&1 || nslookup google.com >/dev/null 2>&1; then
         log "SUCCESS" "Resolución DNS: Funcionando"
     else
         log "ERROR" "Resolución DNS: FALLA"
@@ -257,43 +267,9 @@ ensure_fqdn() {
         return 0
     fi
 
-    local fqdn="panel.example.com"
-    local short="${fqdn%%.*}"
-    log "WARNING" "FQDN inválido o ausente (${current_fqdn:-none}). Estableciendo: $fqdn"
-
-    # Persistente y en runtime
-    echo "$fqdn" > /etc/hostname
-    if command -v hostnamectl >/dev/null 2>&1; then
-        hostnamectl set-hostname "$fqdn" --static --transient --pretty || true
-    fi
-    hostname "$fqdn" 2>/dev/null || true
-    command -v hostname >/dev/null 2>&1 && hostname -F /etc/hostname 2>/dev/null || true
-    export HOSTNAME="$fqdn"
-
-    # /etc/hosts coherente
-    { grep -qE '^127\.0\.1\.1[[:space:]]' /etc/hosts 2>/dev/null && \
-      sed -i "s/^127\.0\.1\.1.*/127.0.1.1 $fqdn $short/" /etc/hosts 2>/dev/null; } || \
-      printf "127.0.1.1 %s %s\n" "$fqdn" "$short" >> /etc/hosts
-    grep -qE '^127\.0\.0\.1[[:space:]]+localhost' /etc/hosts 2>/dev/null || echo "127.0.0.1 localhost" >> /etc/hosts
-
-    # Mapear IP primaria -> FQDN para satisfacer validación de Virtualmin
-    if command -v ip >/dev/null 2>&1; then
-        primary_ip="$(ip -4 route get 8.8.8.8 2>/dev/null | awk '{for(i=1;i<=NF;i++){if($i=="src"){print $(i+1); exit}}}')"
-        if [[ -n "$primary_ip" ]]; then
-            sed -i "\|^${primary_ip}[[:space:]]|d" /etc/hosts 2>/dev/null || true
-            printf "%s %s %s\n" "$primary_ip" "$fqdn" "$short" >> /etc/hosts
-        fi
-    fi
-
-    # Verificación y refuerzo
-    local check_fqdn
-    check_fqdn="$(hostname -f 2>/dev/null || true)"
-    if [[ -z "$check_fqdn" || "$check_fqdn" != *.* ]]; then
-        log "WARNING" "hostname -f aún no es FQDN, reforzando ajustes"
-        hostname "$fqdn" 2>/dev/null || true
-    fi
-
-    log "SUCCESS" "Hostname establecido: $fqdn"
+    log "ERROR" "FQDN inválido o ausente (${current_fqdn:-none}). Debe proporcionar un FQDN válido."
+    log "INFO" "Establezca la variable de entorno FQDN_OVERRIDE (ej: export FQDN_OVERRIDE=panel.midominio.com) y reintente."
+    return 1
 }
 
 # Crear directorio temporal con permisos seguros
@@ -419,6 +395,475 @@ update_system() {
     done
     
     log "SUCCESS" "Sistema actualizado correctamente"
+}
+
+# Activar actualizaciones automáticas de seguridad (Ubuntu/Debian)
+enable_security_auto_updates() {
+    log "HEADER" "ACTIVANDO ACTUALIZACIONES AUTOMÁTICAS DE SEGURIDAD"
+    if apt-get install -y unattended-upgrades >/dev/null 2>&1; then
+        # Habilitar unattended-upgrades
+        dpkg-reconfigure -f noninteractive unattended-upgrades >/dev/null 2>&1 || true
+        # Asegurar ejecución diaria
+        if [[ -f /etc/apt/apt.conf.d/20auto-upgrades ]]; then
+            sed -i 's/\"0\"/"1"/g' /etc/apt/apt.conf.d/20auto-upgrades || true
+        else
+            cat > /etc/apt/apt.conf.d/20auto-upgrades <<'EOF'
+APT::Periodic::Update-Package-Lists "1";
+APT::Periodic::Unattended-Upgrade "1";
+EOF
+        fi
+        log "SUCCESS" "Actualizaciones automáticas de seguridad habilitadas"
+    else
+        log "WARNING" "No se pudo instalar unattended-upgrades"
+    fi
+}
+
+# Tunings de kernel y límites para alto rendimiento
+apply_kernel_tuning() {
+    log "HEADER" "APLICANDO TUNING DE KERNEL Y LÍMITES"
+    local sysctl_conf="/etc/sysctl.d/99-wv-tuning.conf"
+    cat > "$sysctl_conf" <<'EOF'
+# Tuning moderado para alto tráfico y concurrencia
+fs.file-max = 1000000
+net.core.somaxconn = 4096
+net.core.netdev_max_backlog = 32768
+net.ipv4.tcp_max_syn_backlog = 8192
+net.ipv4.tcp_syncookies = 1
+net.ipv4.ip_local_port_range = 10240 65535
+net.ipv4.tcp_fin_timeout = 15
+# net.ipv4.tcp_tw_reuse = 1 # Comentado por compatibilidad; habilitar si aplica
+EOF
+    sysctl --system >/dev/null 2>&1 || sysctl -p "$sysctl_conf" >/dev/null 2>&1 || true
+
+    # Límites de archivos
+    local limits_conf="/etc/security/limits.d/webmin-virtualmin.conf"
+    cat > "$limits_conf" <<'EOF'
+* soft nofile 100000
+* hard nofile 200000
+EOF
+    log "SUCCESS" "Tuning aplicado (sysctl y límites de archivos)"
+}
+
+# Mantenimiento diario automático
+schedule_daily_maintenance() {
+    log "HEADER" "PROGRAMANDO MANTENIMIENTO DIARIO AUTOMÁTICO"
+    local cron_file="/etc/cron.daily/wv-maintenance"
+    cat > "$cron_file" <<'EOF'
+#!/bin/bash
+# Mantenimiento diario: limpieza, verificación y validación
+
+LOG=/var/log/wv-daily-maintenance.log
+exec >> "$LOG" 2>&1
+echo "==== RUN $(date) ===="
+
+# Rotar y podar logs de journal (7 días)
+journalctl --rotate >/dev/null 2>&1 || true
+journalctl --vacuum-time=7d >/dev/null 2>&1 || true
+
+# Limpieza de paquetes
+apt-get autoremove -y >/dev/null 2>&1 || true
+apt-get autoclean -y >/dev/null 2>&1 || true
+
+# Validación de repos oficiales
+if [ -x /opt/webmin-repo-validation/webmin-repo-validation.sh ]; then
+  /opt/webmin-repo-validation/webmin-repo-validation.sh check || true
+fi
+
+# Verificación general (no falla el cron)
+if [ -x "$(dirname "$0")/../../verificar_instalacion_un_comando.sh" ]; then
+  bash "$(dirname "$0")/../../verificar_instalacion_un_comando.sh" || true
+fi
+EOF
+    chmod +x "$cron_file"
+    log "SUCCESS" "Mantenimiento diario programado (/etc/cron.daily/wv-maintenance)"
+}
+
+# Instalar y habilitar la pila de Auto-Reparación y Defensa
+install_self_healing_stack() {
+    log "HEADER" "AUTO-REPARACIÓN Y DEFENSA AVANZADA"
+
+    # Directorios destino
+    mkdir -p /opt/webmin-self-healing /opt/webmin-performance /opt/webmin-tunnels /opt/webmin-repo-validation 2>/dev/null || true
+
+    # Copiar scripts principales
+    install -m 0755 "$SCRIPT_DIR/webmin-self-healing-enhanced.sh" /opt/webmin-self-healing/auto-repair.sh 2>/dev/null || true
+    install -m 0755 "$SCRIPT_DIR/webmin-ssh-monitor.sh"        /opt/webmin-self-healing/ssh-monitor.sh 2>/dev/null || true
+    install -m 0755 "$SCRIPT_DIR/webmin-performance-optimizer.sh" /opt/webmin-performance/webmin-performance-optimizer.sh 2>/dev/null || true
+    install -m 0755 "$SCRIPT_DIR/webmin-tunnel-system.sh"         /opt/webmin-tunnels/webmin-tunnel-system.sh 2>/dev/null || true
+    install -m 0755 "$SCRIPT_DIR/webmin-repo-validation.sh"       /opt/webmin-repo-validation/webmin-repo-validation.sh 2>/dev/null || true
+
+    # Instalar servicios systemd
+    if [[ -d /run/systemd/system ]]; then
+        install -m 0644 "$SCRIPT_DIR/webmin-self-healing.service"          /etc/systemd/system/webmin-self-healing.service 2>/dev/null || true
+        install -m 0644 "$SCRIPT_DIR/webmin-ssh-monitor.service"           /etc/systemd/system/webmin-ssh-monitor.service 2>/dev/null || true
+        install -m 0644 "$SCRIPT_DIR/webmin-performance-optimizer.service" /etc/systemd/system/webmin-performance-optimizer.service 2>/dev/null || true
+        install -m 0644 "$SCRIPT_DIR/webmin-tunnel-system.service"         /etc/systemd/system/webmin-tunnel-system.service 2>/dev/null || true
+        install -m 0644 "$SCRIPT_DIR/webmin-repo-validation.service"       /etc/systemd/system/webmin-repo-validation.service 2>/dev/null || true
+        install -m 0644 "$SCRIPT_DIR/webmin-repo-validation.timer"         /etc/systemd/system/webmin-repo-validation.timer 2>/dev/null || true
+
+        systemctl daemon-reload 2>/dev/null || true
+
+        # Habilitar + iniciar servicios persistentes
+        systemctl enable --now webmin-self-healing.service 2>/dev/null || true
+        systemctl enable --now webmin-ssh-monitor.service 2>/dev/null || true
+        systemctl enable --now webmin-tunnel-system.service 2>/dev/null || true
+
+        # Ejecutar servicios oneshot iniciales
+        systemctl enable webmin-performance-optimizer.service 2>/dev/null || true
+        systemctl start webmin-performance-optimizer.service 2>/dev/null || true
+        systemctl enable webmin-repo-validation.service 2>/dev/null || true
+        systemctl start webmin-repo-validation.service 2>/dev/null || true
+        systemctl enable --now webmin-repo-validation.timer 2>/dev/null || true
+    fi
+
+    log "SUCCESS" "Auto-Reparación y defensas avanzadas activadas"
+}
+
+# Ajustar motor de backups de Virtualmin para alta escala
+tune_virtualmin_backup_engine() {
+    log "HEADER" "AJUSTANDO MOTOR DE BACKUPS (ALTA ESCALA)"
+    local vcfg="/etc/webmin/virtual-server/config"
+    [[ -f "$vcfg" ]] || { log "INFO" "Archivo de configuración Virtualmin no encontrado ($vcfg)."; return 0; }
+
+    # Limitar concurrencia de backups para reducir impacto de I/O (1 en paralelo)
+    if grep -q '^max_backups=' "$vcfg" 2>/dev/null; then
+        sed -i 's/^max_backups=.*/max_backups=1/' "$vcfg" || true
+    else
+        echo 'max_backups=1' >> "$vcfg"
+    fi
+
+    # Habilitar pigz si está disponible (gzip paralelo)
+    if command -v pigz >/dev/null 2>&1; then
+        if grep -q '^pigz=' "$vcfg" 2>/dev/null; then
+            sed -i 's/^pigz=.*/pigz=1/' "$vcfg" || true
+        else
+            echo 'pigz=1' >> "$vcfg"
+        fi
+        # Añadir bandera --rsyncable para mejorar replicación y delta transfers
+        if grep -q '^zip_args=' "$vcfg" 2>/dev/null; then
+            sed -i 's/^zip_args=.*/zip_args=--rsyncable/' "$vcfg" || true
+        else
+            echo 'zip_args=--rsyncable' >> "$vcfg"
+        fi
+    fi
+
+    # Aumentar chunk de S3 (MB) para grandes ficheros
+    if grep -q '^s3_chunk=' "$vcfg" 2>/dev/null; then
+        sed -i 's/^s3_chunk=.*/s3_chunk=64/' "$vcfg" || true
+    else
+        echo 's3_chunk=64' >> "$vcfg"
+    fi
+
+    log "SUCCESS" "Backups: concurrencia=1, pigz=$(command -v pigz >/dev/null 2>&1 && echo on || echo off), s3_chunk=64MB"
+}
+
+# Cargar exclusiones de backup (si existen)
+load_backup_excludes() {
+    local excludes_file="/etc/wv-backup-excludes.txt"
+    BACKUP_EXCLUDE_ARGS=()
+    if [[ -f "$excludes_file" ]]; then
+        while IFS= read -r relpath; do
+            [[ -z "$relpath" || "$relpath" =~ ^# ]] && continue
+            BACKUP_EXCLUDE_ARGS+=( --exclude "$relpath" )
+        done < "$excludes_file"
+        log "INFO" "Se aplicarán exclusiones desde $excludes_file"
+    fi
+}
+
+# Configurar backups automáticos de Virtualmin (diario y semanal)
+setup_automatic_virtualmin_backups() {
+    log "HEADER" "CONFIGURANDO BACKUPS AUTOMÁTICOS VIRTUALMIN"
+    if ! command -v virtualmin >/dev/null 2>&1; then
+        log "WARNING" "Comando 'virtualmin' no disponible; omitiendo configuración de backups"
+        return 0
+    fi
+
+    mkdir -p /var/backups/virtualmin/daily /var/backups/virtualmin/weekly 2>/dev/null || true
+
+    # Cargar exclusiones si existen
+    load_backup_excludes
+
+    # Backup diario: todos los dominios, todas las features, un archivo por dominio, rotación 14 días
+    if virtualmin create-scheduled-backup \
+        --dest /var/backups/virtualmin/daily/%Y-%m-%d/ \
+        --all-domains \
+        --all-features \
+        --newformat \
+        --differential \
+        --strftime \
+        --purge 14 \
+        --compression gzip \
+        --ignore-errors \
+        --desc "WV Daily Backup" \
+        --schedule "30 2 * * *" \
+        "${BACKUP_EXCLUDE_ARGS[@]}" \
+        --email-errors >/dev/null 2>&1; then
+        log "SUCCESS" "Backup diario programado (02:30)"
+    else
+        log "WARNING" "No se pudo crear el backup diario"
+    fi
+
+    # Backup semanal: incluye settings de Virtualmin y todo el sistema de dominios
+    if virtualmin create-scheduled-backup \
+        --dest /var/backups/virtualmin/weekly/%Y-%m-%d/ \
+        --all-domains \
+        --all-features \
+        --all-virtualmin \
+        --newformat \
+        --strftime \
+        --purge 8 \
+        --compression gzip \
+        --ignore-errors \
+        --desc "WV Weekly Full + Virtualmin" \
+        --schedule "0 3 * * 0" \
+        "${BACKUP_EXCLUDE_ARGS[@]}" \
+        --email-errors >/dev/null 2>&1; then
+        log "SUCCESS" "Backup semanal programado (Domingos 03:00)"
+    else
+        log "WARNING" "No se pudo crear el backup semanal"
+    fi
+}
+
+# Configurar backups remotos (SSH/S3/Dropbox/GCS) con rotación y cifrado opcional
+setup_remote_backups() {
+    log "HEADER" "CONFIGURANDO BACKUPS REMOTOS (OPCIONAL)"
+
+    if ! command -v virtualmin >/dev/null 2>&1; then
+        log "INFO" "Virtualmin no está disponible; se omite configuración remota"
+        return 0
+    fi
+
+    # Cargar configuración desde archivo si existe (KEY=VALUE)
+    local remote_cfg_file="/etc/wv-backup-remote.conf"
+    if [[ -f "$remote_cfg_file" ]]; then
+        # shellcheck disable=SC1090
+        source "$remote_cfg_file"
+    fi
+
+    local enabled="${REMOTE_BACKUP_ENABLED:-false}"
+    local do_validate="${REMOTE_BACKUP_VALIDATE:-false}"
+    if [[ "$enabled" != "true" ]]; then
+        # Sembrar plantilla de configuración para el usuario
+        if [[ ! -f "$remote_cfg_file" ]]; then
+            cat > "$remote_cfg_file" <<'EOF'
+# Habilitar backups remotos (true/false)
+REMOTE_BACKUP_ENABLED=false
+
+# Proveedor: ssh|s3|gcs|dropbox
+# Ejemplos de URL con credenciales (reemplaza con tus datos):
+# SSH:     ssh://usuario:password@host:/ruta/backups/%Y-%m-%d/
+# S3:      s3://ACCESSKEY:SECRET@bucket/ruta/%Y-%m-%d/
+# GCS:     gcs://bucket/ruta/%Y-%m-%d/
+# Dropbox: dropbox://carpeta/%Y-%m-%d/
+REMOTE_BACKUP_URL_DAILY=
+REMOTE_BACKUP_URL_WEEKLY=
+
+# Rotación (días)
+REMOTE_BACKUP_PURGE_DAILY=14
+REMOTE_BACKUP_PURGE_WEEKLY=56
+
+# Horarios (formato cron de 5 campos)
+REMOTE_BACKUP_SCHEDULE_DAILY="45 2 * * *"
+REMOTE_BACKUP_SCHEDULE_WEEKLY="15 3 * * 0"
+
+# Notificación por email sólo en errores (opcional)
+REMOTE_BACKUP_EMAIL_ERRORS=
+
+# Cifrado (sólo Virtualmin Pro, requiere clave existente)
+REMOTE_BACKUP_KEY_ID=
+EOF
+            chmod 0600 "$remote_cfg_file" 2>/dev/null || true
+            log "INFO" "Plantilla de configuración creada: $remote_cfg_file"
+        fi
+        log "INFO" "Backups remotos deshabilitados (define REMOTE_BACKUP_ENABLED=true para activarlos)"
+        return 0
+    fi
+
+    # Variables desde env o archivo
+    local url_daily="${REMOTE_BACKUP_URL_DAILY:-}"
+    local url_weekly="${REMOTE_BACKUP_URL_WEEKLY:-}"
+    local purge_daily="${REMOTE_BACKUP_PURGE_DAILY:-14}"
+    local purge_weekly="${REMOTE_BACKUP_PURGE_WEEKLY:-56}"
+    local sched_daily="${REMOTE_BACKUP_SCHEDULE_DAILY:-45 2 * * *}"
+    local sched_weekly="${REMOTE_BACKUP_SCHEDULE_WEEKLY:-15 3 * * 0}"
+    local email_errs="${REMOTE_BACKUP_EMAIL_ERRORS:-}"
+    local key_id="${REMOTE_BACKUP_KEY_ID:-}"
+
+    # Sanitizar logging: no exponer secretos
+    mask_url() {
+        local url="$1"
+        echo "$url" | sed -E 's#(://[^:/]+:)[^@]+@#\1****@#'
+    }
+
+    # Determinar si existe soporte de claves de cifrado (Pro)
+    local has_keys="0"
+    if virtualmin list-backup-keys >/dev/null 2>&1; then
+        has_keys="1"
+    fi
+
+    # Helper: validar destino remoto con un backup mínimo en modo --test
+    validate_remote_dest() {
+        local url="$1"
+        local masked=$(mask_url "$url")
+        if [[ "$do_validate" != "true" ]]; then
+            log "INFO" "Validación remota desactivada; saltando test para $masked"
+            return 0
+        fi
+        local vdest="$url/validate-%Y-%m-%d-%H%M%S/"
+        log "INFO" "Validando destino remoto con prueba ligera: $masked"
+        if virtualmin backup-domain \
+            --test \
+            --dest "$vdest" \
+            --virtualmin config \
+            --newformat \
+            --strftime >/dev/null 2>&1; then
+            log "SUCCESS" "Validación de destino OK: $masked"
+            return 0
+        else
+            log "ERROR" "Validación de destino FALLÓ: $masked. No se programará backup remoto para este destino."
+            return 1
+        fi
+    }
+
+    # Crear backup remoto diario (concurrencia mínima y 'onebyone')
+    if [[ -n "$url_daily" ]]; then
+        log "INFO" "Programando backup remoto diario hacia: $(mask_url "$url_daily")"
+        if ! validate_remote_dest "$url_daily"; then
+            url_daily=""  # Evitar programar si falla validación
+        fi
+        local args=(
+            --dest "$url_daily"
+            --all-domains
+            --all-features
+            --newformat
+            --strftime
+            --purge "$purge_daily"
+            --compression gzip
+            --ignore-errors
+            --desc "WV Remote Daily"
+            --schedule "$sched_daily"
+            --onebyone
+        )
+        # Cargar exclusiones si existen
+        load_backup_excludes
+        if [[ ${#BACKUP_EXCLUDE_ARGS[@]} -gt 0 ]]; then
+            args+=( "${BACKUP_EXCLUDE_ARGS[@]}" )
+        fi
+        if [[ -n "$email_errs" ]]; then
+            args+=( --email "$email_errs" --email-errors )
+        fi
+        if [[ "$has_keys" == "1" && -n "$key_id" ]]; then
+            args+=( --key "$key_id" )
+        fi
+        if virtualmin create-scheduled-backup "${args[@]}" >/dev/null 2>&1; then
+            log "SUCCESS" "Backup remoto diario programado"
+        else
+            log "WARNING" "No se pudo programar backup remoto diario"
+        fi
+    else
+        log "INFO" "REMOTE_BACKUP_URL_DAILY no definido; se omite backup remoto diario"
+    fi
+
+    # Crear backup remoto semanal (onebyone)
+    if [[ -n "$url_weekly" ]]; then
+        log "INFO" "Programando backup remoto semanal hacia: $(mask_url "$url_weekly")"
+        if ! validate_remote_dest "$url_weekly"; then
+            url_weekly=""  # Evitar programar si falla validación
+        fi
+        local wargs=(
+            --dest "$url_weekly"
+            --all-domains
+            --all-features
+            --all-virtualmin
+            --newformat
+            --strftime
+            --purge "$purge_weekly"
+            --compression gzip
+            --ignore-errors
+            --desc "WV Remote Weekly + Virtualmin"
+            --schedule "$sched_weekly"
+            --onebyone
+        )
+        # Cargar exclusiones si existen
+        load_backup_excludes
+        if [[ ${#BACKUP_EXCLUDE_ARGS[@]} -gt 0 ]]; then
+            wargs+=( "${BACKUP_EXCLUDE_ARGS[@]}" )
+        fi
+        if [[ -n "$email_errs" ]]; then
+            wargs+=( --email "$email_errs" --email-errors )
+        fi
+        if [[ "$has_keys" == "1" && -n "$key_id" ]]; then
+            wargs+=( --key "$key_id" )
+        fi
+        if virtualmin create-scheduled-backup "${wargs[@]}" >/dev/null 2>&1; then
+            log "SUCCESS" "Backup remoto semanal programado"
+        else
+            log "WARNING" "No se pudo programar backup remoto semanal"
+        fi
+    else
+        log "INFO" "REMOTE_BACKUP_URL_WEEKLY no definido; se omite backup remoto semanal"
+    fi
+}
+
+# Instalar utilidades de revendedor (GPL emulado) y módulo Webmin
+install_reseller_tools() {
+    log "HEADER" "HERRAMIENTAS DE REVENDEDOR (GPL EMULADO)"
+    
+    # Wrapper CLI global
+    if curl -fsSL "$REPO_RAW/cuentas_revendedor.sh" -o /usr/local/bin/virtualmin-revendedor; then
+        chmod +x /usr/local/bin/virtualmin-revendedor
+        log "SUCCESS" "Instalado /usr/local/bin/virtualmin-revendedor"
+    else
+        log "WARNING" "No se pudo descargar cuentas_revendedor.sh"
+    fi
+    
+    # Módulo Webmin
+    local module_dir="/usr/share/webmin/revendedor-gpl"
+    mkdir -p "$module_dir"
+    if curl -fsSL "$REPO_RAW/webmin-revendedor/module.info" -o "$module_dir/module.info" && \
+       curl -fsSL "$REPO_RAW/webmin-revendedor/index.cgi"   -o "$module_dir/index.cgi"   && \
+       curl -fsSL "$REPO_RAW/webmin-revendedor/config"      -o "$module_dir/config"; then
+        chmod 755 "$module_dir/index.cgi"
+        chown -R root:root "$module_dir" 2>/dev/null || true
+        log "SUCCESS" "Módulo Webmin 'revendedor-gpl' instalado"
+        # Recargar Webmin para registrar el módulo
+        systemctl restart webmin 2>/dev/null || service webmin restart 2>/dev/null || true
+    else
+        log "WARNING" "No se pudo instalar el módulo Webmin de revendedor"
+    fi
+
+    # Favoritos del tema Authentic: añadir acceso rápido si no existe
+    local theme_cfg_dir="/etc/webmin/authentic-theme"
+    local fav_sys="$theme_cfg_dir/favorites.json"
+    local fav_root="$theme_cfg_dir/favorites-root.json"
+    mkdir -p "$theme_cfg_dir" 2>/dev/null || true
+    if [[ ! -f "$fav_sys" ]] && [[ ! -f "$fav_root" ]]; then
+        cat > "$fav_sys" <<'EOF'
+{
+  "favorites": [
+    { "title": "Revendedores (GPL)", "link": "/revendedor-gpl/", "icon": "fa-users" }
+  ]
+}
+EOF
+        log "SUCCESS" "Acceso rápido agregado en Authentic (favoritos)"
+    else
+        # No forzar si ya existe algún favorito; evitar sobre-escrituras
+        if ! grep -q "/revendedor-gpl/" "$fav_sys" 2>/dev/null && ! grep -q "/revendedor-gpl/" "$fav_root" 2>/dev/null; then
+            # Crear archivo específico para root si no existe
+            if [[ ! -f "$fav_root" ]]; then
+                cat > "$fav_root" <<'EOF'
+{
+  "favorites": [
+    { "title": "Revendedores (GPL)", "link": "/revendedor-gpl/", "icon": "fa-users" }
+  ]
+}
+EOF
+                log "SUCCESS" "Acceso rápido agregado para root (favoritos)"
+            else
+                log "INFO" "Favoritos existentes detectados; no se modifica"
+            fi
+        fi
+    fi
 }
 
 # Configurar firewall automáticamente
@@ -1205,10 +1650,24 @@ show_access_info() {
    3. Configurar primer dominio virtual en Virtualmin
    4. Revisar configuración en System Information
 
-🆘 SOPORTE:
-   • Logs: $INSTALL_LOG
-   • Backup: $BACKUP_DIR
-   • Documentación: https://webmin.com/docs/
+   🆘 SOPORTE:
+      • Logs: $INSTALL_LOG
+      • Backup: $BACKUP_DIR
+      • Documentación: https://webmin.com/docs/
+
+   👥 CUENTAS DE REVENDEDOR (GPL EMULADO):
+   • Crear: ./cuentas_revendedor.sh crear \
+       --usuario rev1 --pass 'Secreto123' \
+       --dominio-base rev1-panel.tu-dominio.com \
+       --email soporte@tu-dominio.com --max-doms 50
+   • Nota: en GPL se crean sub-servidores bajo un dominio base. Para revendedores
+     con creación de top-level en todo el sistema se requiere Virtualmin Pro.
+
+   🛡️ AUTO-REPARACIÓN Y DEFENSA:
+      • Auto-Reparación Inteligente: Activa (servicio webmin-self-healing)
+      • Defensa ante ataques: Detección y mitigación automática (brute force, DDoS, probes)
+      • Integridad protegida: Backups de emergencia y restauración automática
+      • Backups Virtualmin: Diario 02:30 y Semanal Dom 03:00
 
 ═══════════════════════════════════════════════════════════════════════════════
 
@@ -1307,6 +1766,9 @@ main() {
     create_temp_dir
     create_system_backup
     update_system
+    apply_kernel_tuning
+    enable_security_auto_updates
+    schedule_daily_maintenance
     configure_firewall
 
     # Autocorrección antes de instalar paneles
@@ -1314,9 +1776,14 @@ main() {
 
     install_webmin
     install_virtualmin
+    install_reseller_tools
     ensure_public_access
     configure_webmin_public_access
     configure_virtualmin_public_ip
+    tune_virtualmin_backup_engine
+    install_self_healing_stack
+    setup_automatic_virtualmin_backups
+    setup_remote_backups
     install_authentic_theme
     configure_ssl
     setup_security_pro_features

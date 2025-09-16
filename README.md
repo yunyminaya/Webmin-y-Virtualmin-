@@ -72,16 +72,19 @@ curl -sSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main
 
 ### 🛡️ Seguridad Enterprise
 - 🔒 Firewall inteligente con reglas dinámicas
-- 🚨 Detección automática de ataques (Brute Force, DDoS, Malware)
-- 🛡️ Sistema de Auto-Reparación contra vulnerabilidades
+- 🚨 Detección y mitigación automática de ataques (Brute Force, DDoS, probes)
+- 🛡️ Auto-Reparación inteligente continua (servicio self‑healing)
+- 🧯 Backups de emergencia y restauración automática de integridad
 - 📊 Logs de seguridad detallados y alertas
 
 ### ⚡ Performance para Millones
-- 🚀 Optimización automática de Apache/Nginx para alto tráfico
-- 💾 Configuración MySQL/MariaDB para miles de conexiones
-- 🔄 Sistema de caché multi-nivel (Redis, Memcached, Varnish)
-- ⚖️ Load Balancing automático con HAProxy
-- 📈 Auto-escalado inteligente basado en carga
+- 🚀 Optimización automática de Apache para alto tráfico
+- 💾 Configuración MySQL/MariaDB para altas tasas de concurrencia
+- 🔄 Caché multi-nivel (Redis, Memcached) y PHP‑FPM
+- ⚖️ Integración de balanceo de carga (HAProxy) opcional
+- 📈 Preparado para picos masivos con perfiles ajustables
+
+Nota: La plataforma está preparada para grandes volúmenes de tráfico y ataques masivos con capas de defensa y auto‑reparación. La capacidad real depende del hardware, red y tuning específico del caso de uso.
 
 ### 🌐 IP Pública Virtual
 - 🚇 Túneles SSH reversos automáticos
@@ -90,10 +93,64 @@ curl -sSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main
 - 🛡️ Balanceo de carga entre múltiples túneles
 
 ### 🤖 Automatización Completa
-- 🔄 Auto-actualizaciones desde repositorio oficial
-- ✅ Validación de integridad de archivos
+- 🔄 Auto‑actualizaciones de seguridad (unattended‑upgrades)
+- ✅ Validación diaria de repositorios oficiales (timer systemd)
 - 🚫 Bloqueo automático de repositorios no autorizados
-- 📧 Alertas automáticas por email
+- 🧰 Mantenimiento diario (limpieza, verificación y logs)
+- 📧 Alertas/logs automáticos de seguridad
+- 💾 Backups automáticos: diario (02:30) y semanal (Dom 03:00)
+  - Remotos opcionales (SSH/S3/GCS/Dropbox) con rotación y cifrado (si disponible)
+  - Optimizados para millones de archivos:
+    - Diario diferencial (sólo cambios), semanal completo
+    - Concurrencia limitada (1 en paralelo) para evitar picos de I/O
+    - Exclusiones configurables en `/etc/wv-backup-excludes.txt`
+    - S3 multipart con bloques de 64MB (menos overhead)
+    - `pigz` (gzip paralelo) si está disponible; `--rsyncable` para replicación eficiente
+  - Validación remota opcional previa (activar `REMOTE_BACKUP_VALIDATE=true`)
+
+### 🌩️ Backups Remotos (Opcional)
+1) Edita `/etc/wv-backup-remote.conf`:
+
+```
+REMOTE_BACKUP_ENABLED=true
+# SSH (ejemplo)
+REMOTE_BACKUP_URL_DAILY="ssh://user:pass@backup.example.com:/backups/daily/%Y-%m-%d/"
+REMOTE_BACKUP_URL_WEEKLY="ssh://user:pass@backup.example.com:/backups/weekly/%Y-%m-%d/"
+# o S3 (ejemplo)
+# REMOTE_BACKUP_URL_DAILY="s3://ACCESSKEY:SECRET@mi-bucket/ruta/daily/%Y-%m-%d/"
+# REMOTE_BACKUP_URL_WEEKLY="s3://ACCESSKEY:SECRET@mi-bucket/ruta/weekly/%Y-%m-%d/"
+REMOTE_BACKUP_PURGE_DAILY=14
+REMOTE_BACKUP_PURGE_WEEKLY=56
+REMOTE_BACKUP_EMAIL_ERRORS="admin@tu-dominio.com"
+# Si usas Virtualmin Pro y tienes claves de cifrado
+# REMOTE_BACKUP_KEY_ID="mi-key-id"
+# Validación previa del destino (con un backup mínimo en modo test)
+# REMOTE_BACKUP_VALIDATE=true
+```
+
+2) Guarda y ejecuta el instalador para que tome la configuración:
+
+```
+sudo bash instalacion_un_comando.sh
+```
+
+### 👥 Cuentas de Revendedor (GPL Emulado)
+- Crea cuentas tipo “revendedor” sin licencias, usando Virtualmin GPL.
+- Cada revendedor gestiona sub-servidores bajo un dominio base (paraguas).
+- Script: `cuentas_revendedor.sh`
+
+Ejemplo de creación:
+
+```bash
+sudo ./cuentas_revendedor.sh crear \
+  --usuario rev1 --pass 'Secreto123' \
+  --dominio-base rev1-panel.tu-dominio.com \
+  --email soporte@tu-dominio.com --max-doms 50
+```
+
+Notas:
+- En GPL la creación es bajo un dominio base. Para “resellers” con creación
+  de servidores top‑level en todo el sistema se requiere Virtualmin Pro.
 
 ## 📁 Estructura del Proyecto
 

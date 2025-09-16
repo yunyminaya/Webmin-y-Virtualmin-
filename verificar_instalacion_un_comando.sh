@@ -30,6 +30,9 @@ TESTS_PASSED=0
 TESTS_FAILED=0
 WARNINGS=0
 
+# Inicializar logging (usa /var/log si root o /tmp si no)
+init_logging "verificar_instalacion_un_comando"
+
 # Funciones de logging
 # DUPLICADA: Función reemplazada por common_functions.sh
 # Contenido de función duplicada
@@ -80,8 +83,10 @@ verify_system_services() {
         if systemctl is-active --quiet "$service" 2>/dev/null; then
             local status=$(systemctl is-enabled "$service" 2>/dev/null)
             log_success "Servicio $service: ACTIVO ($status)"
+            ((TESTS_PASSED++))
         else
             log_error "Servicio $service: INACTIVO"
+            ((TESTS_FAILED++))
         fi
     done
 }
@@ -104,8 +109,10 @@ verify_network_ports() {
         
         if ss -tlnp 2>/dev/null | grep -q ":$port\b" || netstat -tlnp 2>/dev/null | grep -q ":$port "; then
             log_success "Puerto $port ($service): ABIERTO"
+            ((TESTS_PASSED++))
         else
             log_warning "Puerto $port ($service): CERRADO"
+            ((WARNINGS++))
         fi
     done
 }
@@ -117,33 +124,42 @@ verify_webmin() {
     # Verificar instalación
     if [[ -d "/etc/webmin" ]]; then
         log_success "Directorio de configuración Webmin: PRESENTE"
+        ((TESTS_PASSED++))
     else
         log_error "Directorio de configuración Webmin: AUSENTE"
+        ((TESTS_FAILED++))
         return 1
     fi
     
     # Verificar proceso
     if pgrep -f "miniserv.pl" >/dev/null; then
         log_success "Proceso Webmin: EJECUTÁNDOSE"
+        ((TESTS_PASSED++))
     else
         log_error "Proceso Webmin: NO EJECUTÁNDOSE"
+        ((TESTS_FAILED++))
     fi
     
     # Verificar acceso web
     local server_ip=$(hostname -I | awk '{print $1}')
     if curl -k -s --connect-timeout 5 "https://$server_ip:10000" >/dev/null 2>&1; then
         log_success "Acceso HTTPS a Webmin: DISPONIBLE"
+        ((TESTS_PASSED++))
     elif curl -s --connect-timeout 5 "http://$server_ip:10000" >/dev/null 2>&1; then
         log_success "Acceso HTTP a Webmin: DISPONIBLE"
+        ((TESTS_PASSED++))
     else
         log_error "Acceso web a Webmin: NO DISPONIBLE"
+        ((TESTS_FAILED++))
     fi
     
     # Verificar configuración SSL
     if grep -q "ssl=1" /etc/webmin/miniserv.conf 2>/dev/null; then
         log_success "SSL en Webmin: HABILITADO"
+        ((TESTS_PASSED++))
     else
         log_warning "SSL en Webmin: DESHABILITADO"
+        ((WARNINGS++))
     fi
 }
 
@@ -154,29 +170,37 @@ verify_virtualmin() {
     # Verificar comando virtualmin
     if command -v virtualmin >/dev/null 2>&1; then
         log_success "Comando virtualmin: DISPONIBLE"
+        ((TESTS_PASSED++))
         
         # Verificar funcionalidad básica
         if virtualmin list-domains >/dev/null 2>&1; then
             log_success "Virtualmin: FUNCIONANDO"
+            ((TESTS_PASSED++))
         else
             log_warning "Virtualmin: INSTALADO PERO CON ERRORES"
+            ((WARNINGS++))
         fi
     else
         log_error "Comando virtualmin: NO DISPONIBLE"
+        ((TESTS_FAILED++))
     fi
     
     # Verificar módulo en Webmin
     if [[ -d "/etc/webmin/virtual-server" ]]; then
         log_success "Módulo Virtualmin en Webmin: PRESENTE"
+        ((TESTS_PASSED++))
     else
         log_error "Módulo Virtualmin en Webmin: AUSENTE"
+        ((TESTS_FAILED++))
     fi
     
     # Verificar configuración
     if [[ -f "/etc/webmin/virtual-server/config" ]]; then
         log_success "Configuración Virtualmin: PRESENTE"
+        ((TESTS_PASSED++))
     else
         log_warning "Configuración Virtualmin: AUSENTE"
+        ((WARNINGS++))
     fi
 }
 
@@ -186,14 +210,18 @@ verify_authentic_theme() {
     
     if [[ -d "/usr/share/webmin/authentic-theme" ]]; then
         log_success "Authentic Theme: INSTALADO"
+        ((TESTS_PASSED++))
         
         if grep -q "theme=authentic-theme" /etc/webmin/config 2>/dev/null; then
             log_success "Authentic Theme: ACTIVADO"
+            ((TESTS_PASSED++))
         else
             log_warning "Authentic Theme: INSTALADO PERO NO ACTIVADO"
+            ((WARNINGS++))
         fi
     else
         log_warning "Authentic Theme: NO INSTALADO"
+        ((WARNINGS++))
     fi
 }
 
@@ -204,50 +232,62 @@ verify_lamp_stack() {
     # Apache
     if systemctl is-active --quiet apache2; then
         log_success "Apache: ACTIVO"
+        ((TESTS_PASSED++))
         
         # Verificar módulos importantes
         local modules=("rewrite" "ssl" "headers")
         for module in "${modules[@]}"; do
             if apache2ctl -M 2>/dev/null | grep -q "${module}_module"; then
                 log_success "Módulo Apache $module: HABILITADO"
+                ((TESTS_PASSED++))
             else
                 log_warning "Módulo Apache $module: DESHABILITADO"
+                ((WARNINGS++))
             fi
         done
     else
         log_error "Apache: INACTIVO"
+        ((TESTS_FAILED++))
     fi
     
     # MySQL
     if systemctl is-active --quiet mysql; then
         log_success "MySQL: ACTIVO"
+        ((TESTS_PASSED++))
         
         # Verificar acceso
         if mysql -e "SELECT 1;" >/dev/null 2>&1; then
             log_success "Acceso a MySQL: FUNCIONANDO"
+            ((TESTS_PASSED++))
         else
             log_warning "Acceso a MySQL: REQUIERE CONFIGURACIÓN"
+            ((WARNINGS++))
         fi
     else
         log_error "MySQL: INACTIVO"
+        ((TESTS_FAILED++))
     fi
     
     # PHP
     if command -v php >/dev/null 2>&1; then
         local php_version=$(php -v | head -1 | awk '{print $2}' | cut -d. -f1,2)
         log_success "PHP: INSTALADO (versión $php_version)"
+        ((TESTS_PASSED++))
         
         # Verificar módulos PHP importantes
         local php_modules=("mysql" "curl" "gd" "xml")
         for module in "${php_modules[@]}"; do
             if php -m | grep -qi "$module"; then
                 log_success "Módulo PHP $module: DISPONIBLE"
+                ((TESTS_PASSED++))
             else
                 log_warning "Módulo PHP $module: NO DISPONIBLE"
+                ((WARNINGS++))
             fi
         done
     else
         log_error "PHP: NO INSTALADO"
+        ((TESTS_FAILED++))
     fi
 }
 
@@ -258,15 +298,19 @@ verify_mail_system() {
     # Postfix
     if systemctl is-active --quiet postfix; then
         log_success "Postfix: ACTIVO"
+        ((TESTS_PASSED++))
         
         # Verificar configuración básica
         if [[ -f "/etc/postfix/main.cf" ]]; then
             log_success "Configuración Postfix: PRESENTE"
+            ((TESTS_PASSED++))
         else
             log_error "Configuración Postfix: AUSENTE"
+            ((TESTS_FAILED++))
         fi
     else
         log_error "Postfix: INACTIVO"
+        ((TESTS_FAILED++))
     fi
     
     # Dovecot (si está instalado)
@@ -286,15 +330,19 @@ verify_firewall() {
         
         if [[ "$ufw_status" == "active" ]]; then
             log_success "UFW Firewall: ACTIVO"
+            ((TESTS_PASSED++))
             
             # Verificar reglas importantes
             if ufw status | grep -q "10000"; then
                 log_success "Regla firewall Webmin: CONFIGURADA"
+                ((TESTS_PASSED++))
             else
                 log_warning "Regla firewall Webmin: NO CONFIGURADA"
+                ((WARNINGS++))
             fi
         else
             log_warning "UFW Firewall: INACTIVO"
+            ((WARNINGS++))
         fi
     else
         log_info "UFW: NO INSTALADO"
@@ -307,15 +355,19 @@ verify_ssl_certificates() {
     
     if [[ -f "/etc/webmin/miniserv.pem" ]]; then
         log_success "Certificado SSL Webmin: PRESENTE"
+        ((TESTS_PASSED++))
         
         # Verificar validez del certificado
         if openssl x509 -in /etc/webmin/miniserv.pem -checkend 86400 >/dev/null 2>&1; then
             log_success "Certificado SSL Webmin: VÁLIDO"
+            ((TESTS_PASSED++))
         else
             log_warning "Certificado SSL Webmin: EXPIRANDO PRONTO"
+            ((WARNINGS++))
         fi
     else
         log_warning "Certificado SSL Webmin: AUSENTE"
+        ((WARNINGS++))
     fi
 }
 
@@ -330,8 +382,10 @@ verify_system_resources() {
     
     if [[ $mem_percent -lt 80 ]]; then
         log_success "Uso de memoria: ${mem_percent}% (${mem_used}MB/${mem_total}MB)"
+        ((TESTS_PASSED++))
     else
         log_warning "Uso de memoria alto: ${mem_percent}% (${mem_used}MB/${mem_total}MB)"
+        ((WARNINGS++))
     fi
     
     # Disco
@@ -339,8 +393,10 @@ verify_system_resources() {
     
     if [[ $disk_usage -lt 80 ]]; then
         log_success "Uso de disco: ${disk_usage}%"
+        ((TESTS_PASSED++))
     else
         log_warning "Uso de disco alto: ${disk_usage}%"
+        ((WARNINGS++))
     fi
     
     # Carga del sistema
@@ -357,8 +413,10 @@ verify_external_connectivity() {
     for site in "${test_sites[@]}"; do
         if ping -c 1 -W 5 "$site" >/dev/null 2>&1; then
             log_success "Conectividad a $site: OK"
+            ((TESTS_PASSED++))
         else
             log_warning "Conectividad a $site: FALLA"
+            ((WARNINGS++))
         fi
     done
 }
