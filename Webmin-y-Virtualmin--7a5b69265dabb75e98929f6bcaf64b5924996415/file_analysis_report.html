@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Análisis de Archivos - Virtualmin</title>
+<meta charset="utf-8">
+<style>
+body {
+    font-family: "Lucida Grande", "Lucida Sans Unicode", Tahoma, sans-serif;
+    font-size: 13px;
+    background-color: #ffffff;
+    margin: 0;
+    padding: 0;
+    color: #333333;
+}
+
+/* Header principal */
+.main_header {
+    background: linear-gradient(to bottom, #6fa8dc, #3c78d8);
+    border-bottom: 1px solid #2e5ea7;
+    color: white;
+    padding: 12px 15px;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.main_header a {
+    color: white;
+    text-decoration: none;
+}
+
+.main_header a:hover {
+    text-decoration: underline;
+}
+
+/* Barra de navegación */
+.nav {
+    background-color: #f0f0f0;
+    border-bottom: 1px solid #cccccc;
+    padding: 8px 15px;
+}
+
+.nav_links {
+    margin: 0;
+    padding: 0;
+}
+
+.nav_links li {
+    display: inline;
+    margin-right: 20px;
+}
+
+.nav_links a {
+    color: #333333;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.nav_links a:hover {
+    color: #0066cc;
+}
+
+/* Contenedor principal */
+.main {
+    margin: 20px;
+    max-width: 1200px;
+}
+
+/* Títulos de secciones */
+.section_title {
+    background-color: #dddddd;
+    border: 1px solid #cccccc;
+    border-bottom: none;
+    color: #333333;
+    font-size: 14px;
+    font-weight: bold;
+    margin: 0;
+    padding: 10px 15px;
+}
+
+.section_content {
+    background-color: #ffffff;
+    border: 1px solid #cccccc;
+    border-top: none;
+    padding: 15px;
+}
+
+/* Tablas */
+.table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 10px 0;
+}
+
+.table th,
+.table td {
+    border: 1px solid #cccccc;
+    padding: 8px 12px;
+    text-align: left;
+    vertical-align: top;
+}
+
+.table th {
+    background-color: #f0f0f0;
+    font-weight: bold;
+    color: #333333;
+}
+
+/* Estados */
+.ok {
+    color: #008000;
+    font-weight: bold;
+}
+
+.warning {
+    color: #ff8800;
+    font-weight: bold;
+}
+
+.error {
+    color: #ff0000;
+    font-weight: bold;
+}
+
+/* Lista de archivos */
+.file_list {
+    background-color: #f8f8f8;
+    border: 1px solid #cccccc;
+    padding: 10px;
+    margin: 10px 0;
+}
+
+.file_item {
+    padding: 5px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.file_item:last-child {
+    border-bottom: none;
+}
+
+.safe_delete {
+    color: #008000;
+    font-weight: bold;
+}
+
+.keep_file {
+    color: #333333;
+}
+
+.duplicate_file {
+    color: #ff8800;
+    font-weight: bold;
+}
+
+/* Estadísticas */
+.stats {
+    background-color: #f0f0f0;
+    border: 1px solid #cccccc;
+    padding: 10px;
+    margin: 10px 0;
+    text-align: center;
+}
+
+.stat_item {
+    display: inline-block;
+    margin: 0 15px;
+}
+
+.stat_value {
+    font-size: 24px;
+    font-weight: bold;
+    color: #333333;
+    display: block;
+}
+
+.stat_label {
+    font-size: 11px;
+    color: #666666;
+    text-transform: uppercase;
+}
+</style>
+</head>
+<body>
+<div class="main_header">
+    <a href="#">Virtualmin</a> › Análisis de Archivos y Seguridad
+</div>
+
+<div class="nav">
+    <ul class="nav_links">
+        <li><a href="#">Sistema</a></li>
+        <li><a href="#">Servidores</a></li>
+        <li><a href="#">Configuración</a></li>
+        <li><a href="#">Seguridad</a></li>
+        <li><a href="#">Herramientas</a></li>
+    </ul>
+</div>
+
+<div class="main">
+    <h2>🔍 Análisis de Archivos Duplicados y Seguridad</h2>
+
+    <div class="section_title">📊 Resumen del Análisis</div>
+    <div class="section_content">
+        <div class="stats">
+            <div class="stat_item">
+                <span class="stat_value">EOF
+echo "${#SAFE_TO_DELETE[@]}" >> "$ANALYSIS_REPORT"
+cat >> "$ANALYSIS_REPORT" << 'EOF'
+</span>
+                <span class="stat_label">Seguros Eliminar</span>
+            </div>
+            <div class="stat_item">
+                <span class="stat_value">EOF
+echo "${#CRITICAL_FILES[@]}" >> "$ANALYSIS_REPORT"
+cat >> "$ANALYSIS_REPORT" << 'EOF'
+</span>
+                <span class="stat_label">Archivos Críticos</span>
+            </div>
+            <div class="stat_item">
+                <span class="stat_value">EOF
+echo "${#DUPLICATE_FILES[@]}" >> "$ANALYSIS_REPORT"
+cat >> "$ANALYSIS_REPORT" << 'EOF'
+</span>
+                <span class="stat_label">Posibles Duplicados</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="section_title">🗑️ Archivos Seguros de Eliminar</div>
+    <div class="section_content">
+        <div class="file_list">
+<div class="file_item"><span class="safe_delete">test_unit_functions.sh</span> - Archivo de testing, se puede eliminar sin problemas</div>
+<div class="file_item"><span class="safe_delete">test_multi_distro.sh</span> - Archivo de testing, se puede eliminar sin problemas</div>
+<div class="file_item"><span class="safe_delete">test_master.sh</span> - Archivo de testing, se puede eliminar sin problemas</div>
+        </div>
+    </div>
+
+    <div class="section_title">🔐 Archivos Críticos (NO ELIMINAR)</div>
+    <div class="section_content">
+        <div class="file_list">
+<div class="file_item"><span class="keep_file">install_defense.sh</span> - Archivo crítico para funcionalidad del sistema</div>
+<div class="file_item"><span class="keep_file">auto_repair.sh</span> - Archivo crítico para funcionalidad del sistema</div>
+<div class="file_item"><span class="keep_file">auto_repair_critical.sh</span> - Archivo crítico para funcionalidad del sistema</div>
+<div class="file_item"><span class="keep_file">auto_defense.sh</span> - Archivo crítico para funcionalidad del sistema</div>
+        </div>
+    </div>
+
+    <div class="section_title">⚠️ Posibles Duplicados</div>
+    <div class="section_content">
+        <div class="file_list">
+<div class="file_item"><span class="duplicate_file">instalacion_unificada.sh</span> - Posible funcionalidad duplicada, revisar antes de eliminar</div>
+<div class="file_item"><span class="duplicate_file">instalar_todo.sh</span> - Posible funcionalidad duplicada, revisar antes de eliminar</div>
+        </div>
+    </div>
+
+    <div class="section_title">🔍 Estado del Sistema Webmin/Virtualmin</div>
+    <div class="section_content">
+        <table class="table">
+            <tr>
+                <th>Componente</th>
+                <th>Estado</th>
+                <th>Detalles</th>
+            </tr>
+            <tr>
+                <td>Webmin</td>
+                <td><span class="ok">Detectado</span></td>
+                <td>Instalado en /etc/webmin</td>
+            </tr>
+            <tr>
+                <td>Virtualmin</td>
+                <td><span class="warning">No Detectado</span></td>
+                <td>No instalado en /etc/virtualmin</td>
+            </tr>
+            <tr>
+                <td>Interferencia</td>
+                <td><span class="ok">Seguro</span></td>
+                <td>No hay archivos que interfieran</td>
+            </tr>
+            <tr>
+                <td>Archivos Sistema</td>
+                <td><span class="ok">OK</span></td>
+                <td>Todos los archivos críticos presentes</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="section_title">🛠️ Recomendaciones</div>
+    <div class="section_content">
+        <h3>Archivos que PUEDEN eliminarse:</h3>
+        <ul>
+            <li><strong>test_*.sh</strong> - Archivos de testing, no afectan funcionamiento</li>
+            <li><strong>Archivos duplicados</strong> - Después de verificar funcionalidad</li>
+        </ul>
+
+        <h3>Archivos que NO deben eliminarse:</h3>
+        <ul>
+            <li><strong>auto_*.sh</strong> - Scripts de auto-reparación y defensa</li>
+            <li><strong>lib/common.sh</strong> - Biblioteca común crítica</li>
+            <li><strong>*defense*.sh</strong> - Sistema de defensa</li>
+            <li><strong>*.service</strong> - Archivos de servicio del sistema</li>
+        </ul>
+
+        <h3>Comandos seguros:</h3>
+        <pre>
+# Eliminar archivos de test (seguros)
+rm test_*.sh
+
+# Eliminar archivos duplicados después de verificar
+# rm archivo_duplicado.sh
+
+# NO eliminar estos archivos:
+# auto_defense.sh, auto_repair.sh, lib/common.sh, *.service
+        </pre>
+    </div>
+</div>
+</body>
+</html>

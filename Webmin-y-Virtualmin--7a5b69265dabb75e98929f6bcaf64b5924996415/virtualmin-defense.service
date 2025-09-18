@@ -1,0 +1,28 @@
+[Unit]
+Description=Sistema de Auto-Defensa Virtualmin
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+ExecStart=/bin/bash /Users/yunyminaya/Wedmin\ Y\ Virtualmin/Webmin-y-Virtualmin--7a5b69265dabb75e98929f6bcaf64b5924996415/auto_defense.sh start
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=virtualmin-defense
+
+# Security settings
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ReadWritePaths=/Users/yunyminaya/Wedmin Y Virtualmin/Webmin-y-Virtualmin--7a5b69265dabb75e98929f6bcaf64b5924996415/logs /Users/yunyminaya/Wedmin Y Virtualmin/Webmin-y-Virtualmin--7a5b69265dabb75e98929f6bcaf64b5924996415/backups
+
+# Environment
+Environment=DEFENSE_ACTIVE=true
+Environment=MONITOR_INTERVAL=300
+
+[Install]
+WantedBy=multi-user.target
