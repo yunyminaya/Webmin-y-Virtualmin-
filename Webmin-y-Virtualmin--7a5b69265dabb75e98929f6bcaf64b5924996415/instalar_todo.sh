@@ -83,16 +83,15 @@ ${YELLOW}EJEMPLOS:${NC}
     ./instalar_todo.sh --with-docker --with-kubernetes --with-monitoring --with-backup  # Todo
 
 ${YELLOW}FUNCIONALIDADES INCLUIDAS GRATIS:${NC}
-    🎨 Authentic Theme Pro     (\$50/mes)
-    🌐 Virtualmin Pro          (\$200/mes)
-    🔒 SSL Certificados        (\$100/mes)
-    📧 Email Server            (\$100/mes)
-    💾 Backup System           (\$50/mes)
-    📊 Monitoreo Avanzado      (\$50/mes)
-    ☁️ Multi-Cloud             (\$100/mes)
-    🐳 Contenedores            (\$100/mes)
+    🎨 Authentic Theme Pro     (Incluido)
+    🌐 Virtualmin Pro          (Incluido)
+    🔒 SSL Certificados        (Incluido)
+    📧 Email Server            (Incluido)
+    💾 Backup System           (Incluido)
+    📊 Monitoreo Avanzado      (Incluido)
+    ☁️ Multi-Cloud             (Incluido)
+    🐳 Contenedores            (Incluido)
 
-${GREEN}VALOR TOTAL AHORRADO: \$750+ USD/mes${NC}
 
 EOF
 }
@@ -155,7 +154,6 @@ show_banner() {
 ║  📧 Email Server          💾 Backup System       📊 Monitoreo Avanzado   ║
 ║  ☁️ Multi-Cloud           🐳 Contenedores                                 ║
 ║                                                                          ║
-║                    🏆 VALOR TOTAL: $750+ USD/mes GRATIS                   ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 EOF
     echo -e "${NC}"
@@ -400,7 +398,6 @@ EOF
     echo "   🖥️  Virtualmin: https://tu-servidor:10000"
     echo ""
 
-    echo -e "${YELLOW}💰 VALOR AHORRADO:${NC} ${GREEN}\$750+ USD/mes${NC} (funcionalidades premium gratis)"
     echo ""
 
     echo -e "${PURPLE}📚 SCRIPTS ADICIONALES DISPONIBLES:${NC}"
