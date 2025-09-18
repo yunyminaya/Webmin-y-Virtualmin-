@@ -18,10 +18,11 @@ else
     exit 1
 fi
 
-# Configuración de monitoreo
+# Configuración de monitoreo (configurables)
 MONITOR_INTERVAL="${MONITOR_INTERVAL:-60}"  # segundos
 LOG_METRICS="${LOG_METRICS:-true}"
 ALERT_THRESHOLDS="${ALERT_THRESHOLDS:-true}"
+GENERATE_HTML="${GENERATE_HTML:-false}"
 
 # Función para monitorear servicios
 monitor_services() {

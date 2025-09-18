@@ -18,7 +18,7 @@ else
     exit 1
 fi
 
-# Configuración de backups
+# Configuración de backups (configurables)
 BACKUP_DIR="${BACKUP_DIR:-/backups}"
 BACKUP_RETENTION="${BACKUP_RETENTION:-30}"
 BACKUP_COMPRESSION="${BACKUP_COMPRESSION:-gzip}"

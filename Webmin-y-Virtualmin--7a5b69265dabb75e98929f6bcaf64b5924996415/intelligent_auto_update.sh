@@ -11,10 +11,26 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-# Configuración del sistema inteligente
+# Configuración del sistema inteligente - REPOSITORIO OFICIAL EXCLUSIVO
 GITHUB_REPO="yunyminaya/Webmin-y-Virtualmin-"
 GITHUB_API_URL="https://api.github.com/repos/${GITHUB_REPO}"
 GITHUB_RAW_URL="https://raw.githubusercontent.com/${GITHUB_REPO}/main"
+OFFICIAL_REPO_URL="https://github.com/yunyminaya/Webmin-y-Virtualmin-.git"
+
+# Verificación de seguridad del repositorio
+verify_official_repository() {
+    local current_remote
+    current_remote=$(git remote get-url origin 2>/dev/null || echo "")
+
+    if [[ "$current_remote" != "$OFFICIAL_REPO_URL" && "$current_remote" != "git@github.com:yunyminaya/Webmin-y-Virtualmin-.git" ]]; then
+        echo "🚨 ERROR: Repositorio no autorizado detectado"
+        echo "Actual: $current_remote"
+        echo "Autorizado: $OFFICIAL_REPO_URL"
+        exit 1
+    fi
+
+    echo "✅ Repositorio oficial verificado"
+}
 LOCAL_REPO_DIR="/opt/auto_repair_system"
 BACKUP_DIR="/backups/auto_updates"
 LOG_FILE="/var/log/auto_update_system.log"

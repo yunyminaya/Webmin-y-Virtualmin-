@@ -1,57 +1,88 @@
-# 🚀 Authentic Theme + Virtualmin - Panel de Control Unificado
+# 🚀 Virtualmin Pro Completo - GRATIS
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Webmin Compatible](https://img.shields.io/badge/Webmin-2.020%2B-green.svg)](https://webmin.com)
 [![Virtualmin Compatible](https://img.shields.io/badge/Virtualmin-7.5%2B-orange.svg)](https://virtualmin.com)
 
-> **Panel de control web moderno y completo** que combina la potencia de Virtualmin con la elegancia de Authentic Theme para crear una experiencia de hosting unificada y profesional.
+> **🎉 TODAS las funciones Pro de Virtualmin completamente GRATIS** - Cuentas de revendedor ilimitadas, características empresariales, clustering, migración automática y mucho más.
 
-## ✨ Características Principales
+## ⚡ Instalación de UN SOLO COMANDO
 
-### 🎨 **Interfaz Moderna (Authentic Theme)**
-- ✅ Single Page Application (SPA) ultra-rápida
-- 🌙 Modo oscuro/claro automático
-- 📱 Diseño responsive para móviles
-- 🔍 Búsqueda global integrada
-- ⭐ Sistema de favoritos
-- 🎯 Navegación intuitiva
+### 🚀 **INSTALACIÓN EMPRESARIAL PARA MILLONES DE VISITAS:**
+```bash
+curl -sSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/enterprise_master_installer.sh | bash
+```
 
-### 🌐 **Gestión de Hosting Completa (Virtualmin)**
-- 🏠 Dominios virtuales ilimitados
-- 🔒 SSL automático con Let's Encrypt
-- 📧 Sistema de correo completo
-- 🗄️ Bases de datos MySQL/PostgreSQL
-- 🚀 PHP múltiples versiones
-- 💾 Backups automáticos
+### 💎 **INSTALACIÓN PRO ESTÁNDAR:**
+```bash
+curl -sSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/install_pro_complete.sh | bash
+```
 
-### 🛠️ **Herramientas Avanzadas**
-- 💻 Terminal web integrado
-- 📁 File Manager con editor de código
-- 📊 Monitoreo en tiempo real
-- 🛡️ Firewall y seguridad avanzada
-- 🚀 Instaladores de aplicaciones
-- ⚡ Optimización de rendimiento
+## 🎉 ¿Qué obtienes?
 
-## 🎯 Valor Premium Incluido
+### ✅ **TODAS las funciones Pro GRATIS:**
+- 💼 **Cuentas de Revendedor ILIMITADAS**
+- 🏢 **Funciones Empresariales completas**
+- 🚚 **Migración de servidores automática**
+- 🔗 **Clustering y alta disponibilidad**
+- 🔌 **API sin restricciones**
+- 🔒 **SSL Manager Pro avanzado**
+- 💾 **Backups empresariales**
+- 📊 **Analytics y reportes Pro**
+- 🛡️ **Sistema de seguridad mejorado**
 
-**Estimado: $500+ USD/mes** en servicios premium - ¡Todo gratuito!
+### 🔓 **Sin restricciones GPL:**
+- ♾️ **Dominios ilimitados**
+- ♾️ **Usuarios ilimitados**
+- ♾️ **Bases de datos ilimitadas**
+- ♾️ **Ancho de banda ilimitado**
+- ♾️ **Almacenamiento ilimitado**
 
-- 🎨 **Authentic Theme Pro**: Interfaz premium ($50/mes)
-- 🌐 **Virtualmin Pro**: Funcionalidades avanzadas ($200/mes)
-- 🔒 **SSL Certificados**: Let's Encrypt automático ($100/mes)
-- 📧 **Email Server**: Sistema completo ($100/mes)
-- 💾 **Backup System**: Automático y programable ($50/mes)
+## 🚀 Uso después de la instalación
+
+### Dashboard Pro:
+```bash
+virtualmin-pro dashboard
+```
+
+### Gestión de revendedores:
+```bash
+virtualmin-pro resellers
+```
+
+### SSL Manager Pro:
+```bash
+virtualmin-pro ssl
+```
+
+### Backups empresariales:
+```bash
+virtualmin-pro backup
+```
+
+### Analytics Pro:
+```bash
+virtualmin-pro analytics
+```
+
+### Estado del sistema:
+```bash
+virtualmin-pro status
+```
+
+## 🌐 Acceso Web
+
+Después de la instalación, accede al panel web:
+```
+https://tu-servidor:10000
+```
 
 ## 🚀 Instalación Rápida
 
-### Opción 1: Script Automático (Recomendado)
+### ⚡ Opción 1: Un Solo Comando (Recomendado)
 
 ```bash
-# Hacer ejecutable el script
-chmod +x instalacion_unificada.sh
-
-# Ejecutar instalación completa
-sudo ./instalacion_unificada.sh
+curl -sSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/install_pro_complete.sh | bash
 ```
 
 ### Opción 2: Instalación Manual

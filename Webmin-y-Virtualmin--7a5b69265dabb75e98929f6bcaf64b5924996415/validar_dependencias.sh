@@ -6,43 +6,18 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-# Colores para output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-PURPLE='\033[0;35m'
-CYAN='\033[0;36m'
-NC='\033[0m' # No Color
+# ===== INCLUIR BIBLIOTECA COMÚN =====
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "${SCRIPT_DIR}/lib/common.sh" ]]; then
+    source "${SCRIPT_DIR}/lib/common.sh"
+else
+    echo "ERROR: No se encuentra la biblioteca común en ${SCRIPT_DIR}/lib/common.sh"
+    exit 1
+fi
 
-# Códigos de error
-declare -r ERROR_ROOT_REQUIRED=100
-declare -r ERROR_INTERNET_CONNECTION=101
-declare -r ERROR_OS_NOT_SUPPORTED=102
-declare -r ERROR_ARCHITECTURE_NOT_SUPPORTED=103
-declare -r ERROR_MEMORY_INSUFFICIENT=104
-declare -r ERROR_DISK_INSUFFICIENT=105
-declare -r ERROR_DEPENDENCY_MISSING=106
-declare -r ERROR_PACKAGE_MANAGER_NOT_FOUND=107
-declare -r ERROR_PERL_NOT_FOUND=108
-declare -r ERROR_PYTHON_NOT_FOUND=109
-
-# Función de logging con timestamp
-log() {
-    local level="$1"
-    local message="$2"
-    local timestamp
-    timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-
-    case "$level" in
-        "INFO")     echo -e "${BLUE}[$timestamp INFO]${NC} $message" ;;
-        "SUCCESS")  echo -e "${GREEN}[$timestamp SUCCESS]${NC} $message" ;;
-        "WARNING")  echo -e "${YELLOW}[$timestamp WARNING]${NC} $message" ;;
-        "ERROR")    echo -e "${RED}[$timestamp ERROR]${NC} $message" ;;
-        "STEP")     echo -e "${PURPLE}[$timestamp STEP]${NC} $message" ;;
-        "DEBUG")    echo -e "${CYAN}[$timestamp DEBUG]${NC} $message" ;;
-    esac
-}
+# Variables configurables
+MIN_MEMORY_GB="${MIN_MEMORY_GB:-2}"
+MIN_DISK_GB="${MIN_DISK_GB:-20}"
 
 # Función para mostrar progreso
 show_progress() {
@@ -171,9 +146,9 @@ check_system_resources() {
         mem_kb=$(awk '/MemTotal/ {print $2}' /proc/meminfo)
         local mem_gb=$((mem_kb / 1024 / 1024))
 
-        if [[ $mem_gb -lt 2 ]]; then
+        if [[ $mem_gb -lt $MIN_MEMORY_GB ]]; then
             log "ERROR" "Memoria RAM insuficiente: ${mem_gb}GB"
-            log "INFO" "Mínimo requerido: 2GB RAM"
+            log "INFO" "Mínimo requerido: ${MIN_MEMORY_GB}GB RAM"
             log "INFO" "Recomendado: 4GB+ RAM"
             exit $ERROR_MEMORY_INSUFFICIENT
         elif [[ $mem_gb -lt 4 ]]; then
@@ -188,9 +163,9 @@ check_system_resources() {
     disk_kb=$(df --output=avail / | tail -n 1)
     local disk_gb=$((disk_kb / 1024 / 1024))
 
-    if [[ $disk_gb -lt 20 ]]; then
+    if [[ $disk_gb -lt $MIN_DISK_GB ]]; then
         log "ERROR" "Espacio en disco insuficiente: ${disk_gb}GB libres en /"
-        log "INFO" "Mínimo requerido: 20GB libres"
+        log "INFO" "Mínimo requerido: ${MIN_DISK_GB}GB libres"
         log "INFO" "Recomendado: 50GB+ libres"
         exit $ERROR_DISK_INSUFFICIENT
     elif [[ $disk_gb -lt 50 ]]; then

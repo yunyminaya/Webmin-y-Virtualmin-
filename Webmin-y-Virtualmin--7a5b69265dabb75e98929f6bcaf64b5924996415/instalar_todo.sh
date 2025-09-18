@@ -37,6 +37,16 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOG_FILE="./logs/webmin_virtualmin_install.log"
 START_TIME=$(date +%s)
 
+# ===== INCLUIR BIBLIOTECA COMÚN =====
+if [[ -f "${SCRIPT_DIR}/lib/common.sh" ]]; then
+    source "${SCRIPT_DIR}/lib/common.sh"
+    log_info "Biblioteca común cargada correctamente"
+else
+    echo "ERROR: No se encuentra la biblioteca común en ${SCRIPT_DIR}/lib/common.sh"
+    echo "El script no puede continuar sin las funciones básicas"
+    exit 1
+fi
+
 # Variables configurables con valores por defecto
 SERVER_IP="${SERVER_IP:-$(get_server_ip)}"
 WEBMIN_PORT="${WEBMIN_PORT:-10000}"

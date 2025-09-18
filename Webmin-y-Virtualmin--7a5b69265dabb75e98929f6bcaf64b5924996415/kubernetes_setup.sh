@@ -18,11 +18,13 @@ else
     exit 1
 fi
 
-# Configuración de Kubernetes
+# Configuración de Kubernetes (configurables)
 NAMESPACE="${K8S_NAMESPACE:-virtualmin}"
 DEPLOYMENT_NAME="${K8S_DEPLOYMENT_NAME:-virtualmin-webmin}"
 SERVICE_NAME="${K8S_SERVICE_NAME:-virtualmin-service}"
 PVC_NAME="${K8S_PVC_NAME:-virtualmin-storage}"
+STORAGE_SIZE="${K8S_STORAGE_SIZE:-50Gi}"
+WEBMIN_PORT="${WEBMIN_PORT:-10000}"
 
 # Función para verificar kubectl
 check_kubectl() {
@@ -73,7 +75,7 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 50Gi
+      storage: $STORAGE_SIZE
   storageClassName: standard  # Cambia según tu storage class
 EOF
 
@@ -92,7 +94,7 @@ metadata:
   name: virtualmin-config
   namespace: $NAMESPACE
 data:
-  WEBMIN_PORT: "10000"
+  WEBMIN_PORT: "$WEBMIN_PORT"
   VIRTUALMIN_DOMAIN: "tu-dominio.com"
   APACHE_PORT: "80"
   MYSQL_PORT: "3306"

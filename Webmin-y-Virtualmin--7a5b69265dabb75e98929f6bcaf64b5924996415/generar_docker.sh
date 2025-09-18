@@ -18,8 +18,8 @@ else
     exit 1
 fi
 
-# Variables de configuración
-CONTAINER_NAME="virtualmin-webmin"
+# Variables de configuración (configurables)
+CONTAINER_NAME="${CONTAINER_NAME:-virtualmin-webmin}"
 HOST_PORT_WEBMIN="${WEBMIN_PORT:-10000}"
 HOST_PORT_HTTP="${HTTP_PORT:-80}"
 HOST_PORT_HTTPS="${HTTPS_PORT:-443}"
