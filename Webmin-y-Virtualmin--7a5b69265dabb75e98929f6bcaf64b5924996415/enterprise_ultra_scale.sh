@@ -719,7 +719,7 @@ EOF
 create_ddos_protection() {
     log_ultra "INFO" "Implementando protección contra ataques masivos..."
 
-    cat > "${SCRIPT_DIR}/ddos_protection.sh" << 'EOF'
+    cat > "${SCRIPT_DIR}/ddos_protection.sh" << 'DDOS_EOF'
 #!/bin/bash
 
 # ============================================================================
@@ -912,7 +912,7 @@ main() {
 }
 
 main "$@"
-EOF
+DDOS_EOF
 
     chmod +x "${SCRIPT_DIR}/ddos_protection.sh"
     bash "${SCRIPT_DIR}/ddos_protection.sh"

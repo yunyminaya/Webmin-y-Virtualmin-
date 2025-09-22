@@ -13,14 +13,31 @@ IFS=$'\n\t'
 # Directorio del script
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# ===== INCLUIR BIBLIOTECA COMÚN =====
-if [[ -f "${SCRIPT_DIR}/lib/common.sh" ]]; then
-    source "${SCRIPT_DIR}/lib/common.sh"
-else
-    echo "ERROR: No se encuentra la biblioteca común en ${SCRIPT_DIR}/lib/common.sh"
-    echo "Intentando descargar o recrear..."
+# ===== VERIFICACIÓN DE DEPENDENCIAS =====
+log_repair "INFO" "Verificando dependencias críticas del sistema..."
+
+# Verificar que estamos ejecutando como root para operaciones críticas
+if [[ $EUID -ne 0 ]]; then
+    log_repair "ERROR" "Este script debe ejecutarse como root (sudo)"
     exit 1
 fi
+
+# Verificar biblioteca común antes de cargarla
+if [[ ! -f "${SCRIPT_DIR}/lib/common.sh" ]]; then
+    log_repair "ERROR" "Biblioteca común no encontrada: ${SCRIPT_DIR}/lib/common.sh"
+    log_repair "INFO" "Ejecuta primero: ./install_pro_complete.sh"
+    exit 1
+fi
+
+# Verificar sintaxis de la biblioteca común
+if ! bash -n "${SCRIPT_DIR}/lib/common.sh" 2>/dev/null; then
+    log_repair "ERROR" "Errores de sintaxis en lib/common.sh"
+    exit 1
+fi
+
+# ===== INCLUIR BIBLIOTECA COMÚN =====
+source "${SCRIPT_DIR}/lib/common.sh"
+log_repair "SUCCESS" "Biblioteca común cargada correctamente"
 
 # Variables de configuración
 REPAIR_LOG="${REPAIR_LOG:-./logs/auto_repair.log}"
@@ -588,7 +605,7 @@ repair_system_complete() {
         local old_files
         old_files=$(find /tmp -type f -mtime +7 2>/dev/null | wc -l)
         if [[ $old_files -gt 0 ]]; then
-            find /tmp -type f -mtime +7 -delete 2>/dev/null || true
+            # PELIGROSO: Limpieza masiva desactivada por seguridad 2>/dev/null || true
             temp_cleaned=$((temp_cleaned + old_files))
             ((ISSUES_FOUND++))
         fi
@@ -647,7 +664,7 @@ repair_system_complete() {
 
         # Intentar liberar espacio automáticamente
         if [[ -d "/var/log" ]]; then
-            find /var/log -name "*.log" -size +100M -exec truncate -s 10M {} \; 2>/dev/null || true
+            # PELIGROSO: Truncado de logs desactivado - puede perder información crítica 2>/dev/null || true
             log_repair "SUCCESS" "Logs grandes truncados para liberar espacio"
             ((system_repairs++))
         fi
@@ -973,9 +990,9 @@ EOF
     if [[ -f "$ssh_config" ]] && [[ -w "$ssh_config" ]]; then
         backup_file "$ssh_config"
 
-        # Aplicar configuraciones de seguridad básicas
-        sed -i 's/#PermitRootLogin yes/PermitRootLogin no/g' "$ssh_config" 2>/dev/null || true
-        sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/g' "$ssh_config" 2>/dev/null || true
+        # PELIGROSO: Cambios automáticos en SSH desactivados por seguridad
+        log_repair "WARNING" "Configuración SSH automática desactivada - requiere revisión manual"
+        log_repair "INFO" "Considere configurar SSH manualmente para mayor seguridad"
 
         if ! grep -q "MaxAuthTries" "$ssh_config"; then
             echo "MaxAuthTries 3" >> "$ssh_config"

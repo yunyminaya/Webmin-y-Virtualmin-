@@ -328,7 +328,7 @@ check_security_logs() {
     fi
 
     # Verificar logs de Apache/Nginx
-    for log_file in /var/log/apache2/access.log /var/log/nginx/access.log 2>/dev/null; do
+    for log_file in /var/log/apache2/access.log /var/log/nginx/access.log; do
         if [[ -f "$log_file" ]]; then
             local suspicious_requests
             suspicious_requests=$(grep -E "(union.*select|script.*alert|\.\./\.\./|eval\(|base64_decode)" "$log_file" 2>/dev/null | wc -l)
