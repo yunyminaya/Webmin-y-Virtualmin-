@@ -1,7 +1,7 @@
 # 📚 Índice de Documentación - Webmin y Virtualmin Pro
 
 [![Documentation](https://img.shields.io/badge/Documentation-Complete-green.svg)](https://github.com/yunyminaya/Webmin-y-Virtualmin-)
-[![Last Updated](https://img.shields.io/badge/Last%20Updated-2025--01--26-blue.svg)](https://github.com/yunyminaya/Webmin-y-Virtualmin-/commits/main)
+[![Last Updated](https://img.shields.io/badge/Last%20Updated-2025--09--26-blue.svg)](https://github.com/yunyminaya/Webmin-y-Virtualmin-/commits/main)
 
 > **Índice completo de toda la documentación disponible en el repositorio**
 
@@ -115,6 +115,11 @@
 - `pro_api/api_config.conf` - Configuración API
 
 ### Desarrollo
+- **[CMS_FRAMEWORKS_GUIDE.md](CMS_FRAMEWORKS_GUIDE.md)** - Guía instalación CMS y Frameworks ⭐
+- **[ENTERPRISE_DATACENTER_GUIDE.md](ENTERPRISE_DATACENTER_GUIDE.md)** - Guía sistema empresarial para datacenters ⭐
+- `install_cms_frameworks.sh` - Instalador CMS y Frameworks
+- `install_php_multi_version.sh` - Instalador PHP multi-versión
+- `enterprise_monitoring_setup.sh` - Configuración empresarial completa ⭐
 - `dev_tools_pro.sh` - Herramientas de desarrollo Pro
 - `generar_docker.sh` - Generador Docker
 
@@ -199,6 +204,8 @@
 ├── 📄 README.md                          # Documentación principal
 ├── 📄 AI_PROTECTION_GUIDE.md             # Guía protección IA ⭐
 ├── 📄 AUTO_TUNNEL_SYSTEM_GUIDE.md        # Guía túnel automático ⭐
+├── 📄 CMS_FRAMEWORKS_GUIDE.md            # Guía CMS y Frameworks ⭐
+├── 📄 ENTERPRISE_DATACENTER_GUIDE.md      # Guía sistema empresarial ⭐
 ├── 📄 DOCUMENTATION_INDEX.md             # Este archivo
 ├── 📄 GUIA_INSTALACION_UNIFICADA.md      # Guía instalación
 ├── 📄 INTEGRACION_PANELES.md             # Integración paneles
@@ -227,6 +234,9 @@
 ├── 🌐 tunnel_monitor_dashboard.html      # Dashboard túnel ⭐
 ├── 🔧 tunnel_status.cgi                  # API estado túnel ⭐
 ├── 📄 auto-tunnel.service                # Servicio systemd túnel
+├── 🔧 install_php_multi_version.sh       # Instalador PHP multi-versión ⭐
+├── 🔧 install_cms_frameworks.sh          # Instalador CMS y Frameworks ⭐
+├── 🔧 enterprise_monitoring_setup.sh     # Configuración empresarial completa ⭐
 ├── 🔧 Scripts principales...             # Scripts de instalación
 ├── 📁 configs/                           # Configuraciones
 ├── 📁 scripts/                           # Scripts especializados
@@ -289,6 +299,6 @@
 
 [🚀 Inicio](README.md) • [🛡️ Protección IA](AI_PROTECTION_GUIDE.md) • [🚇 Túnel Automático](AUTO_TUNNEL_SYSTEM_GUIDE.md) • [⚙️ Configuración](INTEGRACION_PANELES.md) • [🐛 Soporte](https://github.com/yunyminaya/Webmin-y-Virtualmin-/issues)
 
-*Última actualización: Enero 2025*
+*Última actualización: Septiembre 2025*
 
 </div>

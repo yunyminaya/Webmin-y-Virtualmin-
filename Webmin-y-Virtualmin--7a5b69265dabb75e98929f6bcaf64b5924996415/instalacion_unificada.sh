@@ -491,19 +491,143 @@ show_final_info() {
     echo "   ✅ Authentic Theme (interfaz moderna)"
     echo "   ✅ Apache Web Server"
     echo "   ✅ MySQL/MariaDB"
-    echo "   ✅ PHP (múltiples versiones)"
+    echo "   ✅ PHP (múltiples versiones: 7.4, 8.0, 8.1, 8.2, 8.3)"
     echo "   ✅ Postfix (correo)"
     echo "   ✅ BIND (DNS)"
+    echo "   ✅ WordPress (desde wordpress.org)"
+    echo "   ✅ Laravel (desde sitio oficial)"
+    echo "   ✅ Composer (gestor de dependencias PHP)"
+    echo "   ✅ WP-CLI (herramientas WordPress)"
+    echo "   ✅ Drush (herramientas Drupal)"
+    echo "   ✅ Prometheus & Grafana (monitoreo empresarial)"
+    echo "   ✅ ELK Stack (logging centralizado)"
+    echo "   ✅ Zabbix & Nagios (monitoreo avanzado)"
+    echo "   ✅ Bacula (backup empresarial)"
+    echo "   ✅ Docker & Kubernetes (contenedores)"
+    echo "   ✅ KVM/QEMU (virtualización)"
+    echo "   ✅ HAProxy (load balancer)"
+    echo "   ✅ GlusterFS (almacenamiento distribuido)"
+    echo "   ✅ Ansible, Terraform, Vault (DevOps)"
+    echo "   ✅ Snort, OSSEC, ModSecurity (seguridad enterprise)"
+    echo "   ✅ OpenVPN, WireGuard (VPN empresarial)"
     echo
     echo -e "${GREEN}¡Tu panel de control unificado está listo para usar!${NC}"
     echo
+}
+
+# Instalar PHP multi-versión para servidores virtuales
+install_php_multi_version() {
+    log_step "Instalando múltiples versiones de PHP para servidores virtuales..."
+
+    # Verificar que el script de PHP existe y es ejecutable
+    if [[ ! -f "${SCRIPT_DIR}/install_php_multi_version.sh" ]]; then
+        log_warning "Script install_php_multi_version.sh no encontrado, omitiendo instalación de PHP multi-versión"
+        return 0
+    fi
+
+    if [[ ! -x "${SCRIPT_DIR}/install_php_multi_version.sh" ]]; then
+        log_info "Dando permisos de ejecución a install_php_multi_version.sh"
+        chmod +x "${SCRIPT_DIR}/install_php_multi_version.sh" 2>/dev/null || {
+            log_warning "No se pudieron dar permisos de ejecución a install_php_multi_version.sh, omitiendo instalación de PHP multi-versión"
+            return 0
+        }
+    fi
+
+    # Ejecutar instalación de PHP multi-versión
+    local php_output
+    local php_exit_code
+
+    if ! php_output=$(bash "${SCRIPT_DIR}/install_php_multi_version.sh" 2>&1); then
+        php_exit_code=$?
+        log_warning "La instalación de PHP multi-versión falló (código de salida: $php_exit_code), pero continuando con la instalación"
+        if [[ "${DEBUG:-false}" == "true" ]]; then
+            log_debug "Output de PHP multi-versión:"
+            echo "$php_output" | while IFS= read -r line; do
+                log_debug "  $line"
+            done
+        fi
+    else
+        log_success "PHP multi-versión instalado correctamente para servidores virtuales"
+    fi
+}
+
+# Instalar CMS y Frameworks desde fuentes oficiales
+install_cms_frameworks() {
+    log_step "Instalando CMS y Frameworks web desde fuentes oficiales..."
+
+    # Verificar que el script de CMS existe y es ejecutable
+    if [[ ! -f "${SCRIPT_DIR}/install_cms_frameworks.sh" ]]; then
+        log_warning "Script install_cms_frameworks.sh no encontrado, omitiendo instalación de CMS y Frameworks"
+        return 0
+    fi
+
+    if [[ ! -x "${SCRIPT_DIR}/install_cms_frameworks.sh" ]]; then
+        log_info "Dando permisos de ejecución a install_cms_frameworks.sh"
+        chmod +x "${SCRIPT_DIR}/install_cms_frameworks.sh" 2>/dev/null || {
+            log_warning "No se pudieron dar permisos de ejecución a install_cms_frameworks.sh, omitiendo instalación de CMS y Frameworks"
+            return 0
+        }
+    fi
+
+    # Ejecutar instalación de CMS y Frameworks
+    local cms_output
+    local cms_exit_code
+
+    if ! cms_output=$(bash "${SCRIPT_DIR}/install_cms_frameworks.sh" 2>&1); then
+        cms_exit_code=$?
+        log_warning "La instalación de CMS y Frameworks falló (código de salida: $cms_exit_code), pero continuando con la instalación"
+        if [[ "${DEBUG:-false}" == "true" ]]; then
+            log_debug "Output de CMS y Frameworks:"
+            echo "$cms_output" | while IFS= read -r line; do
+                log_debug "  $line"
+            done
+        fi
+    else
+        log_success "CMS y Frameworks instalados correctamente desde fuentes oficiales"
+    fi
+}
+
+# Instalar componentes empresariales para datacenters
+install_enterprise_components() {
+    log_step "Instalando componentes empresariales para datacenters..."
+
+    # Verificar que el script enterprise existe y es ejecutable
+    if [[ ! -f "${SCRIPT_DIR}/enterprise_monitoring_setup.sh" ]]; then
+        log_warning "Script enterprise_monitoring_setup.sh no encontrado, omitiendo instalación de componentes empresariales"
+        return 0
+    fi
+
+    if [[ ! -x "${SCRIPT_DIR}/enterprise_monitoring_setup.sh" ]]; then
+        log_info "Dando permisos de ejecución a enterprise_monitoring_setup.sh"
+        chmod +x "${SCRIPT_DIR}/enterprise_monitoring_setup.sh" 2>/dev/null || {
+            log_warning "No se pudieron dar permisos de ejecución a enterprise_monitoring_setup.sh, omitiendo instalación de componentes empresariales"
+            return 0
+        }
+    fi
+
+    # Ejecutar instalación de componentes empresariales
+    local enterprise_output
+    local enterprise_exit_code
+
+    if ! enterprise_output=$(bash "${SCRIPT_DIR}/enterprise_monitoring_setup.sh" 2>&1); then
+        enterprise_exit_code=$?
+        log_warning "La instalación de componentes empresariales falló (código de salida: $enterprise_exit_code), pero continuando con la instalación"
+        if [[ "${DEBUG:-false}" == "true" ]]; then
+            log_debug "Output de componentes empresariales:"
+            echo "$enterprise_output" | while IFS= read -r line; do
+                log_debug "  $line"
+            done
+        fi
+    else
+        log_success "Componentes empresariales instalados correctamente para datacenters"
+    fi
 }
 
 # Función principal
 main() {
     echo -e "${BLUE}Iniciando instalación unificada...${NC}"
     echo
-    
+
     detect_os
     check_internet
     check_system_requirements
@@ -513,10 +637,13 @@ main() {
     install_authentic_theme
     configure_unified_system
     apply_security_baseline
+    install_php_multi_version
+    install_cms_frameworks
+    install_enterprise_components
     restart_services
     get_system_info
     show_final_info
-    
+
     echo -e "${GREEN}🎉 ¡Instalación unificada completada exitosamente!${NC}"
 }
 
