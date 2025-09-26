@@ -14,7 +14,7 @@ CYAN='\033[0;36m'
 NC='\033[0m'
 
 echo -e "${PURPLE}============================================================================${NC}"
-echo -e "${CYAN}🚀 DEMO: SERVIDORES ILIMITADOS EN ACCIÓN${NC}"
+echo -e "${CYAN}🚀 SERVIDORES ILIMITADOS EN ACCIÓN${NC}"
 echo -e "${PURPLE}============================================================================${NC}"
 echo
 

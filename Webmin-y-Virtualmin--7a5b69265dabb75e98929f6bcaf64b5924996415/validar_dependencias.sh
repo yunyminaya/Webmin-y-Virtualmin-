@@ -39,41 +39,41 @@ show_progress() {
 
 # Función para verificar privilegios de root
 check_root_privileges() {
-    log "STEP" "Verificando privilegios de administrador..."
+    log_step "Verificando privilegios de administrador..."
 
     if [[ $EUID -ne 0 ]]; then
-        log "ERROR" "Este script debe ejecutarse como root (usa sudo)"
-        log "INFO" "Ejemplo: sudo $0"
+        log_error "Este script debe ejecutarse como root (usa sudo)"
+        log_info "Ejemplo: sudo $0"
         exit $ERROR_ROOT_REQUIRED
     fi
 
-    log "SUCCESS" "Privilegios de root verificados"
+    log_success "Privilegios de root verificados"
 }
 
 # Función para verificar conectividad a internet
 check_internet_connection() {
-    log "STEP" "Verificando conectividad a internet..."
+    log_step "Verificando conectividad a internet..."
 
     local timeout=10
     local test_urls=("https://google.com" "https://github.com" "https://software.virtualmin.com")
 
     for url in "${test_urls[@]}"; do
         if curl -s --max-time "$timeout" "$url" > /dev/null 2>&1; then
-            log "SUCCESS" "Conectividad a internet OK (probado con $url)"
+            log_success "Conectividad a internet OK (probado con $url)"
             return 0
         fi
     done
 
-    log "ERROR" "No hay conectividad a internet. Verifica tu conexión y vuelve a intentar."
+    log_error "No hay conectividad a internet. Verifica tu conexión y vuelve a intentar."
     exit $ERROR_INTERNET_CONNECTION
 }
 
 # Función para detectar y validar sistema operativo
 detect_and_validate_os() {
-    log "STEP" "Detectando sistema operativo..."
+    log_step "Detectando sistema operativo..."
 
     if [[ ! -f /etc/os-release ]]; then
-        log "ERROR" "No se puede detectar el sistema operativo. Archivo /etc/os-release no encontrado."
+        log_error "No se puede detectar el sistema operativo. Archivo /etc/os-release no encontrado."
         exit $ERROR_OS_NOT_SUPPORTED
     fi
 
@@ -84,14 +84,14 @@ detect_and_validate_os() {
     local os_version="${VERSION_ID:-Unknown}"
     local os_id="${ID:-unknown}"
 
-    log "INFO" "Sistema detectado: $os_name $os_version ($os_id)"
+    log_info "Sistema detectado: $os_name $os_version ($os_id)"
 
     # Lista de sistemas operativos soportados
     local supported_os=("ubuntu" "debian" "centos" "rocky" "almalinux" "ol" "rhel")
 
     if [[ ! " ${supported_os[*]} " =~ ${os_id} ]]; then
-        log "ERROR" "Sistema operativo no soportado: $os_name"
-        log "INFO" "Sistemas soportados: Ubuntu, Debian, CentOS, Rocky Linux, AlmaLinux, Oracle Linux, RHEL"
+        log_error "Sistema operativo no soportado: $os_name"
+        log_info "Sistemas soportados: Ubuntu, Debian, CentOS, Rocky Linux, AlmaLinux, Oracle Linux, RHEL"
         exit $ERROR_OS_NOT_SUPPORTED
     fi
 
@@ -99,38 +99,38 @@ detect_and_validate_os() {
     case "$os_id" in
         ubuntu)
             if [[ "${os_version%%.*}" -lt 20 ]]; then
-                log "WARNING" "Ubuntu $os_version detectado. Recomendado: Ubuntu 20.04+"
+                log_warning "Ubuntu $os_version detectado. Recomendado: Ubuntu 20.04+"
             fi
             ;;
         debian)
             if [[ "${os_version%%.*}" -lt 11 ]]; then
-                log "WARNING" "Debian $os_version detectado. Recomendado: Debian 11+"
+                log_warning "Debian $os_version detectado. Recomendado: Debian 11+"
             fi
             ;;
         centos|rhel|rocky|almalinux|ol)
             if [[ "${os_version%%.*}" -lt 8 ]]; then
-                log "WARNING" "Versión $os_version de $os_name detectada. Recomendado: versión 8+"
+                log_warning "Versión $os_version de $os_name detectada. Recomendado: versión 8+"
             fi
             ;;
     esac
 
-    log "SUCCESS" "Sistema operativo validado: $os_name $os_version"
+    log_success "Sistema operativo validado: $os_name $os_version"
 }
 
 # Función para verificar arquitectura
 check_architecture() {
-    log "STEP" "Verificando arquitectura del sistema..."
+    log_step "Verificando arquitectura del sistema..."
 
     local arch
     arch=$(uname -m)
 
     case "$arch" in
         x86_64|amd64)
-            log "SUCCESS" "Arquitectura soportada: $arch"
+            log_success "Arquitectura soportada: $arch"
             ;;
         *)
-            log "ERROR" "Arquitectura no soportada: $arch"
-            log "INFO" "Arquitecturas soportadas: x86_64, amd64"
+            log_error "Arquitectura no soportada: $arch"
+            log_info "Arquitecturas soportadas: x86_64, amd64"
             exit $ERROR_ARCHITECTURE_NOT_SUPPORTED
             ;;
     esac
@@ -138,7 +138,7 @@ check_architecture() {
 
 # Función para verificar recursos del sistema
 check_system_resources() {
-    log "STEP" "Verificando recursos del sistema..."
+    log_step "Verificando recursos del sistema..."
 
     # Verificar memoria RAM
     if [[ -r /proc/meminfo ]]; then
@@ -147,14 +147,14 @@ check_system_resources() {
         local mem_gb=$((mem_kb / 1024 / 1024))
 
         if [[ $mem_gb -lt $MIN_MEMORY_GB ]]; then
-            log "ERROR" "Memoria RAM insuficiente: ${mem_gb}GB"
-            log "INFO" "Mínimo requerido: ${MIN_MEMORY_GB}GB RAM"
-            log "INFO" "Recomendado: 4GB+ RAM"
+            log_error "Memoria RAM insuficiente: ${mem_gb}GB"
+            log_info "Mínimo requerido: ${MIN_MEMORY_GB}GB RAM"
+            log_info "Recomendado: 4GB+ RAM"
             exit $ERROR_MEMORY_INSUFFICIENT
         elif [[ $mem_gb -lt 4 ]]; then
-            log "WARNING" "Memoria RAM limitada: ${mem_gb}GB (recomendado: 4GB+)"
+            log_warning "Memoria RAM limitada: ${mem_gb}GB (recomendado: 4GB+)"
         else
-            log "SUCCESS" "Memoria RAM: ${mem_gb}GB"
+            log_success "Memoria RAM: ${mem_gb}GB"
         fi
     fi
 
@@ -164,29 +164,29 @@ check_system_resources() {
     local disk_gb=$((disk_kb / 1024 / 1024))
 
     if [[ $disk_gb -lt $MIN_DISK_GB ]]; then
-        log "ERROR" "Espacio en disco insuficiente: ${disk_gb}GB libres en /"
-        log "INFO" "Mínimo requerido: ${MIN_DISK_GB}GB libres"
-        log "INFO" "Recomendado: 50GB+ libres"
+        log_error "Espacio en disco insuficiente: ${disk_gb}GB libres en /"
+        log_info "Mínimo requerido: ${MIN_DISK_GB}GB libres"
+        log_info "Recomendado: 50GB+ libres"
         exit $ERROR_DISK_INSUFFICIENT
     elif [[ $disk_gb -lt 50 ]]; then
-        log "WARNING" "Espacio en disco limitado: ${disk_gb}GB (recomendado: 50GB+)"
+        log_warning "Espacio en disco limitado: ${disk_gb}GB (recomendado: 50GB+)"
     else
-        log "SUCCESS" "Espacio en disco: ${disk_gb}GB libres"
+        log_success "Espacio en disco: ${disk_gb}GB libres"
     fi
 
     # Verificar núcleos de CPU
     local cpu_cores
     cpu_cores=$(nproc 2>/dev/null || echo "1")
     if [[ $cpu_cores -lt 2 ]]; then
-        log "WARNING" "Pocos núcleos de CPU: $cpu_cores (recomendado: 2+)"
+        log_warning "Pocos núcleos de CPU: $cpu_cores (recomendado: 2+)"
     else
-        log "SUCCESS" "Núcleos de CPU: $cpu_cores"
+        log_success "Núcleos de CPU: $cpu_cores"
     fi
 }
 
 # Función para verificar gestor de paquetes
 check_package_manager() {
-    log "STEP" "Verificando gestor de paquetes..."
+    log_step "Verificando gestor de paquetes..."
 
     local package_managers=("apt-get" "yum" "dnf" "zypper")
     local found_manager=""
@@ -199,17 +199,17 @@ check_package_manager() {
     done
 
     if [[ -z "$found_manager" ]]; then
-        log "ERROR" "No se encontró un gestor de paquetes soportado"
-        log "INFO" "Gestores soportados: apt-get, yum, dnf, zypper"
+        log_error "No se encontró un gestor de paquetes soportado"
+        log_info "Gestores soportados: apt-get, yum, dnf, zypper"
         exit $ERROR_PACKAGE_MANAGER_NOT_FOUND
     fi
 
-    log "SUCCESS" "Gestor de paquetes encontrado: $found_manager"
+    log_success "Gestor de paquetes encontrado: $found_manager"
 }
 
 # Función para verificar dependencias críticas
 check_critical_dependencies() {
-    log "STEP" "Verificando dependencias críticas..."
+    log_step "Verificando dependencias críticas..."
 
     local critical_deps=("curl" "wget" "tar" "gzip" "bash")
     local missing_deps=()
@@ -221,20 +221,20 @@ check_critical_dependencies() {
     done
 
     if [[ ${#missing_deps[@]} -gt 0 ]]; then
-        log "ERROR" "Dependencias críticas faltantes: ${missing_deps[*]}"
-        log "INFO" "Instala las dependencias faltantes y vuelve a ejecutar el script"
+        log_error "Dependencias críticas faltantes: ${missing_deps[*]}"
+        log_info "Instala las dependencias faltantes y vuelve a ejecutar el script"
         exit $ERROR_DEPENDENCY_MISSING
     fi
 
-    log "SUCCESS" "Dependencias críticas verificadas"
+    log_success "Dependencias críticas verificadas"
 }
 
 # Función para verificar Perl
 check_perl() {
-    log "STEP" "Verificando instalación de Perl..."
+    log_step "Verificando instalación de Perl..."
 
     if ! command -v perl &> /dev/null; then
-        log "ERROR" "Perl no está instalado"
+        log_error "Perl no está instalado"
         exit $ERROR_PERL_NOT_FOUND
     fi
 
@@ -242,9 +242,9 @@ check_perl() {
     perl_version=$(perl -v | grep -oP 'v\d+\.\d+\.\d+' | head -1)
 
     if [[ -z "$perl_version" ]]; then
-        log "WARNING" "No se pudo determinar la versión de Perl"
+        log_warning "No se pudo determinar la versión de Perl"
     else
-        log "INFO" "Versión de Perl: $perl_version"
+        log_info "Versión de Perl: $perl_version"
     fi
 
     # Verificar módulos Perl críticos
@@ -258,16 +258,16 @@ check_perl() {
     done
 
     if [[ ${#missing_modules[@]} -gt 0 ]]; then
-        log "WARNING" "Módulos Perl faltantes: ${missing_modules[*]}"
-        log "INFO" "Algunos módulos se instalarán automáticamente durante la instalación"
+        log_warning "Módulos Perl faltantes: ${missing_modules[*]}"
+        log_info "Algunos módulos se instalarán automáticamente durante la instalación"
     else
-        log "SUCCESS" "Módulos Perl críticos verificados"
+        log_success "Módulos Perl críticos verificados"
     fi
 }
 
 # Función para verificar Python (opcional)
 check_python() {
-    log "STEP" "Verificando instalación de Python..."
+    log_step "Verificando instalación de Python..."
 
     local python_cmd=""
     if command -v python3 &> /dev/null; then
@@ -275,7 +275,7 @@ check_python() {
     elif command -v python &> /dev/null; then
         python_cmd="python"
     else
-        log "WARNING" "Python no está instalado (opcional para algunas funcionalidades)"
+        log_warning "Python no está instalado (opcional para algunas funcionalidades)"
         return 0
     fi
 
@@ -283,28 +283,28 @@ check_python() {
     python_version=$("$python_cmd" --version 2>&1 | grep -oP '\d+\.\d+\.\d+')
 
     if [[ -n "$python_version" ]]; then
-        log "INFO" "Versión de Python: $python_version"
-        log "SUCCESS" "Python disponible"
+        log_info "Versión de Python: $python_version"
+        log_success "Python disponible"
     else
-        log "WARNING" "No se pudo determinar la versión de Python"
+        log_warning "No se pudo determinar la versión de Python"
     fi
 }
 
 # Función para verificar conectividad a repositorios
 check_repository_connectivity() {
-    log "STEP" "Verificando conectividad a repositorios..."
+    log_step "Verificando conectividad a repositorios..."
 
     local repos=("https://software.virtualmin.com" "https://github.com" "https://deb.debian.org" "https://archive.ubuntu.com")
 
     for repo in "${repos[@]}"; do
         if curl -s --max-time 5 "$repo" > /dev/null 2>&1; then
-            log "DEBUG" "Repositorio accesible: $repo"
+            log_debug "Repositorio accesible: $repo"
         else
-            log "WARNING" "Repositorio no accesible: $repo"
+            log_warning "Repositorio no accesible: $repo"
         fi
     done
 
-    log "SUCCESS" "Verificación de repositorios completada"
+    log_success "Verificación de repositorios completada"
 }
 
 # Función principal
@@ -361,12 +361,12 @@ main() {
     check_repository_connectivity
 
     echo # Nueva línea después del progreso
-    log "SUCCESS" "¡Todas las validaciones pasaron exitosamente!"
+    log_success "¡Todas las validaciones pasaron exitosamente!"
     echo
-    log "INFO" "El sistema está listo para la instalación de Virtualmin + Authentic Theme"
+    log_info "El sistema está listo para la instalación de Virtualmin + Authentic Theme"
     echo
-    log "INFO" "Ejecuta el script de instalación principal:"
-    log "INFO" "  sudo ./instalacion_unificada.sh"
+    log_info "Ejecuta el script de instalación principal:"
+    log_info "  sudo ./instalacion_unificada.sh"
 }
 
 # Función de limpieza

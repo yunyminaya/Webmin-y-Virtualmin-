@@ -41,9 +41,11 @@ show_progress() {
 # Verificar permisos de root
 check_root() {
     if [[ $EUID -ne 0 ]]; then
-        log_error "Este script debe ejecutarse como root"
+        log_error "Este script debe ejecutarse como root (sudo)"
+        log_error "Ejemplo: sudo $0"
         exit 1
     fi
+    log_info "Permisos de root verificados"
 }
 
 # Detectar distribución
