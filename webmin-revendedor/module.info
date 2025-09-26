@@ -1,7 +1,0 @@
-desc=Revendedores (GPL Emulado)
-longdesc=Gestiona cuentas de revendedor emuladas para Virtualmin GPL.
-category=virtualmin
-index_link=index.cgi
-depends=virtual-server 1.0
-version=1.0
-usermin=0

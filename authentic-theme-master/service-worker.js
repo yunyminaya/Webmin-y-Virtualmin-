@@ -1,1 +1,0 @@
-unauthenticated/js/service-worker.js

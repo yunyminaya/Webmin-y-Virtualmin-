@@ -1,1 +1,0 @@
-change-licence.pl
