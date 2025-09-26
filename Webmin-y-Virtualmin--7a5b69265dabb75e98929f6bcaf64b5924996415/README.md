@@ -139,18 +139,34 @@ Virtualmin → Create Virtual Server
 ## 📁 Estructura del Proyecto
 
 ```
-📦 Wedmin Y Virtualmin/
-├── 📄 README.md                          # Este archivo
+📦 Webmin y Virtualmin Pro/
+├── 📄 README.md                          # Documentación principal
+├── 📄 DOCUMENTATION_INDEX.md             # Índice completo de documentación ⭐
+├── 📄 AI_PROTECTION_GUIDE.md             # Guía protección IA ⭐
+├── 📄 CHANGELOG_AI_PROTECTION.md         # Registro cambios IA ⭐
 ├── 📄 INTEGRACION_PANELES.md             # Guía de integración
 ├── 📄 GUIA_INSTALACION_UNIFICADA.md      # Instalación detallada
+├── 📄 FUNCIONES_PRO_COMPLETAS.md         # Funciones Pro completas
+├── 📄 SISTEMA_PROTECCION_COMPLETA_100.md # Protección completa
 ├── 📄 SERVICIOS_PREMIUM_INCLUIDOS.md     # Características premium
 ├── 📄 INSTRUCCIONES_RAPIDAS.md           # Guía rápida
+├── 🤖 ai_defense_system.sh               # Sistema defensa IA ⭐
+├── 🛡️ ddos_shield_extreme.sh            # Escudo DDoS extremo ⭐
+├── 🔧 install_ai_protection.sh           # Instalador protección IA ⭐
 ├── 🔧 instalacion_unificada.sh           # Script principal
 ├── 🔧 instalar_integracion.sh            # Script alternativo
 ├── 📦 authentic-theme-master.zip         # Tema original
 ├── 📦 virtualmin-gpl-master.zip          # Virtualmin original
 ├── 📁 authentic-theme-master/            # Código del tema
-└── 📁 virtualmin-gpl-master/             # Código de Virtualmin
+├── 📁 virtualmin-gpl-master/             # Código de Virtualmin
+├── 📁 configs/                           # Configuraciones del sistema
+├── 📁 scripts/                           # Scripts especializados
+├── 📁 pro_api/                           # API Pro
+├── 📁 pro_config/                        # Configuraciones Pro
+├── 📁 pro_clustering/                    # Clustering Pro
+├── 📁 pro_migration/                     # Migración Pro
+├── 📁 pro_monitoring/                    # Monitoreo Pro
+└── 📁 test_results/                      # Resultados de pruebas
 ```
 
 ## 🔄 Actualizaciones Automáticas
@@ -169,6 +185,8 @@ Virtualmin → Create Virtual Server
 - 🔒 **SSL/TLS**: Certificados automáticos
 - 🚫 **Fail2Ban**: Protección contra ataques
 - 📊 **Logs**: Monitoreo completo
+- 🤖 **Protección IA**: Sistema avanzado contra ataques de IA
+- ⚡ **DDoS Shield Extremo**: Protección contra ataques DDoS masivos
 
 ### Mejores Prácticas:
 ```bash
@@ -183,6 +201,34 @@ sudo ufw allow 80/tcp
 sudo ufw allow 443/tcp
 sudo ufw allow 10000/tcp
 ```
+
+### 🤖 Protección Avanzada contra Ataques de IA
+
+#### Sistema de Defensa IA:
+```bash
+# Instalar protección IA completa
+./install_ai_protection.sh
+
+# Ejecutar sistema de defensa IA
+./ai_defense_system.sh
+
+# Activar escudo DDoS extremo
+./ddos_shield_extreme.sh
+```
+
+#### Características de Protección IA:
+- 🧠 **Detección Inteligente**: Algoritmos de machine learning para identificar ataques
+- 🚀 **Respuesta Automática**: Bloqueo automático de amenazas detectadas
+- 📊 **Análisis en Tiempo Real**: Monitoreo continuo de patrones de ataque
+- 🛡️ **Defensa Adaptativa**: Aprendizaje continuo de nuevas amenazas
+- ⚡ **Rendimiento Optimizado**: Protección sin impacto en el rendimiento del servidor
+
+#### Protección contra Ataques Comunes:
+- 🤖 **Ataques de Bots**: Detección y bloqueo de bots maliciosos
+- 📈 **Ataques DDoS**: Mitigación avanzada de ataques de denegación de servicio
+- 🔍 **Escaneo de Vulnerabilidades**: Detección de intentos de explotación
+- 🎭 **Ataques de Spoofing**: Prevención de suplantación de identidad
+- 🌐 **Ataques Web**: Protección contra inyecciones y exploits web
 
 ## 📊 Monitoreo y Mantenimiento
 
@@ -207,6 +253,22 @@ virtualmin backup-domain --domain ejemplo.com --dest /backup/
 # Actualizar sistema
 sudo apt update && sudo apt upgrade -y
 ```
+
+## 📖 Documentación y Guías
+
+### 📚 **Documentación Completa**
+- **[📚 Índice de Documentación](DOCUMENTATION_INDEX.md)** - Índice completo de toda la documentación disponible
+- **[🛡️ Guía de Protección IA](AI_PROTECTION_GUIDE.md)** - Sistema avanzado contra ataques de IA y DDoS
+- **[🔧 Guía de Instalación Unificada](GUIA_INSTALACION_UNIFICADA.md)** - Instalación completa paso a paso
+- **[⚙️ Integración de Paneles](INTEGRACION_PANELES.md)** - Configuración avanzada de paneles Webmin/Virtualmin
+- **[💼 Funciones Pro Completas](FUNCIONES_PRO_COMPLETAS.md)** - Todas las características Pro documentadas
+- **[🔒 Sistema de Protección Completa](SISTEMA_PROTECCION_COMPLETA_100.md)** - Seguridad 100% garantizada
+
+### 📋 **Guías Especializadas**
+- **[🚀 Sistema Autosuficiente](SISTEMA_COMPLETO_AUTOSUFICIENTE.md)** - Arquitectura completa del sistema
+- **[🧠 Sistema Inteligente](SISTEMA_INTELIGENTE_GUIA_COMPLETA.md)** - Guía del sistema inteligente
+- **[🔄 Actualización Segura](SISTEMA_ACTUALIZACION_SEGURA.md)** - Sistema de actualizaciones automáticas
+- **[📊 Servicios Premium](SERVICIOS_PREMIUM_INCLUIDOS.md)** - Servicios premium incluidos
 
 ## 🚀 Aplicaciones Soportadas
 
