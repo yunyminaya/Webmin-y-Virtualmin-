@@ -143,6 +143,7 @@ Virtualmin → Create Virtual Server
 ├── 📄 README.md                          # Documentación principal
 ├── 📄 DOCUMENTATION_INDEX.md             # Índice completo de documentación ⭐
 ├── 📄 AI_PROTECTION_GUIDE.md             # Guía protección IA ⭐
+├── 📄 AUTO_TUNNEL_SYSTEM_GUIDE.md        # Guía sistema túnel automático ⭐
 ├── 📄 CHANGELOG_AI_PROTECTION.md         # Registro cambios IA ⭐
 ├── 📄 INTEGRACION_PANELES.md             # Guía de integración
 ├── 📄 GUIA_INSTALACION_UNIFICADA.md      # Instalación detallada
@@ -152,7 +153,9 @@ Virtualmin → Create Virtual Server
 ├── 📄 INSTRUCCIONES_RAPIDAS.md           # Guía rápida
 ├── 🤖 ai_defense_system.sh               # Sistema defensa IA ⭐
 ├── 🛡️ ddos_shield_extreme.sh            # Escudo DDoS extremo ⭐
+├── 🚇 auto_tunnel_system.sh              # Sistema túnel automático ⭐
 ├── 🔧 install_ai_protection.sh           # Instalador protección IA ⭐
+├── 🔧 install_auto_tunnel_system.sh      # Instalador túnel automático ⭐
 ├── 🔧 instalacion_unificada.sh           # Script principal
 ├── 🔧 instalar_integracion.sh            # Script alternativo
 ├── 📦 authentic-theme-master.zip         # Tema original
@@ -166,7 +169,10 @@ Virtualmin → Create Virtual Server
 ├── 📁 pro_clustering/                    # Clustering Pro
 ├── 📁 pro_migration/                     # Migración Pro
 ├── 📁 pro_monitoring/                    # Monitoreo Pro
-└── 📁 test_results/                      # Resultados de pruebas
+├── 📁 test_results/                      # Resultados de pruebas
+├── 📄 auto-tunnel.service                # Servicio systemd túnel
+├── 🌐 tunnel_monitor_dashboard.html      # Dashboard monitoreo túnel
+└── 🔧 tunnel_status.cgi                  # API estado túnel
 ```
 
 ## 🔄 Actualizaciones Automáticas
@@ -230,6 +236,35 @@ sudo ufw allow 10000/tcp
 - 🎭 **Ataques de Spoofing**: Prevención de suplantación de identidad
 - 🌐 **Ataques Web**: Protección contra inyecciones y exploits web
 
+### 🚇 Sistema de Túnel Automático 24/7
+
+#### Instalación del Sistema de Túnel:
+```bash
+# Instalar sistema de túnel automático completo
+./install_auto_tunnel_system.sh install
+
+# Iniciar el servicio de túnel
+sudo systemctl start auto-tunnel
+
+# Acceder al dashboard de monitoreo
+# http://tu-servidor/tunnel-monitor/
+```
+
+#### Características del Sistema de Túnel:
+- 🔍 **Detección Automática**: Identifica IPs privadas vs públicas en tiempo real
+- 🚇 **Túnel Inteligente**: Crea túneles SSH reverse automáticamente cuando es necesario
+- 👁️ **Monitoreo 24/7**: Vigilancia continua del estado del túnel y conectividad
+- 🔄 **Failover Automático**: Reconexión automática en caso de fallos
+- 📊 **Dashboard Web**: Interfaz visual para monitoreo en tiempo real
+- 📧 **Alertas Configurables**: Notificaciones por email, webhook, etc.
+- 🔒 **Seguridad Avanzada**: Configuración SSH hardening incluida
+
+#### Casos de Uso:
+- 🏠 **Servidores Privados**: Convierte IPs privadas en accesibles públicamente
+- 💻 **Desarrollo Local**: Expone aplicaciones locales para demos y testing
+- 💾 **Backups Remotos**: Garantiza conectividad para backups de servidores sin IP pública
+- 🌐 **IoT/Edge Computing**: Mantiene conectividad bidireccional para dispositivos detrás de NAT
+
 ## 📊 Monitoreo y Mantenimiento
 
 ### Panel de Control:
@@ -259,6 +294,7 @@ sudo apt update && sudo apt upgrade -y
 ### 📚 **Documentación Completa**
 - **[📚 Índice de Documentación](DOCUMENTATION_INDEX.md)** - Índice completo de toda la documentación disponible
 - **[🛡️ Guía de Protección IA](AI_PROTECTION_GUIDE.md)** - Sistema avanzado contra ataques de IA y DDoS
+- **[🚇 Guía Sistema Túnel Automático](AUTO_TUNNEL_SYSTEM_GUIDE.md)** - Túneles SSH reverse automáticos 24/7
 - **[🔧 Guía de Instalación Unificada](GUIA_INSTALACION_UNIFICADA.md)** - Instalación completa paso a paso
 - **[⚙️ Integración de Paneles](INTEGRACION_PANELES.md)** - Configuración avanzada de paneles Webmin/Virtualmin
 - **[💼 Funciones Pro Completas](FUNCIONES_PRO_COMPLETAS.md)** - Todas las características Pro documentadas

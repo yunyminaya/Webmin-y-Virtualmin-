@@ -46,6 +46,13 @@
 - `ddos_shield_extreme.sh` - Escudo DDoS extremo
 - `install_ai_protection.sh` - Instalador de protección IA
 
+### Túneles y Redes
+- **[AUTO_TUNNEL_SYSTEM_GUIDE.md](AUTO_TUNNEL_SYSTEM_GUIDE.md)** - Sistema de túnel automático 24/7 ⭐
+- `auto_tunnel_system.sh` - Sistema principal de túnel automático
+- `install_auto_tunnel_system.sh` - Instalador del sistema de túnel
+- `tunnel_monitor_dashboard.html` - Dashboard de monitoreo de túnel
+- `tunnel_status.cgi` - API de estado del túnel
+
 ### Seguridad del Sistema
 - **[SISTEMA_PROTECCION_COMPLETA_100.md](SISTEMA_PROTECCION_COMPLETA_100.md)** - Protección completa 100%
 - **[README_DEFENSE.md](README_DEFENSE.md)** - Sistema de defensa
@@ -191,6 +198,7 @@
 📦 Webmin-y-Virtualmin/
 ├── 📄 README.md                          # Documentación principal
 ├── 📄 AI_PROTECTION_GUIDE.md             # Guía protección IA ⭐
+├── 📄 AUTO_TUNNEL_SYSTEM_GUIDE.md        # Guía túnel automático ⭐
 ├── 📄 DOCUMENTATION_INDEX.md             # Este archivo
 ├── 📄 GUIA_INSTALACION_UNIFICADA.md      # Guía instalación
 ├── 📄 INTEGRACION_PANELES.md             # Integración paneles
@@ -214,6 +222,11 @@
 ├── 📄 README_AUTONOMOUS_SYSTEM.md        # README sistema autónomo
 ├── 📄 README_DEFENSE.md                  # README defensa
 ├── 📄 README_MEJORADO.md                 # README mejorado
+├── 🚇 auto_tunnel_system.sh              # Sistema túnel automático ⭐
+├── 🔧 install_auto_tunnel_system.sh      # Instalador túnel ⭐
+├── 🌐 tunnel_monitor_dashboard.html      # Dashboard túnel ⭐
+├── 🔧 tunnel_status.cgi                  # API estado túnel ⭐
+├── 📄 auto-tunnel.service                # Servicio systemd túnel
 ├── 🔧 Scripts principales...             # Scripts de instalación
 ├── 📁 configs/                           # Configuraciones
 ├── 📁 scripts/                           # Scripts especializados
@@ -238,6 +251,7 @@
 2. **Instalación**: Sigue la [GUIA_INSTALACION_UNIFICADA.md](GUIA_INSTALACION_UNIFICADA.md)
 3. **Configuración**: Consulta [INTEGRACION_PANELES.md](INTEGRACION_PANELES.md)
 4. **Seguridad**: Revisa [AI_PROTECTION_GUIDE.md](AI_PROTECTION_GUIDE.md)
+5. **Túneles**: Configura [AUTO_TUNNEL_SYSTEM_GUIDE.md](AUTO_TUNNEL_SYSTEM_GUIDE.md) para acceso remoto
 
 ### Para Usuarios Avanzados
 1. **Referencia API**: Explora `pro_api/`
@@ -273,7 +287,7 @@
 
 **📚 Documentación completa y organizada para Webmin y Virtualmin Pro 📚**
 
-[🚀 Inicio](README.md) • [🛡️ Protección IA](AI_PROTECTION_GUIDE.md) • [⚙️ Configuración](INTEGRACION_PANELES.md) • [🐛 Soporte](https://github.com/yunyminaya/Webmin-y-Virtualmin-/issues)
+[🚀 Inicio](README.md) • [🛡️ Protección IA](AI_PROTECTION_GUIDE.md) • [🚇 Túnel Automático](AUTO_TUNNEL_SYSTEM_GUIDE.md) • [⚙️ Configuración](INTEGRACION_PANELES.md) • [🐛 Soporte](https://github.com/yunyminaya/Webmin-y-Virtualmin-/issues)
 
 *Última actualización: Enero 2025*
 
