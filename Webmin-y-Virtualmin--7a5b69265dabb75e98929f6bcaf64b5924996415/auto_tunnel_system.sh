@@ -21,6 +21,13 @@ PURPLE='\033[0;35m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
+# Verificar que el script se ejecute como root
+if [[ $EUID -ne 0 ]]; then
+    echo -e "${RED}Este script debe ejecutarse como root${NC}"
+    echo -e "${YELLOW}Ejemplo: sudo $0 $@${NC}"
+    exit 1
+fi
+
 # Función de logging
 log() {
     local level="$1"
@@ -501,12 +508,6 @@ main() {
             ;;
     esac
 }
-
-# Verificar que el script se ejecute como root
-if [[ $EUID -ne 0 ]]; then
-    echo -e "${RED}Este script debe ejecutarse como root${NC}"
-    exit 1
-fi
 
 # Ejecutar función principal
 main "$@"
