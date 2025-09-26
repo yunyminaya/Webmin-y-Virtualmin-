@@ -1,0 +1,198 @@
+#!/bin/bash
+# Custom Budget Alerts Script
+# Alertas personalizadas de presupuesto con lógica avanzada
+
+set -e
+
+# Configuración
+CLUSTER_NAME="{{ cluster_name }}"
+BUDGET_LIMIT="{{ cost_monitoring.budget_limit }}"
+ALERT_THRESHOLDS="{{ cost_monitoring.alert_thresholds | join(' ') }}"
+ALERT_EMAILS="{{ cost_monitoring.alert_emails | join(' ') }}"
+LOG_FILE="/var/log/cost_monitoring/custom_budget_alerts.log"
+DATA_DIR="/var/lib/cost_monitoring"
+
+# Función de logging
+log() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $*" | tee -a "$LOG_FILE"
+}
+
+# Función para enviar alertas por email
+send_email_alert() {
+    local subject="$1"
+    local message="$2"
+
+    if [ -n "$ALERT_EMAILS" ]; then
+        log "Enviando alerta por email: $subject"
+
+        # Usar mailx o similar para enviar emails
+        echo "$message" | mail -s "$subject" $ALERT_EMAILS 2>/dev/null || \
+        log "Error enviando email - verificar configuración de mail"
+    fi
+}
+
+# Función para enviar alertas a Slack
+send_slack_alert() {
+    local message="$1"
+    local color="${2:-danger}"
+
+    if [ -f "/opt/cost_monitoring/slack_config.json" ]; then
+        local webhook_url=$(jq -r '.webhook_url' /opt/cost_monitoring/slack_config.json 2>/dev/null)
+
+        if [ -n "$webhook_url" ] && [ "$webhook_url" != "null" ]; then
+            log "Enviando alerta a Slack"
+
+            curl -X POST -H 'Content-type: application/json' \
+                --data "{\"text\":\"$message\",\"attachments\":[{\"color\":\"$color\"}]}" \
+                "$webhook_url" 2>/dev/null || \
+                log "Error enviando alerta a Slack"
+        fi
+    fi
+}
+
+# Función para enviar alertas a PagerDuty
+send_pagerduty_alert() {
+    local summary="$1"
+    local severity="${2:-warning}"
+
+    if [ -f "/opt/cost_monitoring/pagerduty_config.json" ]; then
+        local routing_key=$(jq -r '.routing_key' /opt/cost_monitoring/pagerduty_config.json 2>/dev/null)
+
+        if [ -n "$routing_key" ] && [ "$routing_key" != "null" ]; then
+            log "Enviando alerta a PagerDuty"
+
+            curl -X POST https://events.pagerduty.com/v2/enqueue \
+                -H "Content-Type: application/json" \
+                -d "{
+                    \"routing_key\": \"$routing_key\",
+                    \"event_action\": \"trigger\",
+                    \"payload\": {
+                        \"summary\": \"$summary\",
+                        \"severity\": \"$severity\",
+                        \"source\": \"cost_monitoring\"
+                    }
+                }" 2>/dev/null || \
+                log "Error enviando alerta a PagerDuty"
+        fi
+    fi
+}
+
+# Función para obtener costos actuales
+get_current_costs() {
+    local date=$(date +%Y-%m-%d)
+    local data_file="$DATA_DIR/aws/$date/summary.json"
+
+    if [ -f "$data_file" ]; then
+        jq -r '.total_cost' "$data_file" 2>/dev/null || echo "0"
+    else
+        echo "0"
+    fi
+}
+
+# Función para calcular porcentaje del presupuesto
+calculate_budget_percentage() {
+    local current_cost=$1
+    local budget_limit=$2
+
+    if (( $(echo "$budget_limit > 0" | bc -l) )); then
+        echo "scale=2; $current_cost / $budget_limit * 100" | bc -l
+    else
+        echo "0"
+    fi
+}
+
+# Función principal de alertas
+check_budget_alerts() {
+    log "Verificando alertas de presupuesto..."
+
+    local current_cost=$(get_current_costs)
+    local budget_percentage=$(calculate_budget_percentage "$current_cost" "$BUDGET_LIMIT")
+
+    log "Costo actual: $$current_cost / $$BUDGET_LIMIT ($budget_percentage%)"
+
+    # Verificar umbrales de alerta
+    for threshold in $ALERT_THRESHOLDS; do
+        if (( $(echo "$budget_percentage >= $threshold" | bc -l) )); then
+            local subject="ALERTA DE PRESUPUESTO: $CLUSTER_NAME - ${budget_percentage}% usado"
+            local message="Cluster: $CLUSTER_NAME
+Costo actual: $$current_cost
+Límite de presupuesto: $$BUDGET_LIMIT
+Porcentaje usado: ${budget_percentage}%
+Umbral excedido: ${threshold}%
+
+Acción requerida: Revisar costos y optimizar recursos."
+
+            log "ALERTA: Presupuesto excedió umbral del ${threshold}%"
+
+            # Enviar alertas a todos los canales configurados
+            send_email_alert "$subject" "$message"
+            send_slack_alert "$message" "danger"
+            send_pagerduty_alert "$subject" "critical"
+            break
+        fi
+    done
+}
+
+# Función para verificar anomalías de costos
+check_cost_anomalies() {
+    {% if cost_monitoring.anomaly_detection %}
+    log "Verificando anomalías de costos..."
+
+    local date=$(date +%Y-%m-%d)
+    local analysis_file="$DATA_DIR/aws/$date/cost_analysis_results.json"
+
+    if [ -f "$analysis_file" ]; then
+        local anomalies_count=$(jq '.anomalies | length' "$analysis_file" 2>/dev/null || echo "0")
+
+        if [ "$anomalies_count" -gt 0 ]; then
+            local subject="ANOMALÍA DE COSTOS DETECTADA: $CLUSTER_NAME"
+            local message="Se detectaron $anomalies_count anomalías en los costos del cluster $CLUSTER_NAME.
+
+Revisar análisis completo en: $analysis_file"
+
+            log "ALERTA: $anomalies_count anomalías detectadas"
+
+            send_email_alert "$subject" "$message"
+            send_slack_alert "$message" "warning"
+        fi
+    fi
+    {% endif %}
+}
+
+# Función de prueba
+test_alerts() {
+    log "Ejecutando pruebas de alertas..."
+
+    local test_subject="TEST: Sistema de Alertas de Costos - $CLUSTER_NAME"
+    local test_message="Esta es una alerta de prueba del sistema de monitoreo de costos.
+
+Cluster: $CLUSTER_NAME
+Fecha: $(date)
+Estado: OK"
+
+    send_email_alert "$test_subject" "$test_message"
+    send_slack_alert "Test Alert: Cost monitoring system is working correctly" "good"
+
+    log "Pruebas completadas"
+}
+
+# Función principal
+main() {
+    log "Iniciando verificación de alertas de costos para cluster $CLUSTER_NAME"
+
+    # Procesar argumentos
+    case "${1:-}" in
+        --test)
+            test_alerts
+            ;;
+        *)
+            check_budget_alerts
+            check_cost_anomalies
+            ;;
+    esac
+
+    log "Verificación de alertas completada"
+}
+
+# Ejecutar función principal
+main "$@"

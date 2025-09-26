@@ -1,0 +1,38 @@
+---
+# Cost Dashboards Configuration
+# Configura dashboards de costos en Grafana
+
+- name: "Crear directorio para dashboards de costos"
+  file:
+    path: "/etc/grafana/provisioning/dashboards/cost_monitoring"
+    state: directory
+    owner: grafana
+    group: grafana
+    mode: '0755'
+
+- name: "Desplegar dashboard de costos principales"
+  template:
+    src: "cost_dashboard.json.j2"
+    dest: "/etc/grafana/provisioning/dashboards/cost_monitoring/cost_overview.json"
+    owner: grafana
+    group: grafana
+    mode: '0644'
+  notify: reload_grafana
+
+- name: "Desplegar dashboard de optimización de costos"
+  template:
+    src: "cost_optimization_dashboard.json.j2"
+    dest: "/etc/grafana/provisioning/dashboards/cost_monitoring/cost_optimization.json"
+    owner: grafana
+    group: grafana
+    mode: '0644'
+  notify: reload_grafana
+
+- name: "Configurar datasource de costos"
+  template:
+    src: "cost_datasource.yml.j2"
+    dest: "/etc/grafana/provisioning/datasources/cost_monitoring.yml"
+    owner: grafana
+    group: grafana
+    mode: '0644'
+  notify: reload_grafana

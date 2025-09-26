@@ -1,0 +1,109 @@
+✅ dashboard_autonomous.sh
+✅ test_auto_repair_now.sh
+✅ kubernetes_setup.sh
+✅ createvirtualminmodule.sh
+✅ setup-repos.sh
+✅ enterprise_ultra_scale.sh
+✅ ai_defense_system.sh
+✅ configure_official_repo.sh
+✅ ddos_shield_extreme.sh
+✅ instalar_integracion.sh
+✅ cleanup_safe.sh
+✅ test_vps_direct.sh
+✅ verificar_funciones_pro.sh
+✅ install_ultra_simple.sh
+✅ activate_all_pro_features.sh
+✅ pro_features_advanced.sh
+✅ PREPARE_FOR_COMMIT.sh
+✅ apply_gpl_override.sh
+✅ install_pro_complete.sh
+✅ install_intelligent_system.sh
+✅ intelligent_auto_update.sh
+✅ ssl_manager_pro.sh
+✅ pro_dashboard.sh
+✅ analytics_pro.sh
+✅ instalacion_unificada.sh
+✅ install_defense.sh
+✅ enterprise_monitor_pro.sh
+✅ install_autonomous_system.sh
+✅ generar_docker.sh
+✅ analyze_duplicates.sh
+✅ intelligent_dashboard.sh
+✅ pro_activation_master.sh
+✅ enterprise_monitoring_setup.sh
+✅ test_smart_system.sh
+✅ auto_repair.sh
+✅ install_ai_protection.sh
+✅ cloud_backup_enterprise.sh
+✅ enterprise_master_installer.sh
+✅ prueba_exhaustiva_sistema.sh
+✅ install_php_multi_version.sh
+✅ backup_multicloud.sh
+✅ auto_repair_critical.sh
+✅ auto_repair_complete.sh
+✅ autonomous_repair.sh
+✅ diagnostico_reparacion_vps.sh
+✅ proteccion_web_avanzada.sh
+✅ instalador_completo_offline.sh
+✅ repair_apache_auto.sh
+✅ proteccion_completa_100.sh
+✅ seguridad_integridad_100.sh
+✅ hardening_servidor_100.sh
+✅ configurador_automatico_pro.sh
+✅ dev_tools_pro.sh
+✅ performance_turbo_max.sh
+✅ common.sh
+✅ manage_resellers.sh
+✅ validar_dependencias.sh
+✅ install_auto_repair_system.sh
+✅ install_cms_frameworks.sh
+✅ api_manager_pro.sh
+✅ instalar_todo.sh
+✅ monitor_sistema.sh
+✅ enterprise_backup_pro.sh
+✅ auto_tunnel_system.sh
+✅ integration_test_staging.sh
+✅ cluster_manager_pro.sh
+✅ test_security_system.sh
+✅ theme-update.sh
+✅ migrate_server_pro.sh
+✅ test_unit_functions.sh
+✅ test_multi_distro.sh
+✅ test_master.sh
+✅ auto_defense.sh
+✅ install_auto_tunnel_system.sh
+✅ update_system_secure.sh
+✅ final_verification.sh
+
+✅ curl encontrado
+✅ wget encontrado
+✅ bash encontrado
+✅ grep encontrado
+✅ awk encontrado
+✅ sed encontrado
+✅ find encontrado
+✅ ps encontrado
+✅ netstat encontrado
+
+❌ Servicio apache2 no habilitado
+❌ Servicio mysql no habilitado
+❌ Servicio ssh no habilitado
+❌ Servicio rsyslog no habilitado
+
+✅ Conectividad a 8.8.8.8 OK
+✅ Conectividad a google.com OK
+✅ Conectividad a github.com OK
+
+✅ Directorio /etc accesible
+✅ Directorio /var accesible
+✅ Directorio /usr accesible
+✅ Directorio /opt accesible
+❌ Directorio /home no accesible
+✅ Archivo crítico instalacion_unificada.sh OK
+✅ Archivo crítico ai_defense_system.sh OK
+✅ Archivo crítico auto_tunnel_system.sh OK
+
+✅ SSH: Root login deshabilitado
+❌ Firewall no configurado
+
+❌ 3 pruebas fallaron

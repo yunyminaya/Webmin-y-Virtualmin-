@@ -1,0 +1,312 @@
+#!/usr/bin/env python3
+"""
+Webmin/Virtualmin Reserved Instances Automation - FREE Version
+Sistema completamente gratuito de gestión de RI integrado con Webmin
+"""
+
+import json
+import logging
+import os
+import sys
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional
+
+# Configuración de logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+class WebminRIAutomation:
+    """Clase para automatización gratuita de RI en Webmin/Virtualmin"""
+
+    def __init__(self, webmin_config_path: str = '/etc/webmin'):
+        self.webmin_config_path = webmin_config_path
+        self.virtualmin_config_path = '/etc/virtualmin'
+        self.ri_config_file = f"{webmin_config_path}/ri_automation_config.json"
+        self.ri_reports_dir = f"{webmin_config_path}/ri_reports"
+
+        # Crear directorios si no existen
+        os.makedirs(self.ri_reports_dir, exist_ok=True)
+
+        # Configuración gratuita por defecto
+        self.default_config = {
+            'enabled': True,
+            'analysis_interval_hours': 24,
+            'recommendation_threshold': 50,  # USD mensuales mínimos para recomendar
+            'max_recommendations': 10,
+            'simulation_mode': True,  # Siempre en modo simulación (GRATIS)
+            'auto_apply': False,  # Nunca aplicar automáticamente (GRATIS)
+            'notification_emails': [],
+            'webmin_integration': True,
+            'virtualmin_integration': True
+        }
+
+    def load_config(self) -> Dict:
+        """Carga configuración desde Webmin"""
+        try:
+            if os.path.exists(self.ri_config_file):
+                with open(self.ri_config_file, 'r') as f:
+                    config = json.load(f)
+                    # Asegurar que siempre sea gratuito
+                    config.update({
+                        'simulation_mode': True,
+                        'auto_apply': False,
+                        'cost_free': True
+                    })
+                    return config
+            else:
+                # Crear configuración por defecto gratuita
+                self.save_config(self.default_config)
+                return self.default_config
+        except Exception as e:
+            logger.error(f"Error cargando configuración: {e}")
+            return self.default_config
+
+    def save_config(self, config: Dict):
+        """Guarda configuración en Webmin"""
+        try:
+            with open(self.ri_config_file, 'w') as f:
+                json.dump(config, f, indent=2)
+            os.chmod(self.ri_config_file, 0o600)
+        except Exception as e:
+            logger.error(f"Error guardando configuración: {e}")
+
+    def analyze_virtualmin_servers(self) -> Dict:
+        """Analiza servidores Virtualmin para recomendaciones RI (GRATIS)"""
+        analysis = {
+            'servers': [],
+            'total_servers': 0,
+            'potential_savings': 0,
+            'recommendations': []
+        }
+
+        try:
+            # Leer configuración de Virtualmin
+            virtualmin_config = f"{self.virtualmin_config_path}/config"
+
+            if os.path.exists(virtualmin_config):
+                with open(virtualmin_config, 'r') as f:
+                    for line in f:
+                        if line.startswith('host='):
+                            server_info = self._analyze_server(line.split('=')[1].strip())
+                            if server_info:
+                                analysis['servers'].append(server_info)
+                                analysis['total_servers'] += 1
+                                analysis['potential_savings'] += server_info.get('potential_savings', 0)
+
+            # Generar recomendaciones basadas en análisis gratuito
+            analysis['recommendations'] = self._generate_free_recommendations(analysis['servers'])
+
+        except Exception as e:
+            logger.error(f"Error analizando servidores Virtualmin: {e}")
+
+        return analysis
+
+    def _analyze_server(self, server_name: str) -> Optional[Dict]:
+        """Analiza un servidor individual (simulación gratuita)"""
+        # Simulación gratuita - no requiere acceso real a AWS
+        server_analysis = {
+            'server_name': server_name,
+            'instance_type': 't3.medium',  # Simulado
+            'running_hours_month': 720,  # Simulado
+            'current_cost_month': 30.00,  # Simulado
+            'ri_cost_month': 18.00,  # Simulado (40% descuento)
+            'potential_savings': 12.00,  # Simulado
+            'break_even_months': 6,  # Simulado
+            'recommendation': 'CONSIDER_RI' if server_name else 'MONITOR'
+        }
+
+        return server_analysis
+
+    def _generate_free_recommendations(self, servers: List[Dict]) -> List[Dict]:
+        """Genera recomendaciones completamente gratuitas"""
+        recommendations = []
+
+        for server in servers:
+            if server.get('potential_savings', 0) >= self.load_config().get('recommendation_threshold', 50):
+                recommendation = {
+                    'server_name': server['server_name'],
+                    'instance_type': server['instance_type'],
+                    'current_monthly_cost': server['current_cost_month'],
+                    'ri_monthly_cost': server['ri_cost_month'],
+                    'monthly_savings': server['potential_savings'],
+                    'yearly_savings': server['potential_savings'] * 12,
+                    'break_even_months': server['break_even_months'],
+                    'confidence': 'HIGH',
+                    'action': 'SIMULATE_ONLY',  # Siempre simulación gratuita
+                    'implementation_cost': 0.00,  # GRATIS
+                    'timestamp': datetime.now().isoformat()
+                }
+                recommendations.append(recommendation)
+
+        # Limitar número de recomendaciones
+        max_recs = self.load_config().get('max_recommendations', 10)
+        return recommendations[:max_recs]
+
+    def create_webmin_module(self) -> Dict:
+        """Crea módulo para Webmin (GRATIS)"""
+        module_config = {
+            'name': 'RI Automation',
+            'description': 'Reserved Instances Automation - FREE',
+            'version': '1.0.0',
+            'category': 'System',
+            'depends': ['virtualmin'],
+            'free_features': [
+                'RI Analysis',
+                'Cost Simulation',
+                'Savings Reports',
+                'Recommendations Dashboard',
+                'Email Notifications'
+            ],
+            'premium_features': [],  # Todo es gratuito
+            'config_file': self.ri_config_file,
+            'reports_dir': self.ri_reports_dir
+        }
+
+        return module_config
+
+    def generate_free_report(self) -> Dict:
+        """Genera reporte completamente gratuito"""
+        config = self.load_config()
+        analysis = self.analyze_virtualmin_servers()
+
+        report = {
+            'title': 'Webmin/Virtualmin RI Automation Report - FREE',
+            'generated_at': datetime.now().isoformat(),
+            'version': 'FREE-1.0.0',
+            'configuration': config,
+            'server_analysis': analysis,
+            'summary': {
+                'total_servers_analyzed': analysis['total_servers'],
+                'total_potential_savings': analysis['potential_savings'],
+                'total_recommendations': len(analysis['recommendations']),
+                'implementation_cost': 0.00,  # GRATIS
+                'cost_free': True,
+                'simulation_mode': True
+            },
+            'recommendations': analysis['recommendations'],
+            'disclaimer': 'This is a FREE analysis. No actual RI purchases will be made.',
+            'next_analysis': (datetime.now() + timedelta(hours=config.get('analysis_interval_hours', 24))).isoformat()
+        }
+
+        return report
+
+    def save_report(self, report: Dict):
+        """Guarda reporte en Webmin"""
+        try:
+            report_file = f"{self.ri_reports_dir}/ri_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+            with open(report_file, 'w') as f:
+                json.dump(report, f, indent=2)
+            os.chmod(report_file, 0o644)
+
+            # Crear enlace simbólico al último reporte
+            latest_link = f"{self.ri_reports_dir}/latest_report.json"
+            if os.path.exists(latest_link):
+                os.remove(latest_link)
+            os.symlink(report_file, latest_link)
+
+            logger.info(f"Reporte guardado: {report_file}")
+            return report_file
+
+        except Exception as e:
+            logger.error(f"Error guardando reporte: {e}")
+            return None
+
+    def send_free_notifications(self, report: Dict):
+        """Envía notificaciones gratuitas por email"""
+        config = self.load_config()
+        emails = config.get('notification_emails', [])
+
+        if not emails:
+            return
+
+        subject = f"Webmin RI Automation Report - FREE - {datetime.now().strftime('%Y-%m-%d')}"
+        body = f"""
+Webmin/Virtualmin Reserved Instances Automation - FREE Report
+
+Generated: {report['generated_at']}
+Total Servers Analyzed: {report['summary']['total_servers_analyzed']}
+Potential Monthly Savings: ${report['summary']['total_potential_savings']:.2f}
+Total Recommendations: {report['summary']['total_recommendations']}
+
+This is a completely FREE analysis with no implementation costs.
+
+Recommendations Summary:
+{chr(10).join([f"- {rec['server_name']}: ${rec['monthly_savings']:.2f}/month savings" for rec in report['recommendations'][:5]])}
+
+Full report available in Webmin: System -> RI Automation
+
+---
+Webmin RI Automation - FREE Version
+No costs, no commitments, pure analysis.
+"""
+
+        # Enviar emails (simulación gratuita - en implementación real usaría sendmail)
+        for email in emails:
+            logger.info(f"Notification would be sent to: {email}")
+            # En implementación real: subprocess.run(['sendmail', '-t'], input=email_content)
+
+    def run_free_analysis(self):
+        """Ejecuta análisis completamente gratuito"""
+        logger.info("=== WEBMIN RI AUTOMATION - FREE ANALYSIS ===")
+
+        try:
+            # Cargar configuración
+            config = self.load_config()
+            logger.info(f"Configuración cargada: {config}")
+
+            # Ejecutar análisis
+            report = self.generate_free_report()
+            logger.info(f"Análisis completado. Servidores: {report['summary']['total_servers_analyzed']}")
+
+            # Guardar reporte
+            report_file = self.save_report(report)
+            if report_file:
+                logger.info(f"Reporte guardado: {report_file}")
+
+            # Enviar notificaciones
+            self.send_free_notifications(report)
+
+            logger.info("=== ANÁLISIS GRATUITO COMPLETADO ===")
+            return True
+
+        except Exception as e:
+            logger.error(f"Error en análisis gratuito: {e}")
+            return False
+
+
+def main():
+    """Función principal"""
+    if len(sys.argv) > 1 and sys.argv[1] == '--help':
+        print("Webmin/Virtualmin RI Automation - FREE Version")
+        print("Uso: python webmin_ri_automation.py [opción]")
+        print("Opciones:")
+        print("  --analyze    Ejecutar análisis gratuito")
+        print("  --report     Generar reporte")
+        print("  --config     Mostrar configuración")
+        print("  --help       Esta ayuda")
+        sys.exit(0)
+
+    automation = WebminRIAutomation()
+
+    if len(sys.argv) > 1:
+        option = sys.argv[1]
+        if option == '--analyze':
+            success = automation.run_free_analysis()
+            sys.exit(0 if success else 1)
+        elif option == '--report':
+            report = automation.generate_free_report()
+            print(json.dumps(report, indent=2))
+        elif option == '--config':
+            config = automation.load_config()
+            print(json.dumps(config, indent=2))
+        else:
+            print(f"Opción no reconocida: {option}")
+            sys.exit(1)
+    else:
+        # Ejecutar análisis por defecto
+        success = automation.run_free_analysis()
+        sys.exit(0 if success else 1)
+
+
+if __name__ == '__main__':
+    main()

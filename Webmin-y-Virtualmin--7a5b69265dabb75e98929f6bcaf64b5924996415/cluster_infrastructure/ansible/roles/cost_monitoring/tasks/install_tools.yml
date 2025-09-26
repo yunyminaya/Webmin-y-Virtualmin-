@@ -1,0 +1,71 @@
+---
+# Instalar herramientas de monitoreo de costos
+
+- name: "Instalar AWS CLI para monitoreo de costos"
+  package:
+    name: awscli
+    state: present
+  when: cloud_provider == "aws"
+
+- name: "Instalar Azure CLI para monitoreo de costos"
+  package:
+    name: azure-cli
+    state: present
+  when: cloud_provider == "azure"
+
+- name: "Instalar Google Cloud SDK para monitoreo de costos"
+  package:
+    name: google-cloud-sdk
+    state: present
+  when: cloud_provider == "gcp"
+
+- name: "Instalar jq para procesamiento JSON"
+  package:
+    name: jq
+    state: present
+
+- name: "Instalar bc para cálculos matemáticos"
+  package:
+    name: bc
+    state: present
+
+- name: "Instalar curl para APIs de costos"
+  package:
+    name: curl
+    state: present
+
+- name: "Instalar Python y pip para herramientas de costos"
+  package:
+    name:
+      - python3
+      - python3-pip
+    state: present
+
+- name: "Instalar bibliotecas Python para análisis de costos"
+  pip:
+    name:
+      - boto3
+      - azure-mgmt-costmanagement
+      - google-cloud-billing
+      - pandas
+      - numpy
+      - matplotlib
+    state: present
+
+- name: "Crear directorio para scripts de costos"
+  file:
+    path: "/opt/cost_monitoring"
+    state: directory
+    mode: '0755'
+
+- name: "Crear directorio para datos de costos"
+  file:
+    path: "/var/lib/cost_monitoring"
+    state: directory
+    mode: '0755'
+
+- name: "Crear directorio para logs de costos"
+  file:
+    path: "/var/log/cost_monitoring"
+    state: directory
+    mode: '0755'

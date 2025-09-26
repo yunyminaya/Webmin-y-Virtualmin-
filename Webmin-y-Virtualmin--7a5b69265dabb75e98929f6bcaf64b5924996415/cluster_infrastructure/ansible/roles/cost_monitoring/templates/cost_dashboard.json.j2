@@ -1,0 +1,145 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "AWS Cost Monitoring - Enterprise",
+    "tags": ["aws", "cost", "monitoring", "enterprise"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Total Cost Overview",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "aws_cost_total{account_id=\"$account_id\"}",
+            "legendFormat": "Total Cost",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "id": 2,
+        "title": "Cost by Service",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "aws_cost_by_service{account_id=\"$account_id\"}",
+            "legendFormat": "{{service}}",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 0
+        }
+      },
+      {
+        "id": 3,
+        "title": "Daily Cost Trend",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "aws_cost_daily{account_id=\"$account_id\"}",
+            "legendFormat": "Daily Cost",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 8
+        }
+      },
+      {
+        "id": 4,
+        "title": "Budget vs Actual",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "aws_budget_limit{account_id=\"$account_id\"}",
+            "legendFormat": "Budget Limit",
+            "refId": "A"
+          },
+          {
+            "expr": "aws_cost_total{account_id=\"$account_id\"}",
+            "legendFormat": "Actual Cost",
+            "refId": "B"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 16
+        }
+      },
+      {
+        "id": 5,
+        "title": "Cost Anomalies",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "aws_cost_anomaly{account_id=\"$account_id\"}",
+            "legendFormat": "Anomalies",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 16
+        }
+      },
+      {
+        "id": 6,
+        "title": "Savings Opportunities",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "aws_cost_savings{account_id=\"$account_id\"}",
+            "legendFormat": "Savings",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 24
+        }
+      }
+    ],
+    "time": {
+      "from": "now-30d",
+      "to": "now"
+    },
+    "timepicker": {},
+    "templating": {
+      "list": [
+        {
+          "name": "account_id",
+          "type": "query",
+          "query": "label_values(account_id)",
+          "label": "AWS Account ID"
+        }
+      ]
+    },
+    "annotations": {
+      "list": []
+    },
+    "refresh": "5m",
+    "schemaVersion": 27,
+    "version": 0,
+    "links": []
+  }
+}

@@ -1,0 +1,413 @@
+#!/usr/bin/env python3
+"""
+AWS Cost Optimization Algorithms - Enterprise Edition
+Sistema inteligente de optimización de costos con IA
+"""
+
+import boto3
+import json
+import logging
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional, Tuple
+import pandas as pd
+import numpy as np
+from sklearn.ensemble import IsolationForest
+from sklearn.linear_model import LinearRegression
+
+# Configuración de logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+class AWSCostOptimizer:
+    """Clase principal para optimización de costos AWS"""
+
+    def __init__(self, account_id: str, region: str = 'us-east-1'):
+        self.account_id = account_id
+        self.region = region
+        self.session = boto3.Session()
+        self.clients = {
+            'ec2': self.session.client('ec2', region_name=region),
+            'rds': self.session.client('rds', region_name=region),
+            'cloudwatch': self.session.client('cloudwatch', region_name=region),
+            'ce': self.session.client('ce', region_name=region),  # Cost Explorer
+            's3': self.session.client('s3', region_name=region),
+            'lambda': self.session.client('lambda', region_name=region),
+            'elb': self.session.client('elbv2', region_name=region)
+        }
+
+    def analyze_unused_resources(self) -> Dict:
+        """Analiza recursos no utilizados"""
+        unused_resources = {
+            'ebs_volumes': [],
+            'eip_addresses': [],
+            'rds_instances': [],
+            'snapshots': [],
+            'load_balancers': []
+        }
+
+        try:
+            # Analizar volúmenes EBS no utilizados
+            volumes = self.clients['ec2'].describe_volumes()
+            for volume in volumes['Volumes']:
+                if volume['State'] == 'available':
+                    unused_resources['ebs_volumes'].append({
+                        'volume_id': volume['VolumeId'],
+                        'size': volume['Size'],
+                        'type': volume['VolumeType'],
+                        'monthly_cost': self._calculate_ebs_cost(volume)
+                    })
+
+            # Analizar direcciones IP elásticas no utilizadas
+            addresses = self.clients['ec2'].describe_addresses()
+            for address in addresses['Addresses']:
+                if 'InstanceId' not in address:
+                    unused_resources['eip_addresses'].append({
+                        'allocation_id': address['AllocationId'],
+                        'public_ip': address['PublicIp'],
+                        'monthly_cost': 3.6  # Costo mensual aproximado
+                    })
+
+            # Analizar instancias RDS con bajo uso
+            rds_instances = self.clients['rds'].describe_db_instances()
+            for db in rds_instances['DBInstances']:
+                if self._is_rds_underutilized(db['DBInstanceIdentifier']):
+                    unused_resources['rds_instances'].append({
+                        'instance_id': db['DBInstanceIdentifier'],
+                        'instance_class': db['DBInstanceClass'],
+                        'monthly_cost': self._calculate_rds_cost(db)
+                    })
+
+        except Exception as e:
+            logger.error(f"Error analizando recursos no utilizados: {e}")
+
+        return unused_resources
+
+    def recommend_reserved_instances(self) -> List[Dict]:
+        """Recomienda Reserved Instances basado en patrones de uso"""
+        recommendations = []
+
+        try:
+            # Obtener uso de EC2 de los últimos 30 días
+            end_date = datetime.now()
+            start_date = end_date - timedelta(days=30)
+
+            usage = self.clients['ce'].get_reservation_purchase_recommendation(
+                Service='Amazon Elastic Compute Cloud - Compute',
+                LookbackPeriodInDays='THIRTY_DAYS'
+            )
+
+            for rec in usage.get('Recommendations', []):
+                if rec['RecommendationDetails']:
+                    detail = rec['RecommendationDetails'][0]
+                    recommendations.append({
+                        'instance_type': detail['InstanceType'],
+                        'recommended_number': detail['RecommendedNumberOfInstancesToPurchase'],
+                        'estimated_savings': detail['EstimatedMonthlySavingsAmount'],
+                        'upfront_cost': detail['UpfrontCost'],
+                        'monthly_cost': detail['EstimatedMonthlyOnDemandCost']
+                    })
+
+        except Exception as e:
+            logger.error(f"Error generando recomendaciones RI: {e}")
+
+        return recommendations
+
+    def optimize_spot_instances(self) -> Dict:
+        """Optimiza uso de Spot Instances"""
+        optimization = {
+            'current_spot_usage': 0,
+            'recommended_spot_types': [],
+            'potential_savings': 0
+        }
+
+        try:
+            # Obtener precios de spot actuales
+            spot_prices = self.clients['ec2'].describe_spot_price_history(
+                StartTime=datetime.now() - timedelta(hours=1),
+                EndTime=datetime.now()
+            )
+
+            # Analizar patrones de precios
+            price_history = {}
+            for price in spot_prices['SpotPriceHistory']:
+                instance_type = price['InstanceType']
+                spot_price = float(price['SpotPrice'])
+
+                if instance_type not in price_history:
+                    price_history[instance_type] = []
+                price_history[instance_type].append(spot_price)
+
+            # Calcular promedio y volatilidad
+            for instance_type, prices in price_history.items():
+                if len(prices) > 10:
+                    avg_price = np.mean(prices)
+                    volatility = np.std(prices) / avg_price
+
+                    if volatility < 0.3:  # Baja volatilidad = buen candidato para spot
+                        optimization['recommended_spot_types'].append({
+                            'instance_type': instance_type,
+                            'avg_price': avg_price,
+                            'volatility': volatility,
+                            'savings_potential': self._calculate_spot_savings(instance_type, avg_price)
+                        })
+
+        except Exception as e:
+            logger.error(f"Error optimizando spot instances: {e}")
+
+        return optimization
+
+    def detect_cost_anomalies(self, days: int = 30) -> List[Dict]:
+        """Detecta anomalías en costos usando machine learning"""
+        anomalies = []
+
+        try:
+            # Obtener datos de costos históricos
+            end_date = datetime.now()
+            start_date = end_date - timedelta(days=days)
+
+            cost_data = self.clients['ce'].get_cost_and_usage(
+                TimePeriod={
+                    'Start': start_date.strftime('%Y-%m-%d'),
+                    'End': end_date.strftime('%Y-%m-%d')
+                },
+                Granularity='DAILY',
+                Metrics=['BlendedCost']
+            )
+
+            # Preparar datos para ML
+            dates = []
+            costs = []
+
+            for group in cost_data['ResultsByTime']:
+                dates.append(group['TimePeriod']['Start'])
+                costs.append(float(group['Groups'][0]['Metrics']['BlendedCost']['Amount']))
+
+            if len(costs) > 14:  # Necesitamos suficientes datos
+                # Usar Isolation Forest para detectar anomalías
+                df = pd.DataFrame({'cost': costs})
+                iso_forest = IsolationForest(contamination=0.1, random_state=42)
+                df['anomaly'] = iso_forest.fit_predict(df[['cost']])
+
+                # Identificar anomalías
+                for i, (date, cost, anomaly) in enumerate(zip(dates, costs, df['anomaly'])):
+                    if anomaly == -1:  # Anomalía detectada
+                        anomalies.append({
+                            'date': date,
+                            'cost': cost,
+                            'deviation': self._calculate_deviation(costs, i),
+                            'severity': 'high' if abs(self._calculate_deviation(costs, i)) > 50 else 'medium'
+                        })
+
+        except Exception as e:
+            logger.error(f"Error detectando anomalías: {e}")
+
+        return anomalies
+
+    def forecast_costs(self, days: int = 90) -> Dict:
+        """Pronostica costos futuros usando regresión lineal"""
+        forecast = {
+            'forecast_30d': 0,
+            'forecast_90d': 0,
+            'forecast_365d': 0,
+            'trend': 'stable',
+            'confidence': 0
+        }
+
+        try:
+            # Obtener datos históricos de 6 meses
+            end_date = datetime.now()
+            start_date = end_date - timedelta(days=180)
+
+            cost_data = self.clients['ce'].get_cost_and_usage(
+                TimePeriod={
+                    'Start': start_date.strftime('%Y-%m-%d'),
+                    'End': end_date.strftime('%Y-%m-%d')
+                },
+                Granularity='MONTHLY',
+                Metrics=['BlendedCost']
+            )
+
+            # Preparar datos para forecasting
+            months = []
+            costs = []
+
+            for group in cost_data['ResultsByTime']:
+                months.append(len(months))
+                costs.append(float(group['Groups'][0]['Metrics']['BlendedCost']['Amount']))
+
+            if len(costs) >= 3:
+                # Regresión lineal para forecasting
+                X = np.array(months).reshape(-1, 1)
+                y = np.array(costs)
+
+                model = LinearRegression()
+                model.fit(X, y)
+
+                # Predecir próximos periodos
+                future_months = [len(months), len(months) + 3, len(months) + 12]
+                predictions = model.predict(np.array(future_months).reshape(-1, 1))
+
+                forecast['forecast_30d'] = predictions[0]
+                forecast['forecast_90d'] = predictions[1]
+                forecast['forecast_365d'] = predictions[2]
+                forecast['confidence'] = model.score(X, y)
+
+                # Determinar tendencia
+                slope = model.coef_[0]
+                if slope > 10:
+                    forecast['trend'] = 'increasing'
+                elif slope < -10:
+                    forecast['trend'] = 'decreasing'
+                else:
+                    forecast['trend'] = 'stable'
+
+        except Exception as e:
+            logger.error(f"Error en forecasting: {e}")
+
+        return forecast
+
+    def generate_optimization_report(self) -> Dict:
+        """Genera reporte completo de optimización"""
+        report = {
+            'timestamp': datetime.now().isoformat(),
+            'account_id': self.account_id,
+            'unused_resources': self.analyze_unused_resources(),
+            'ri_recommendations': self.recommend_reserved_instances(),
+            'spot_optimization': self.optimize_spot_instances(),
+            'cost_anomalies': self.detect_cost_anomalies(),
+            'cost_forecast': self.forecast_costs(),
+            'total_potential_savings': 0
+        }
+
+        # Calcular ahorros totales potenciales
+        total_savings = 0
+
+        # Ahorros de recursos no utilizados
+        for category in report['unused_resources'].values():
+            for item in category:
+                total_savings += item.get('monthly_cost', 0)
+
+        # Ahorros de RI
+        for ri in report['ri_recommendations']:
+            total_savings += float(ri.get('estimated_savings', '0'))
+
+        # Ahorros de spot
+        for spot in report['spot_optimization'].get('recommended_spot_types', []):
+            total_savings += spot.get('savings_potential', 0)
+
+        report['total_potential_savings'] = total_savings
+
+        return report
+
+    def _is_rds_underutilized(self, db_identifier: str) -> bool:
+        """Verifica si una instancia RDS está subutilizada"""
+        try:
+            # Obtener métricas de CloudWatch
+            cpu_metric = self.clients['cloudwatch'].get_metric_statistics(
+                Namespace='AWS/RDS',
+                MetricName='CPUUtilization',
+                Dimensions=[{'Name': 'DBInstanceIdentifier', 'Value': db_identifier}],
+                StartTime=datetime.now() - timedelta(days=7),
+                EndTime=datetime.now(),
+                Period=3600,
+                Statistics=['Average']
+            )
+
+            if cpu_metric['Datapoints']:
+                avg_cpu = np.mean([dp['Average'] for dp in cpu_metric['Datapoints']])
+                return avg_cpu < 20  # Menos del 20% de uso promedio
+
+        except Exception as e:
+            logger.error(f"Error verificando RDS {db_identifier}: {e}")
+
+        return False
+
+    def _calculate_ebs_cost(self, volume: Dict) -> float:
+        """Calcula costo mensual de volumen EBS"""
+        size = volume['Size']
+        volume_type = volume['VolumeType']
+
+        # Precios aproximados por GB/mes
+        prices = {
+            'gp2': 0.10,
+            'gp3': 0.08,
+            'io1': 0.125,
+            'st1': 0.045,
+            'sc1': 0.025
+        }
+
+        return size * prices.get(volume_type, 0.10)
+
+    def _calculate_rds_cost(self, db_instance: Dict) -> float:
+        """Calcula costo mensual aproximado de RDS"""
+        instance_class = db_instance['DBInstanceClass']
+        engine = db_instance.get('Engine', 'mysql')
+
+        # Precios aproximados por hora para us-east-1
+        hourly_prices = {
+            'db.t3.micro': 0.017,
+            'db.t3.small': 0.036,
+            'db.t3.medium': 0.072,
+            'db.m5.large': 0.142,
+            'db.m5.xlarge': 0.284,
+            'db.r5.large': 0.222,
+            'db.r5.xlarge': 0.444
+        }
+
+        hourly_cost = hourly_prices.get(instance_class, 0.072)
+        return hourly_cost * 24 * 30  # Costo mensual aproximado
+
+    def _calculate_spot_savings(self, instance_type: str, spot_price: float) -> float:
+        """Calcula ahorros potenciales con spot instances"""
+        # Precio on-demand aproximado (simplificado)
+        on_demand_prices = {
+            't3.micro': 0.0104,
+            't3.small': 0.0208,
+            't3.medium': 0.0416,
+            'm5.large': 0.096,
+            'm5.xlarge': 0.192
+        }
+
+        on_demand = on_demand_prices.get(instance_type, spot_price * 2)
+        savings_per_hour = on_demand - spot_price
+
+        return savings_per_hour * 24 * 30  # Ahorro mensual
+
+    def _calculate_deviation(self, costs: List[float], index: int) -> float:
+        """Calcula desviación porcentual de un punto de datos"""
+        if index < 7 or index >= len(costs) - 7:
+            return 0
+
+        # Calcular promedio de 7 días anteriores
+        baseline = np.mean(costs[index-7:index])
+        current = costs[index]
+
+        if baseline == 0:
+            return 0
+
+        return ((current - baseline) / baseline) * 100
+
+
+def main():
+    """Función principal para ejecutar optimización"""
+    import sys
+
+    if len(sys.argv) != 2:
+        print("Uso: python cost_optimization_algorithms.py <account_id>")
+        sys.exit(1)
+
+    account_id = sys.argv[1]
+
+    optimizer = AWSCostOptimizer(account_id)
+    report = optimizer.generate_optimization_report()
+
+    # Guardar reporte en JSON
+    with open(f'/tmp/cost_optimization_report_{account_id}.json', 'w') as f:
+        json.dump(report, f, indent=2, default=str)
+
+    print(f"Reporte de optimización generado: /tmp/cost_optimization_report_{account_id}.json")
+    print(f"Ahorros potenciales totales: ${report['total_potential_savings']:.2f}/mes")
+
+
+if __name__ == '__main__':
+    main()

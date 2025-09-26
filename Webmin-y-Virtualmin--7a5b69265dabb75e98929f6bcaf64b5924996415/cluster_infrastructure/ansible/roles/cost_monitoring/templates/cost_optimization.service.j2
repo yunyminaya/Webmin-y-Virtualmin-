@@ -1,0 +1,19 @@
+[Unit]
+Description=AWS Cost Optimization Service - Enterprise
+After=network.target
+Wants=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/cost_optimization/run_cost_optimization.sh
+User=root
+Group=root
+Environment=AWS_ACCESS_KEY_ID={{ cost_monitoring.aws_access_key }}
+Environment=AWS_SECRET_ACCESS_KEY={{ cost_monitoring.aws_secret_key }}
+Environment=AWS_DEFAULT_REGION={{ cost_monitoring.region | default('us-east-1') }}
+StandardOutput=journal
+StandardError=journal
+TimeoutStartSec=3600
+
+[Install]
+WantedBy=multi-user.target

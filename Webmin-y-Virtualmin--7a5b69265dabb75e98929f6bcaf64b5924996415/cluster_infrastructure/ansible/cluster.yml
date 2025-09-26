@@ -1,0 +1,194 @@
+---
+# Playbook principal para despliegue del clúster Enterprise Webmin/Virtualmin
+# Configura todos los componentes del sistema
+
+- name: Preparar todos los nodos del clúster
+  hosts: all
+  become: true
+  gather_facts: true
+  pre_tasks:
+    - name: Actualizar cache de paquetes
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: ansible_os_family == 'Debian'
+
+    - name: Instalar dependencias básicas
+      package:
+        name:
+          - curl
+          - wget
+          - python3
+          - python3-pip
+          - software-properties-common
+          - apt-transport-https
+          - ca-certificates
+          - gnupg2
+          - lsb-release
+          - jq
+          - net-tools
+          - htop
+          - iotop
+          - sysstat
+          - nload
+          - iftop
+        state: present
+
+    - name: Configurar timezone
+      timezone:
+        name: "{{ cluster_timezone | default('UTC') }}"
+
+    - name: Configurar hostname
+      hostname:
+        name: "{{ inventory_hostname }}"
+
+    - name: Actualizar /etc/hosts
+      lineinfile:
+        path: /etc/hosts
+        line: "{{ hostvars[item]['ansible_default_ipv4']['address'] }} {{ item }}"
+        state: present
+      loop: "{{ groups['all'] }}"
+
+- name: Configurar nodos de base de datos (MariaDB Galera)
+  hosts: database_nodes
+  become: true
+  roles:
+    - role: common
+    - role: security_hardening
+    - role: mariadb_galera
+    - role: monitoring_agent
+
+- name: Configurar nodos de almacenamiento (GlusterFS)
+  hosts: storage_nodes
+  become: true
+  roles:
+    - role: common
+    - role: security_hardening
+    - role: glusterfs
+    - role: monitoring_agent
+
+- name: Configurar nodos de monitoreo (Prometheus + Grafana)
+  hosts: monitoring_nodes
+  become: true
+  roles:
+    - role: common
+    - role: security_hardening
+    - role: prometheus
+    - role: grafana
+    - role: alertmanager
+    - role: monitoring_agent
+
+- name: Configurar nodos web (HAProxy + Webmin/Virtualmin)
+  hosts: web_nodes
+  become: true
+  roles:
+    - role: common
+    - role: security_hardening
+    - role: haproxy
+    - role: webmin_virtualmin
+    - role: php_multi_version
+    - role: cms_frameworks
+    - role: monitoring_agent
+
+- name: Configurar nodos API (Webmin/Virtualmin API)
+  hosts: api_nodes
+  become: true
+  roles:
+    - role: common
+    - role: security_hardening
+    - role: webmin_virtualmin_api
+    - role: monitoring_agent
+
+- name: Configurar balanceo de carga y alta disponibilidad
+  hosts: load_balancers
+  become: true
+  roles:
+    - role: common
+    - role: security_hardening
+    - role: keepalived
+    - role: monitoring_agent
+
+- name: Configurar backups y recuperación
+  hosts: backup_nodes
+  become: true
+  roles:
+    - role: common
+    - role: security_hardening
+    - role: backup_system
+    - role: monitoring_agent
+
+- name: Configurar SERVIDORES ILIMITADOS
+  hosts: all
+  become: true
+  roles:
+    - role: unlimited_servers
+
+- name: Configurar MONITOREO DE COSTOS Y OPTIMIZACIÓN
+  hosts: monitoring_nodes[0]
+  become: true
+  roles:
+    - role: cost_monitoring
+
+- name: Verificaciones finales y hardening extremo
+  hosts: all
+  become: true
+  tasks:
+    - name: Ejecutar verificación de seguridad final
+      include_role:
+        name: security_audit
+
+    - name: Configurar monitoreo de compliance
+      include_role:
+        name: compliance_monitoring
+
+    - name: Configurar actualizaciones automáticas seguras
+      include_role:
+        name: unattended_upgrades
+
+    - name: Configurar escaneos automáticos de seguridad
+      include_role:
+        name: security_scanning
+
+    - name: Verificar configuración final
+      include_role:
+        name: final_verification
+
+- name: Configurar integración entre componentes
+  hosts: monitoring_nodes[0]
+  become: true
+  tasks:
+    - name: Configurar dashboards de Grafana
+      include_role:
+        name: grafana_dashboards
+
+    - name: Configurar alertas de Prometheus
+      include_role:
+        name: prometheus_alerts
+
+    - name: Configurar notificaciones
+      include_role:
+        name: notification_channels
+
+    - name: Probar integración completa
+      include_role:
+        name: integration_tests
+
+- name: Documentación y reportes finales
+  hosts: localhost
+  connection: local
+  tasks:
+    - name: Generar documentación de despliegue
+      include_role:
+        name: documentation_generator
+
+    - name: Generar reportes de seguridad
+      include_role:
+        name: security_reports
+
+    - name: Crear inventario final
+      include_role:
+        name: inventory_generator
+
+    - name: Notificar despliegue completado
+      include_role:
+        name: deployment_notification

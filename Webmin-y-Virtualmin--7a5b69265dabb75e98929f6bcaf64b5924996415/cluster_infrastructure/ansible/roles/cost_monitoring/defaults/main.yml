@@ -1,0 +1,75 @@
+---
+# Cost Monitoring and Optimization - FREE Implementation
+# Variables por defecto para el rol de monitoreo de costos
+
+# Configuración general de monitoreo de costos
+cost_monitoring:
+  enabled: true
+  budget_limit: 1000
+  currency: "USD"
+  alert_threshold: 80
+  anomaly_detection: true
+  reporting_enabled: true
+
+# Configuración de optimización de costos
+cost_optimization:
+  enabled: true
+  auto_optimize: false
+  ri_recommendations: true
+  spot_recommendations: true
+  savings_threshold: 100
+
+# Configuración de dashboards
+cost_dashboards:
+  enabled: true
+  grafana_enabled: true
+  webmin_enabled: true
+
+# Configuración de eficiencia de costos
+cost_efficiency:
+  reporting_enabled: true
+  roi_tracking: true
+  forecasting_enabled: true
+
+# Configuración de integración con Webmin/Virtualmin
+webmin_integration:
+  enabled: true
+  ri_automation: true
+  cost_dashboard: true
+  auto_reports: true
+
+# Configuración de proveedores cloud
+cloud_provider: "aws"  # aws, azure, gcp
+
+# Configuración de AWS
+aws_cost_monitoring:
+  enabled: true
+  region: "us-east-1"
+  cost_allocation_tags: true
+  detailed_monitoring: true
+
+# Configuración de Azure
+azure_cost_monitoring:
+  enabled: false
+  subscription_id: ""
+  tenant_id: ""
+
+# Configuración de GCP
+gcp_cost_monitoring:
+  enabled: false
+  project_id: ""
+  billing_account: ""
+
+# Configuración de alertas
+budget_alerts:
+  enabled: true
+  slack_webhook: ""
+  pagerduty_key: ""
+  email_recipients: []
+
+# Configuración de reportes
+cost_reporting:
+  enabled: true
+  frequency: "weekly"
+  format: "html"
+  retention_days: 90

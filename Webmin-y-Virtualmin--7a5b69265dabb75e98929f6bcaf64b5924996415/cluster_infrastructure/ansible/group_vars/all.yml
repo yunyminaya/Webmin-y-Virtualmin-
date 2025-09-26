@@ -1,0 +1,396 @@
+---
+# Variables globales para clúster Enterprise Webmin/Virtualmin
+
+# Configuración básica del clúster
+cluster_name: "{{ lookup('env', 'TF_VAR_cluster_name') | default('webmin-cluster') }}"
+cluster_domain: "{{ cluster_name }}.local"
+cluster_timezone: "{{ lookup('env', 'TF_VAR_cluster_timezone') | default('UTC') }}"
+cluster_environment: "{{ lookup('env', 'TF_VAR_environment') | default('production') }}"
+
+# Configuración de red
+vpc_cidr: "{{ lookup('env', 'TF_VAR_vpc_cidr') | default('10.0.0.0/16') }}"
+public_subnets: "{{ lookup('env', 'TF_VAR_public_subnets') | default(['10.0.1.0/24', '10.0.2.0/24', '10.0.3.0/24']) }}"
+private_subnets: "{{ lookup('env', 'TF_VAR_private_subnets') | default(['10.0.10.0/24', '10.0.11.0/24', '10.0.12.0/24']) }}"
+database_subnets: "{{ lookup('env', 'TF_VAR_database_subnets') | default(['10.0.20.0/24', '10.0.21.0/24', '10.0.22.0/24']) }}"
+
+# Configuración de instancias
+instance_types:
+  load_balancer: "{{ lookup('env', 'TF_VAR_lb_instance_type') | default('t3.medium') }}"
+  web_node: "{{ lookup('env', 'TF_VAR_web_instance_type') | default('t3.large') }}"
+  api_node: "{{ lookup('env', 'TF_VAR_api_instance_type') | default('t3.large') }}"
+  database_node: "{{ lookup('env', 'TF_VAR_db_instance_type') | default('t3.xlarge') }}"
+  storage_node: "{{ lookup('env', 'TF_VAR_storage_instance_type') | default('t3.large') }}"
+  monitoring_node: "{{ lookup('env', 'TF_VAR_monitoring_instance_type') | default('t3.medium') }}"
+  backup_node: "{{ lookup('env', 'TF_VAR_backup_instance_type') | default('t3.medium') }}"
+
+# Configuración de auto-scaling
+autoscaling:
+  web_nodes:
+    min_size: "{{ lookup('env', 'TF_VAR_web_min_size') | default(3) }}"
+    max_size: "{{ lookup('env', 'TF_VAR_web_max_size') | default(50) }}"
+    desired_capacity: "{{ lookup('env', 'TF_VAR_web_desired_capacity') | default(5) }}"
+  api_nodes:
+    min_size: "{{ lookup('env', 'TF_VAR_api_min_size') | default(2) }}"
+    max_size: "{{ lookup('env', 'TF_VAR_api_max_size') | default(20) }}"
+    desired_capacity: "{{ lookup('env', 'TF_VAR_api_desired_capacity') | default(3) }}"
+  database_nodes:
+    min_size: "{{ lookup('env', 'TF_VAR_db_min_size') | default(3) }}"
+    max_size: "{{ lookup('env', 'TF_VAR_db_max_size') | default(9) }}"
+    desired_capacity: "{{ lookup('env', 'TF_VAR_db_desired_capacity') | default(3) }}"
+
+# Configuración de Webmin/Virtualmin
+webmin:
+  version: "2.021"
+  theme: "authentic"
+  port: 10000
+  ssl: true
+  letsencrypt: true
+
+virtualmin:
+  version: "7.9"
+  license_key: "{{ lookup('env', 'VIRTUALMIN_LICENSE_KEY') }}"
+  features:
+    - "webmin"
+    - "ssl"
+    - "mysql"
+    - "postgres"
+    - "ftp"
+    - "mail"
+    - "spam"
+    - "virus"
+    - "dns"
+    - "status"
+
+# Configuración de MariaDB Galera
+mariadb_galera:
+  version: "10.11"
+  cluster_name: "{{ cluster_name }}_galera"
+  wsrep_provider: "/usr/lib/galera/libgalera_smm.so"
+  wsrep_cluster_address: "gcomm://{{ groups['database_nodes'] | join(',') }}"
+  wsrep_node_address: "{{ ansible_default_ipv4.address }}"
+  wsrep_node_name: "{{ inventory_hostname }}"
+  innodb_buffer_pool_size: "4G"
+  max_connections: 1000
+  query_cache_size: "256M"
+  tmp_table_size: "256M"
+  max_heap_table_size: "256M"
+
+# Configuración de GlusterFS
+glusterfs:
+  version: "11.0"
+  volume_name: "gv0"
+  replica_count: 3
+  brick_path: "/data/glusterfs/brick1"
+  mount_path: "/mnt/glusterfs"
+  transport: "tcp"
+  performance_options:
+    - "performance.cache-size 1GB"
+    - "performance.io-thread-count 32"
+    - "performance.write-behind-window-size 4MB"
+
+# Configuración de HAProxy
+haproxy:
+  version: "2.8"
+  global_maxconn: 100000
+  defaults_maxconn: 10000
+  timeout_connect: "10s"
+  timeout_client: "30s"
+  timeout_server: "30s"
+  stats_port: 8080
+  stats_auth: "admin:{{ lookup('env', 'HAPROXY_STATS_PASSWORD') | default('changeme') }}"
+
+# Configuración de Keepalived
+keepalived:
+  virtual_ip: "{{ lookup('env', 'TF_VAR_keepalived_vip') | default('10.0.1.100') }}"
+  interface: "eth0"
+  priority: 100
+  advert_int: 1
+  auth_pass: "{{ lookup('env', 'KEEPALIVED_AUTH_PASS') | default('changeme') }}"
+
+# Configuración de Prometheus
+prometheus:
+  version: "2.45.0"
+  retention: "30d"
+  scrape_interval: "15s"
+  evaluation_interval: "15s"
+  external_labels:
+    cluster: "{{ cluster_name }}"
+    environment: "{{ cluster_environment }}"
+
+# Configuración de Grafana
+grafana:
+  version: "10.1.0"
+  admin_user: "admin"
+  admin_password: "{{ lookup('env', 'GRAFANA_ADMIN_PASSWORD') }}"
+  domain: "monitoring.{{ cluster_domain }}"
+  smtp:
+    enabled: true
+    host: "{{ lookup('env', 'SMTP_HOST') | default('smtp.gmail.com') }}"
+    port: "{{ lookup('env', 'SMTP_PORT') | default(587) }}"
+    user: "{{ lookup('env', 'SMTP_USER') }}"
+    password: "{{ lookup('env', 'SMTP_PASSWORD') }}"
+
+# Configuración de Alertmanager
+alertmanager:
+  version: "0.26.0"
+  smtp_smarthost: "{{ lookup('env', 'SMTP_HOST') | default('smtp.gmail.com') }}:{{ lookup('env', 'SMTP_PORT') | default(587) }}"
+  smtp_from: "{{ lookup('env', 'ALERT_FROM_EMAIL') | default('alerts@' + cluster_domain) }}"
+  smtp_auth_username: "{{ lookup('env', 'SMTP_USER') }}"
+  smtp_auth_password: "{{ lookup('env', 'SMTP_PASSWORD') }}"
+  slack_webhook_url: "{{ lookup('env', 'SLACK_WEBHOOK_URL') }}"
+  pagerduty_service_key: "{{ lookup('env', 'PAGERDUTY_SERVICE_KEY') }}"
+
+# Configuración de seguridad
+security:
+  ssh_port: 22
+  fail2ban_bantime: 3600
+  fail2ban_maxretry: 3
+  ufw_default_policy: "deny"
+  lynis_cron_schedule: "0 2 * * *"
+  unattended_upgrades: true
+  unattended_upgrades_reboot: false
+
+# Configuración de backups
+backup:
+  retention_days: 30
+  encryption_key: "{{ lookup('env', 'BACKUP_ENCRYPTION_KEY') }}"
+  s3_bucket: "{{ cluster_name }}-backups"
+  schedule: "0 2 * * *"
+  compression: "gzip"
+  verify_backups: true
+
+# Configuración de PHP multi-version
+php_versions: ["7.4", "8.0", "8.1", "8.2", "8.3"]
+php_default_version: "8.1"
+
+# Configuración de CMS frameworks
+cms_frameworks:
+  wordpress:
+    version: "6.3"
+    plugins: ["wordpress-seo", "wp-super-cache", "akismet"]
+  drupal:
+    version: "10.1"
+    modules: ["admin_toolbar", "pathauto", "metatag"]
+  joomla:
+    version: "4.3"
+    extensions: ["sh404sef", "jce"]
+  laravel:
+    version: "10"
+    packages: ["laravel/framework", "laravel/telescope"]
+  symfony:
+    version: "6.3"
+    bundles: ["DoctrineBundle", "TwigBundle"]
+
+# Configuración de Let's Encrypt
+letsencrypt:
+  email: "{{ lookup('env', 'TF_VAR_admin_email') }}"
+  staging: "{{ lookup('env', 'LETSENCRYPT_STAGING') | default(false) }}"
+  renew_days: 30
+
+# Configuración de logs
+logging:
+  rsyslog_remote_host: "{{ groups['monitoring_nodes'][0] }}"
+  rsyslog_remote_port: 514
+  logrotate_maxage: 30
+  logrotate_rotate: 12
+
+# Configuración de monitoreo
+monitoring:
+  node_exporter_port: 9100
+  blackbox_exporter_port: 9115
+  alert_rules:
+    - name: "High CPU Usage"
+      condition: "cpu_usage > 90"
+      duration: "5m"
+      severity: "warning"
+    - name: "High Memory Usage"
+      condition: "memory_usage > 95"
+      duration: "5m"
+      severity: "critical"
+    - name: "Disk Space Low"
+      condition: "disk_usage > 85"
+      duration: "10m"
+      severity: "warning"
+
+# Configuración de compliance
+compliance:
+  cis_level: 2
+  stig_profile: "high"
+  audit_schedule: "0 3 * * *"
+  report_retention: 90
+
+# Configuración de notificaciones
+notifications:
+  slack_webhook: "{{ lookup('env', 'SLACK_WEBHOOK_URL') }}"
+  email_recipients: ["{{ lookup('env', 'TF_VAR_admin_email') }}"]
+  pagerduty_integration_key: "{{ lookup('env', 'PAGERDUTY_INTEGRATION_KEY') }}"
+
+# Configuración para SERVIDORES ILIMITADOS
+unlimited_servers:
+  enabled: "{{ lookup('env', 'TF_VAR_enable_unlimited_servers') | default(true) }}"
+  max_servers: "{{ lookup('env', 'TF_VAR_unlimited_max_servers') | default(0) }}"
+  dynamic_inventory: "{{ lookup('env', 'TF_VAR_dynamic_inventory_enabled') | default(true) }}"
+  auto_discovery_interval: "{{ lookup('env', 'TF_VAR_auto_discovery_interval') | default(5) }}"
+  load_balancer_auto_scaling: "{{ lookup('env', 'TF_VAR_load_balancer_auto_scaling') | default(true) }}"
+  intelligent_allocation: "{{ lookup('env', 'TF_VAR_intelligent_resource_allocation') | default(true) }}"
+  health_check_interval: "{{ lookup('env', 'TF_VAR_server_health_check_interval') | default(30) }}"
+  auto_failover: "{{ lookup('env', 'TF_VAR_auto_failover_enabled') | default(true) }}"
+  cross_region_replication: "{{ lookup('env', 'TF_VAR_cross_region_replication') | default(false) }}"
+  unlimited_backup: "{{ lookup('env', 'TF_VAR_unlimited_backup_storage') | default(true) }}"
+  provisioning_speed: "{{ lookup('env', 'TF_VAR_server_provisioning_speed') | default(120) }}"
+
+# Configuración de escalado inteligente
+intelligent_scaling:
+  enabled: "{{ unlimited_servers.intelligent_allocation }}"
+  algorithms:
+    - predictive_scaling
+    - workload_pattern_recognition
+    - resource_optimization
+    - cost_efficiency
+  metrics_collection_interval: 60
+  scaling_decision_interval: 300
+  historical_data_retention: 90
+
+# Configuración de inventario dinámico
+dynamic_inventory:
+  enabled: "{{ unlimited_servers.dynamic_inventory }}"
+  discovery_methods:
+    - aws_api_discovery
+    - consul_service_discovery
+    - etcd_service_discovery
+    - dns_based_discovery
+  update_interval: "{{ unlimited_servers.auto_discovery_interval }}"
+  cache_timeout: 300
+  health_check_timeout: 10
+
+# Configuración de balanceo de carga ilimitado
+unlimited_load_balancing:
+  enabled: "{{ unlimited_servers.load_balancer_auto_scaling }}"
+  max_backends_per_lb: 1000
+  auto_backend_discovery: true
+  intelligent_routing: true
+  geo_load_balancing: "{{ unlimited_servers.cross_region_replication }}"
+  session_persistence: true
+  ssl_termination: true
+  compression_enabled: true
+
+# Configuración de failover automático
+auto_failover:
+  enabled: "{{ unlimited_servers.auto_failover }}"
+  health_check_interval: "{{ unlimited_servers.health_check_interval }}"
+  failure_threshold: 3
+  recovery_timeout: 300
+  cross_az_failover: true
+  cross_region_failover: "{{ unlimited_servers.cross_region_replication }}"
+  notification_enabled: true
+
+# Configuración de replicación ilimitada
+unlimited_replication:
+  enabled: "{{ unlimited_servers.cross_region_replication }}"
+  regions: ["us-east-1", "us-west-2", "eu-west-1", "ap-southeast-1"]
+  replication_factor: 3
+  consistency_level: "strong"
+  latency_optimization: true
+  bandwidth_optimization: true
+
+# Configuración de backup ilimitado
+unlimited_backup:
+  enabled: "{{ unlimited_servers.unlimited_backup }}"
+  storage_classes:
+    - hot_storage
+    - warm_storage
+    - cold_storage
+    - archive_storage
+  retention_policies:
+    - name: "hot"
+      retention_days: 30
+      storage_class: "hot_storage"
+    - name: "warm"
+      retention_days: 90
+      storage_class: "warm_storage"
+    - name: "cold"
+      retention_days: 365
+      storage_class: "cold_storage"
+    - name: "archive"
+      retention_days: 2555
+      storage_class: "archive_storage"
+  compression_enabled: true
+  encryption_enabled: true
+  deduplication_enabled: true
+
+# Configuración de aprovisionamiento automático
+auto_provisioning:
+  enabled: true
+  provisioning_speed: "{{ unlimited_servers.provisioning_speed }}"
+  pre_warming_enabled: true
+  resource_prediction: true
+  cost_optimization: true
+  security_hardening: true
+
+# Configuración de monitoreo ilimitado
+unlimited_monitoring:
+  enabled: true
+  metrics_retention_days: 365
+  log_retention_days: 90
+  alerting_enabled: true
+  predictive_alerting: true
+  anomaly_detection: true
+  performance_analytics: true
+
+# Configuración de seguridad para escalado ilimitado
+unlimited_security:
+  enabled: true
+  auto_security_groups: true
+  dynamic_firewall_rules: true
+  threat_intelligence: true
+  zero_trust_networking: true
+  automated_compliance: true
+  security_scanning: true
+
+# Configuración de COSTOS Y OPTIMIZACIÓN
+cost_monitoring:
+  enabled: "{{ lookup('env', 'TF_VAR_enable_cost_monitoring') | default(true) }}"
+  budget_limit: "{{ lookup('env', 'TF_VAR_monthly_budget_limit') | default(0) }}"  # GRATIS - Sin costo adicional
+  alert_thresholds: "{{ lookup('env', 'TF_VAR_cost_alert_thresholds') | default([50, 75, 90, 100]) }}"
+  alert_emails: "{{ lookup('env', 'TF_VAR_budget_alert_emails') | default([]) }}"
+  anomaly_detection: "{{ lookup('env', 'TF_VAR_cost_anomaly_detection') | default(true) }}"
+  saving_targets: "{{ lookup('env', 'TF_VAR_cost_saving_targets') | default(20) }}"
+
+cost_optimization:
+  enabled: "{{ lookup('env', 'TF_VAR_cost_optimization_enabled') | default(true) }}"
+  spot_instances: "{{ lookup('env', 'TF_VAR_spot_instances_enabled') | default(false) }}"
+  reserved_instances: "{{ lookup('env', 'TF_VAR_reserved_instances_optimization') | default(true) }}"
+  auto_shutdown_unused: true
+  rightsizing_enabled: true
+  storage_optimization: true
+  network_optimization: true
+
+# Dashboards de costos
+cost_dashboards:
+  enabled: true
+  refresh_interval: 300
+  metrics_retention: 365
+  alerts_enabled: true
+  notifications:
+    email: true
+    slack: "{{ slack_webhook is defined }}"
+    pagerduty: "{{ pagerduty_integration_key is defined }}"
+
+# Optimización automática de recursos
+resource_optimization:
+  enabled: true
+  cpu_optimization: true
+  memory_optimization: true
+  storage_optimization: true
+  network_optimization: true
+  predictive_rightsizing: true
+  cost_based_decisions: true
+
+# Monitoreo de eficiencia de costos
+cost_efficiency:
+  enabled: true
+  utilization_tracking: true
+  waste_detection: true
+  recommendation_engine: true
+  automated_actions: true
+  reporting_enabled: true

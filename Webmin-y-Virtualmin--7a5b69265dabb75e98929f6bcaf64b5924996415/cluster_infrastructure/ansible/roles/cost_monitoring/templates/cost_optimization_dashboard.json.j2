@@ -1,0 +1,257 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "AWS Cost Optimization - Enterprise",
+    "tags": ["aws", "cost", "optimization", "enterprise"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Optimization Score",
+        "type": "singlestat",
+        "targets": [
+          {
+            "expr": "aws_cost_optimization_score{account_id=\"$account_id\"}",
+            "legendFormat": "Score",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 0,
+          "y": 0
+        },
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [
+              {
+                "options": {
+                  "match": "null",
+                  "result": {
+                    "text": "N/A"
+                  }
+                },
+                "type": "special"
+              }
+            ],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "red",
+                  "value": null
+                },
+                {
+                  "color": "orange",
+                  "value": 50
+                },
+                {
+                  "color": "green",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "percent"
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Potential Savings",
+        "type": "singlestat",
+        "targets": [
+          {
+            "expr": "aws_cost_potential_savings{account_id=\"$account_id\"}",
+            "legendFormat": "Savings",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 6,
+          "y": 0
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "currencyUSD"
+          }
+        }
+      },
+      {
+        "id": 3,
+        "title": "Unused Resources",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "aws_unused_resources{account_id=\"$account_id\"}",
+            "legendFormat": "Unused",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 0
+        }
+      },
+      {
+        "id": 4,
+        "title": "RI Coverage",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "aws_ri_coverage{account_id=\"$account_id\"}",
+            "legendFormat": "Coverage",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 6,
+          "x": 0,
+          "y": 4
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent"
+          }
+        }
+      },
+      {
+        "id": 5,
+        "title": "Spot Instance Usage",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "aws_spot_usage{account_id=\"$account_id\"}",
+            "legendFormat": "Spot Usage",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 6,
+          "x": 6,
+          "y": 4
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent"
+          }
+        }
+      },
+      {
+        "id": 6,
+        "title": "Cost Optimization Recommendations",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "aws_cost_recommendations{account_id=\"$account_id\"}",
+            "legendFormat": "Recommendations",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {
+          "h": 12,
+          "w": 12,
+          "x": 12,
+          "y": 8
+        }
+      },
+      {
+        "id": 7,
+        "title": "Resource Utilization",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "aws_resource_utilization{account_id=\"$account_id\", resource_type=\"ec2\"}",
+            "legendFormat": "EC2 Utilization",
+            "refId": "A"
+          },
+          {
+            "expr": "aws_resource_utilization{account_id=\"$account_id\", resource_type=\"rds\"}",
+            "legendFormat": "RDS Utilization",
+            "refId": "B"
+          },
+          {
+            "expr": "aws_resource_utilization{account_id=\"$account_id\", resource_type=\"ebs\"}",
+            "legendFormat": "EBS Utilization",
+            "refId": "C"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 12
+        }
+      },
+      {
+        "id": 8,
+        "title": "Cost Forecasting",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "aws_cost_forecast_30d{account_id=\"$account_id\"}",
+            "legendFormat": "30 Day Forecast",
+            "refId": "A"
+          },
+          {
+            "expr": "aws_cost_forecast_90d{account_id=\"$account_id\"}",
+            "legendFormat": "90 Day Forecast",
+            "refId": "B"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 20
+        }
+      },
+      {
+        "id": 9,
+        "title": "Optimization Actions Taken",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "aws_optimization_actions{account_id=\"$account_id\"}",
+            "legendFormat": "Actions",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 20
+        }
+      }
+    ],
+    "time": {
+      "from": "now-7d",
+      "to": "now"
+    },
+    "timepicker": {},
+    "templating": {
+      "list": [
+        {
+          "name": "account_id",
+          "type": "query",
+          "query": "label_values(account_id)",
+          "label": "AWS Account ID"
+        }
+      ]
+    },
+    "annotations": {
+      "list": []
+    },
+    "refresh": "15m",
+    "schemaVersion": 27,
+    "version": 0,
+    "links": []
+  }
+}

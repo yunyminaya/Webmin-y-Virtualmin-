@@ -1,0 +1,75 @@
+{
+    "Rules": [
+        {
+            "ID": "Cost data lifecycle",
+            "Status": "Enabled",
+            "Prefix": "aws/",
+            "Transitions": [
+                {
+                    "Days": 30,
+                    "StorageClass": "STANDARD_IA"
+                },
+                {
+                    "Days": 90,
+                    "StorageClass": "GLACIER"
+                },
+                {
+                    "Days": 365,
+                    "StorageClass": "DEEP_ARCHIVE"
+                }
+            ],
+            "Expiration": {
+                "Days": 2555
+            },
+            "NoncurrentVersionTransitions": [
+                {
+                    "NoncurrentDays": 30,
+                    "StorageClass": "STANDARD_IA"
+                },
+                {
+                    "NoncurrentDays": 90,
+                    "StorageClass": "GLACIER"
+                }
+            ],
+            "NoncurrentVersionExpiration": {
+                "NoncurrentDays": 365
+            }
+        },
+        {
+            "ID": "Analysis results lifecycle",
+            "Status": "Enabled",
+            "Prefix": "analysis/",
+            "Transitions": [
+                {
+                    "Days": 7,
+                    "StorageClass": "STANDARD_IA"
+                },
+                {
+                    "Days": 30,
+                    "StorageClass": "GLACIER"
+                }
+            ],
+            "Expiration": {
+                "Days": 365
+            }
+        },
+        {
+            "ID": "Reports lifecycle",
+            "Status": "Enabled",
+            "Prefix": "reports/",
+            "Transitions": [
+                {
+                    "Days": 30,
+                    "StorageClass": "STANDARD_IA"
+                },
+                {
+                    "Days": 90,
+                    "StorageClass": "GLACIER"
+                }
+            ],
+            "Expiration": {
+                "Days": 1095
+            }
+        }
+    ]
+}

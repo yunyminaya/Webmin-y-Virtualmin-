@@ -1,0 +1,14 @@
+# Backups Enterprise - Generado automáticamente
+# Fri Sep 26 09:24:52 EDT 2025
+
+# Backup diario - 2:00 AM
+0 2 * * * root /Users/yunyminaya/Wedmin Y Virtualmin/Webmin-y-Virtualmin--7a5b69265dabb75e98929f6bcaf64b5924996415/auto_backup_system.sh daily
+
+# Backup semanal - Domingos 3:00 AM
+0 3 * * 0 root /Users/yunyminaya/Wedmin Y Virtualmin/Webmin-y-Virtualmin--7a5b69265dabb75e98929f6bcaf64b5924996415/auto_backup_system.sh weekly
+
+# Backup mensual - Primer día del mes 4:00 AM
+0 4 1 * * root /Users/yunyminaya/Wedmin Y Virtualmin/Webmin-y-Virtualmin--7a5b69265dabb75e98929f6bcaf64b5924996415/auto_backup_system.sh monthly
+
+# Limpieza de backups antiguos - Diariamente 5:00 AM
+0 5 * * * root /Users/yunyminaya/Wedmin Y Virtualmin/Webmin-y-Virtualmin--7a5b69265dabb75e98929f6bcaf64b5924996415/auto_backup_system.sh cleanup

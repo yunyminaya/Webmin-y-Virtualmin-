@@ -1,0 +1,84 @@
+#!/bin/bash
+# Webmin RI Automation Wrapper - FREE Version
+# Script wrapper para integrar RI Automation con Webmin
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PYTHON_SCRIPT="/usr/local/bin/webmin_ri_automation.py"
+LOG_FILE="/var/log/webmin/ri_automation.log"
+
+# Función de logging
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG_FILE"
+}
+
+# Verificar que Python esté disponible
+if ! command -v python3 &> /dev/null; then
+    log "ERROR: Python3 no está instalado"
+    exit 1
+fi
+
+# Verificar que el script Python existe
+if [ ! -f "$PYTHON_SCRIPT" ]; then
+    log "ERROR: Script Python no encontrado: $PYTHON_SCRIPT"
+    exit 1
+fi
+
+log "=== WEBMIN RI AUTOMATION WRAPPER - FREE ==="
+
+case "${1:-}" in
+    --analyze|--report|--config)
+        log "Ejecutando: python3 $PYTHON_SCRIPT $@"
+        python3 "$PYTHON_SCRIPT" "$@"
+        ;;
+    --webmin-test)
+        log "Prueba de integración con Webmin"
+        if [ -d "/etc/webmin" ]; then
+            log "✓ Webmin detectado"
+            if [ -f "/etc/webmin/ri_automation_config.json" ]; then
+                log "✓ Configuración RI Automation encontrada"
+            else
+                log "⚠ Configuración RI Automation no encontrada"
+            fi
+        else
+            log "⚠ Webmin no detectado"
+        fi
+        ;;
+    --status)
+        log "Verificando estado del servicio RI Automation"
+        if pgrep -f "webmin_ri_automation" > /dev/null; then
+            log "✓ Servicio RI Automation ejecutándose"
+        else
+            log "⚠ Servicio RI Automation no ejecutándose"
+        fi
+
+        if [ -f "/etc/webmin/ri_reports/latest_report.json" ]; then
+            LAST_REPORT=$(stat -c %Y "/etc/webmin/ri_reports/latest_report.json" 2>/dev/null || stat -f %m "/etc/webmin/ri_reports/latest_report.json")
+            LAST_REPORT_HUMAN=$(date -d "@$LAST_REPORT" '+%Y-%m-%d %H:%M:%S' 2>/dev/null || date -r "$LAST_REPORT" '+%Y-%m-%d %H:%M:%S')
+            log "Último reporte: $LAST_REPORT_HUMAN"
+        else
+            log "⚠ No hay reportes generados"
+        fi
+        ;;
+    --help|*)
+        echo "Webmin RI Automation Wrapper - FREE Version"
+        echo ""
+        echo "Uso: $0 [opción]"
+        echo ""
+        echo "Opciones:"
+        echo "  --analyze     Ejecutar análisis gratuito de RI"
+        echo "  --report      Generar reporte de RI"
+        echo "  --config      Mostrar configuración actual"
+        echo "  --status      Verificar estado del servicio"
+        echo "  --webmin-test Probar integración con Webmin"
+        echo "  --help        Mostrar esta ayuda"
+        echo ""
+        echo "Ejemplos:"
+        echo "  $0 --analyze"
+        echo "  $0 --report"
+        echo "  $0 --status"
+        ;;
+esac
+
+log "=== WRAPPER COMPLETADO ==="

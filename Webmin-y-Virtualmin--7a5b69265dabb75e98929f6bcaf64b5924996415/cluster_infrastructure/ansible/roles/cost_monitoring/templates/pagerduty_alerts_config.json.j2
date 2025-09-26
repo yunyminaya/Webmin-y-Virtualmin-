@@ -1,0 +1,14 @@
+{
+    "routing_key": "{{ pagerduty_integration_key }}",
+    "service_name": "Cost Monitoring - {{ cluster_name }}",
+    "alert_defaults": {
+        "client": "Cost Monitoring System",
+        "client_url": "https://monitoring.{{ cluster_name }}.local/costs",
+        "severity_levels": {
+            "info": "info",
+            "warning": "warning",
+            "error": "error",
+            "critical": "critical"
+        }
+    }
+}

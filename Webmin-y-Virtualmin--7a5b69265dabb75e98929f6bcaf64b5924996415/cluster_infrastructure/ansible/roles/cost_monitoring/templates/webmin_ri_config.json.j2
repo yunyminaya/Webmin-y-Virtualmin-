@@ -1,0 +1,44 @@
+{
+  "enabled": true,
+  "analysis_interval_hours": 24,
+  "recommendation_threshold": 50,
+  "max_recommendations": 10,
+  "simulation_mode": true,
+  "auto_apply": false,
+  "cost_free": true,
+  "notification_emails": [],
+  "webmin_integration": true,
+  "virtualmin_integration": true,
+  "report_retention_days": 30,
+  "language": "es",
+  "theme": "default",
+  "version": "FREE-1.0.0",
+  "last_updated": "{{ ansible_date_time.iso8601 }}",
+  "disclaimer": "Este es un sistema completamente GRATUITO. No se realizarán compras reales de Reserved Instances.",
+  "features": {
+    "ri_analysis": true,
+    "cost_simulation": true,
+    "savings_reports": true,
+    "recommendations_dashboard": true,
+    "email_notifications": true,
+    "webmin_integration": true,
+    "virtualmin_integration": true,
+    "api_access": false,
+    "advanced_analytics": false,
+    "multi_cloud_support": false,
+    "custom_dashboards": false
+  },
+  "limits": {
+    "max_servers_per_analysis": 100,
+    "max_reports_per_day": 10,
+    "max_email_notifications": 5,
+    "analysis_timeout_seconds": 300
+  },
+  "webmin_settings": {
+    "module_name": "RI Automation",
+    "module_description": "Reserved Instances Automation - FREE",
+    "category": "System",
+    "menu_priority": 50,
+    "icon": "ri_automation.png"
+  }
+}

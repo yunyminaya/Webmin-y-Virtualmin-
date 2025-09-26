@@ -1,0 +1,135 @@
+---
+# Configuración de inventario dinámico para servidores ilimitados
+
+- name: Instalar herramientas para inventario dinámico
+  package:
+    name:
+      - python3-boto3
+      - python3-consul
+      - python3-etcd3
+      - python3-dnspython
+      - jq
+    state: present
+
+- name: Crear directorio para inventario dinámico
+  file:
+    path: /opt/dynamic_inventory
+    state: directory
+    mode: '0755'
+
+- name: Configurar script de descubrimiento AWS
+  template:
+    src: aws_discovery.py.j2
+    dest: /opt/dynamic_inventory/aws_discovery.py
+    mode: '0755'
+
+- name: Configurar script de descubrimiento Consul
+  template:
+    src: consul_discovery.py.j2
+    dest: /opt/dynamic_inventory/consul_discovery.py
+    mode: '0755'
+
+- name: Configurar script de descubrimiento etcd
+  template:
+    src: etcd_discovery.py.j2
+    dest: /opt/dynamic_inventory/etcd_discovery.py
+    mode: '0755'
+
+- name: Configurar script de descubrimiento DNS
+  template:
+    src: dns_discovery.py.j2
+    dest: /opt/dynamic_inventory/dns_discovery.py
+    mode: '0755'
+
+- name: Configurar script principal de inventario dinámico
+  template:
+    src: dynamic_inventory.py.j2
+    dest: /opt/dynamic_inventory/dynamic_inventory.py
+    mode: '0755'
+
+- name: Configurar servicio de inventario dinámico
+  template:
+    src: dynamic-inventory.service.j2
+    dest: /etc/systemd/system/dynamic-inventory.service
+    mode: '0644'
+
+- name: Configurar timer para inventario dinámico
+  template:
+    src: dynamic-inventory.timer.j2
+    dest: /etc/systemd/system/dynamic-inventory.timer
+    mode: '0644'
+
+- name: Habilitar e iniciar servicios de inventario dinámico
+  systemd:
+    name: "{{ item }}"
+    enabled: true
+    state: started
+    daemon_reload: true
+  loop:
+    - dynamic-inventory.timer
+
+- name: Configurar cache de inventario
+  template:
+    src: inventory_cache.py.j2
+    dest: /opt/dynamic_inventory/inventory_cache.py
+    mode: '0755'
+
+- name: Configurar validación de salud de nodos
+  template:
+    src: health_validator.py.j2
+    dest: /opt/dynamic_inventory/health_validator.py
+    mode: '0755'
+
+- name: Configurar integración con Ansible
+  template:
+    src: ansible_inventory.py.j2
+    dest: /opt/dynamic_inventory/ansible_inventory.py
+    mode: '0755'
+
+- name: Configurar actualización automática de inventario
+  template:
+    src: inventory_updater.py.j2
+    dest: /opt/dynamic_inventory/inventory_updater.py
+    mode: '0755'
+
+- name: Crear enlace simbólico para Ansible
+  file:
+    src: /opt/dynamic_inventory/ansible_inventory.py
+    dest: /etc/ansible/hosts
+    state: link
+    force: true
+
+- name: Configurar logging para inventario dinámico
+  template:
+    src: inventory_logging.conf.j2
+    dest: /etc/rsyslog.d/inventory_logging.conf
+    mode: '0644'
+  notify: restart rsyslog
+
+- name: Configurar métricas de inventario
+  template:
+    src: inventory_metrics.yml.j2
+    dest: /etc/prometheus/inventory_metrics.yml
+    mode: '0644'
+  notify: reload prometheus
+
+- name: Configurar alertas de inventario
+  template:
+    src: inventory_alerts.yml.j2
+    dest: /etc/prometheus/inventory_alerts.yml
+    mode: '0644'
+  notify: reload prometheus
+
+- name: Inicializar cache de inventario
+  command: python3 /opt/dynamic_inventory/inventory_cache.py --init
+  ignore_errors: true
+
+- name: Probar descubrimiento inicial
+  command: python3 /opt/dynamic_inventory/dynamic_inventory.py --test
+  register: discovery_test
+  ignore_errors: true
+
+- name: Mostrar resultado del descubrimiento
+  debug:
+    msg: "{{ discovery_test.stdout }}"
+  when: discovery_test.stdout is defined
