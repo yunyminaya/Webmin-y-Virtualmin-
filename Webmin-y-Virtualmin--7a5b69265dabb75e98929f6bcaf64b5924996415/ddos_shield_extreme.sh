@@ -404,14 +404,66 @@ ignoreregex =
 EOF
 }
 
-# Sistema de monitoreo en tiempo real con IA
+# Sistema de monitoreo en tiempo real con IA avanzada
 setup_ai_monitoring() {
-    log_shield "INFO" "Configurando sistema de monitoreo con IA..."
+    log_shield "INFO" "Configurando sistema avanzado de monitoreo con IA..."
+
+    # Verificar si existe el sistema de IA avanzado
+    if [[ -f "./ai_defense_system.sh" ]]; then
+        log_shield "INFO" "Integrando con sistema de defensa de IA avanzado..."
+
+        # Ejecutar configuración del sistema de IA
+        bash ./ai_defense_system.sh
+
+        # Integrar con el sistema DDoS existente
+        integrate_ai_with_ddos
+
+    else
+        log_shield "WARNING" "Sistema de IA avanzado no encontrado, usando monitoreo básico..."
+
+        # Fallback al sistema básico anterior
+        setup_basic_ai_monitoring
+    fi
+}
+
+# Integrar IA avanzada con sistema DDoS
+integrate_ai_with_ddos() {
+    log_shield "INFO" "Integrando IA avanzada con protección DDoS..."
+
+    # Crear enlace simbólico para compatibilidad
+    ln -sf "/ai_defense/scripts/ai_monitor.sh" "$SHIELD_DIR/scripts/ai_monitor.sh" 2>/dev/null || true
+
+    # Actualizar servicio systemd para usar IA avanzada
+    cat > /etc/systemd/system/ddos-ai-monitor.service << 'EOF'
+[Unit]
+Description=Advanced AI Defense Monitor - DDoS & AI Threats
+After=network.target ai-defense-monitor.service
+
+[Service]
+Type=simple
+User=root
+ExecStart=/ai_defense/scripts/ai_monitor.sh
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    systemctl daemon-reload
+    systemctl restart ddos-ai-monitor 2>/dev/null || true
+
+    log_shield "SUCCESS" "IA avanzada integrada con sistema DDoS"
+}
+
+# Sistema básico de IA (fallback)
+setup_basic_ai_monitoring() {
+    log_shield "INFO" "Configurando sistema básico de monitoreo con IA..."
 
     cat > "$SHIELD_DIR/scripts/ai_monitor.sh" << 'EOF'
 #!/bin/bash
 
-# Sistema de monitoreo con IA para detección de patrones de ataque
+# Sistema básico de monitoreo con IA para detección de patrones de ataque
 SHIELD_DIR="/shield_ddos"
 LOG_FILE="$SHIELD_DIR/logs/ai_monitor.log"
 ALERT_THRESHOLD=10000
@@ -444,17 +496,36 @@ analyze_traffic_patterns() {
 # Análisis de logs con IA (detección de patrones)
 ai_log_analysis() {
     # Detectar patrones de user agents sospechosos
-    local suspicious_agents=$(awk '{print $12}' /var/log/nginx/access.log | sort | uniq -c | sort -nr | head -20 | grep -E "(bot|crawler|spider|scan)" | wc -l)
+    local suspicious_agents=$(awk '{print $12}' /var/log/nginx/access.log 2>/dev/null | sort | uniq -c | sort -nr | head -20 | grep -E "(bot|crawler|spider|scan)" | wc -l 2>/dev/null || echo "0")
 
     if [[ $suspicious_agents -gt 10 ]]; then
         log_ai "🤖 ACTIVIDAD DE BOTS DETECTADA: $suspicious_agents user agents sospechosos"
     fi
 
     # Detectar ataques de fuerza bruta en formularios
-    local brute_force_attempts=$(grep "POST" /var/log/nginx/access.log | grep -E "(login|wp-login|admin)" | wc -l)
+    local brute_force_attempts=$(grep "POST" /var/log/nginx/access.log 2>/dev/null | grep -E "(login|wp-login|admin)" | wc -l 2>/dev/null || echo "0")
 
     if [[ $brute_force_attempts -gt 100 ]]; then
         log_ai "🔓 FUERZA BRUTA DETECTADA: $brute_force_attempts intentos de login"
+    fi
+
+    # NUEVO: Análisis básico de timing para detectar IA
+    detect_ai_timing_patterns
+}
+
+# Detectar patrones de timing característicos de IA
+detect_ai_timing_patterns() {
+    local log_file="/var/log/nginx/access.log"
+    local ai_timing_score=0
+
+    if [[ -f "$log_file" ]]; then
+        # Analizar intervalos entre requests (IA tiende a tener timing perfecto)
+        local perfect_intervals=$(tail -n 50 "$log_file" 2>/dev/null | awk '{print $4}' | sed 's/\[//' | sed 's/\]//' | date -f - +%s 2>/dev/null | awk 'NR>1 {print $1 - prev} {prev=$1}' | grep "^[0-9]*$" | grep -c "^[01]$" || echo "0")
+
+        if [[ $perfect_intervals -gt 20 ]]; then
+            ai_timing_score=$((perfect_intervals * 2))
+            log_ai "🧠 POSIBLE ATAQUE DE IA DETECTADO: $ai_timing_score patrones de timing perfecto"
+        fi
     fi
 }
 
@@ -463,15 +534,15 @@ trigger_emergency_response() {
     log_ai "🚨 ACTIVANDO RESPUESTA DE EMERGENCIA"
 
     # Activar rate limiting extremo
-    iptables -I INPUT -p tcp --dport 80 -m limit --limit 10/sec --limit-burst 20 -j ACCEPT
-    iptables -I INPUT -p tcp --dport 80 -j DROP
+    iptables -I INPUT -p tcp --dport 80 -m limit --limit 10/sec --limit-burst 20 -j ACCEPT 2>/dev/null || true
+    iptables -I INPUT -p tcp --dport 80 -j DROP 2>/dev/null || true
 
     # Notificar a administradores
-    echo "ATAQUE DDOS MASIVO DETECTADO EN $(hostname)" | mail -s "EMERGENCIA DDOS" admin@empresa.com
+    echo "ATAQUE DDOS MASIVO DETECTADO EN $(hostname)" | mail -s "EMERGENCIA DDOS" admin@empresa.com 2>/dev/null || true
 
     # Activar modo de protección máxima
-    echo 1 > /proc/sys/net/ipv4/tcp_syncookies
-    echo 2048 > /proc/sys/net/ipv4/tcp_max_syn_backlog
+    echo 1 > /proc/sys/net/ipv4/tcp_syncookies 2>/dev/null || true
+    echo 2048 > /proc/sys/net/ipv4/tcp_max_syn_backlog 2>/dev/null || true
 }
 
 # Bloqueo inmediato de IP
@@ -482,7 +553,7 @@ block_ip_immediately() {
     ipset add ddos_attackers "$ip" 2>/dev/null || true
 
     # Bloquear con iptables
-    iptables -I INPUT -s "$ip" -j DROP
+    iptables -I INPUT -s "$ip" -j DROP 2>/dev/null || true
 
     log_ai "🔒 IP BLOQUEADA INMEDIATAMENTE: $ip"
 }
@@ -494,12 +565,12 @@ main_monitoring_loop() {
         ai_log_analysis
 
         # Verificar estado del sistema
-        local load_avg=$(uptime | awk '{print $10}' | sed 's/,//')
-        local memory_usage=$(free | grep Mem | awk '{printf "%.0f", $3/$2 * 100.0}')
+        local load_avg=$(uptime | awk '{print $10}' | sed 's/,//' 2>/dev/null || echo "0")
+        local memory_usage=$(free | grep Mem | awk '{printf "%.0f", $3/$2 * 100.0}' 2>/dev/null || echo "0")
 
         log_ai "📊 Estado del sistema - Load: $load_avg, RAM: ${memory_usage}%"
 
-        sleep $MONITOR_INTERVAL
+        sleep 30  # Análisis cada 30 segundos (más frecuente para IA)
     done
 }
 
@@ -512,7 +583,7 @@ EOF
     # Crear servicio systemd para el monitor
     cat > /etc/systemd/system/ddos-ai-monitor.service << 'EOF'
 [Unit]
-Description=DDoS AI Monitor
+Description=DDoS AI Monitor - Basic AI Detection
 After=network.target
 
 [Service]
@@ -527,10 +598,10 @@ WantedBy=multi-user.target
 EOF
 
     systemctl daemon-reload
-    systemctl enable ddos-ai-monitor
-    systemctl start ddos-ai-monitor
+    systemctl enable ddos-ai-monitor 2>/dev/null || true
+    systemctl start ddos-ai-monitor 2>/dev/null || true
 
-    log_shield "SUCCESS" "Sistema de monitoreo con IA configurado"
+    log_shield "SUCCESS" "Sistema básico de monitoreo con IA configurado"
 }
 
 # Sistema de alertas avanzado
