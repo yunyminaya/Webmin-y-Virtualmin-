@@ -251,6 +251,138 @@ EOF
     fi
 }
 
+# Función para crear configuración automática con valores por defecto
+create_auto_config() {
+    log "INFO" "Creando configuración automática con valores por defecto..."
+
+    local config_file="/etc/auto_tunnel_config.conf"
+
+    cat > "$config_file" << 'EOF'
+# Configuración del Sistema de Túnel Automático - Configuración Automática
+# Valores por defecto configurados automáticamente
+
+# Configuración del servidor remoto para túnel SSH
+TUNNEL_REMOTE_HOST="tunnel.example.com"
+TUNNEL_REMOTE_USER="tunnel"
+TUNNEL_REMOTE_PORT="22"
+TUNNEL_LOCAL_PORT="80"
+TUNNEL_PORT="8080"
+
+# Configuración de túnel inteligente
+TUNNEL_TYPE="smart"
+ENABLE_LOAD_BALANCING="true"
+AUTO_FAILOVER="true"
+
+# Configuración de monitoreo
+MONITOR_INTERVAL="60"
+ENABLE_AUTO_RESTART="true"
+
+# Configuración de alertas
+ALERT_EMAIL="admin@localhost"
+ALERT_WEBHOOK=""
+ENABLE_EMAIL_ALERTS="true"
+ENABLE_WEBHOOK_ALERTS="false"
+
+# Configuración avanzada
+SSH_KEY_PATH="/root/.ssh/auto_tunnel_key"
+LOG_LEVEL="INFO"
+MAX_RETRY_ATTEMPTS="5"
+RETRY_DELAY="30"
+EOF
+
+    chmod 600 "$config_file"
+    log "SUCCESS" "Configuración automática creada: $config_file"
+}
+
+# Función para crear configuración de servidores de túnel
+create_tunnel_servers_config() {
+    log "INFO" "Creando configuración de servidores de túnel..."
+
+    local servers_file="/etc/auto-tunnel/tunnel_servers.conf"
+
+    mkdir -p /etc/auto-tunnel
+
+    cat > "$servers_file" << 'EOF'
+# Configuración de servidores de túnel
+# Formato: host:port:user:description
+
+# Servidores principales
+tunnel.example.com:22:tunnel:Servidor principal de túnel
+backup-tunnel.example.com:22:tunnel:Servidor de respaldo
+
+# Servidores adicionales (deshabilitados por defecto)
+# tunnel2.example.com:22:tunnel:Servidor secundario
+# tunnel3.example.com:22:tunnel:Servidor terciario
+EOF
+
+    chmod 644 "$servers_file"
+    log "SUCCESS" "Configuración de servidores creada: $servers_file"
+}
+
+# Función para crear configuración de dominios públicos
+create_domains_config() {
+    log "INFO" "Creando configuración de dominios públicos..."
+
+    local domains_file="/etc/auto-tunnel/domains.conf"
+
+    mkdir -p /etc/auto-tunnel
+
+    cat > "$domains_file" << 'EOF'
+# Configuración de dominios públicos
+# Formato: dominio:puerto:descripción
+
+# Dominios locales
+localhost:80:Dominio local para desarrollo
+127.0.0.1:80:IP local
+
+# Dominios de ejemplo (modificar según necesidades)
+example.com:80:Dominio de ejemplo
+test.example.com:80:Dominio de pruebas
+
+# Dominios adicionales (deshabilitados por defecto)
+# api.example.com:8080:Dominio API
+# admin.example.com:8443:Dominio administración
+EOF
+
+    chmod 644 "$domains_file"
+    log "SUCCESS" "Configuración de dominios creada: $domains_file"
+}
+
+# Función para crear configuración de alertas
+create_alerts_config() {
+    log "INFO" "Creando configuración de alertas..."
+
+    local alerts_file="/etc/auto-tunnel/alerts.conf"
+
+    mkdir -p /etc/auto-tunnel
+
+    cat > "$alerts_file" << 'EOF'
+# Configuración de alertas del sistema de túnel
+# Formato: tipo:destino:condición:mensaje
+
+# Alertas por email
+email:admin@localhost:tunnel_down:Túnel SSH caído - Requiere atención inmediata
+email:admin@localhost:tunnel_restored:Túnel SSH restaurado automáticamente
+
+# Alertas por webhook (deshabilitadas por defecto)
+# webhook:http://webhook.example.com/alert:tunnel_down:Túnel caído
+# webhook:http://webhook.example.com/alert:tunnel_restored:Túnel restaurado
+
+# Alertas de rendimiento
+email:admin@localhost:high_latency:Alta latencia detectada en túnel
+email:admin@localhost:connection_timeout:Timeout de conexión detectado
+
+# Configuración general de alertas
+ALERT_RETRY_ATTEMPTS="3"
+ALERT_RETRY_DELAY="60"
+ENABLE_DEDUPLICATION="true"
+DEDUPLICATION_WINDOW="300"
+EOF
+
+    chmod 644 "$alerts_file"
+    log "SUCCESS" "Configuración de alertas creada: $alerts_file"
+}
+
 # Función para configurar Apache/Nginx para CGI
 configure_web_server() {
     log "INFO" "Configurando servidor web para dashboard CGI..."
@@ -418,6 +550,71 @@ install_system() {
     log "SUCCESS" "Instalación del Sistema de Túnel Automático completada"
 }
 
+# Función principal de instalación automática
+install_auto() {
+    echo -e "${BLUE}🚀 INSTALACIÓN AUTOMÁTICA DEL SISTEMA DE TÚNEL AUTOMÁTICO ${SCRIPT_VERSION}${NC}"
+    echo -e "${BLUE}════════════════════════════════════════════════════════════════${NC}"
+    echo
+
+    # Verificaciones iniciales
+    check_root
+    detect_os
+
+    # Pasos de instalación automática
+    local steps=(
+        "Instalando dependencias del sistema"
+        "Creando directorios necesarios"
+        "Realizando backup de archivos existentes"
+        "Instalando archivos del sistema"
+        "Configurando SSH"
+        "Configurando firewall"
+        "Creando directorio de configuración"
+        "Creando configuración automática"
+        "Creando configuración de servidores de túnel"
+        "Creando configuración de dominios"
+        "Creando configuración de alertas"
+        "Configurando servidor web"
+        "Probando instalación"
+    )
+
+    local step_num=1
+    local total_steps=${#steps[@]}
+
+    for step in "${steps[@]}"; do
+        echo -e "${CYAN}[$step_num/$total_steps] ${step}...${NC}"
+        case $step_num in
+            1) install_dependencies ;;
+            2) create_directories ;;
+            3) backup_existing_files ;;
+            4) install_files ;;
+            5) configure_ssh ;;
+            6) configure_firewall ;;
+            7) mkdir -p /etc/auto-tunnel ; log "SUCCESS" "Directorio de configuración creado" ;;
+            8) create_auto_config ;;
+            9) create_tunnel_servers_config ;;
+            10) create_domains_config ;;
+            11) create_alerts_config ;;
+            12) configure_web_server ;;
+            13) test_installation ;;
+        esac
+
+        if [[ $? -eq 0 ]]; then
+            echo -e "${GREEN}   ✅ Completado${NC}"
+        else
+            echo -e "${RED}   ❌ Error en el paso $step_num${NC}"
+            return 1
+        fi
+
+        ((step_num++))
+        echo
+    done
+
+    # Mostrar información final
+    show_post_install_info
+
+    log "SUCCESS" "Instalación automática del Sistema de Túnel Automático completada"
+}
+
 # Función de desinstalación
 uninstall_system() {
     echo -e "${YELLOW}⚠️  DESINSTALANDO SISTEMA DE TÚNEL AUTOMÁTICO${NC}"
@@ -463,6 +660,9 @@ main() {
         "install")
             install_system
             ;;
+        "auto")
+            install_auto
+            ;;
         "uninstall")
             uninstall_system
             ;;
@@ -472,12 +672,14 @@ main() {
             echo -e "${CYAN}Uso:${NC} $0 [comando]"
             echo
             echo -e "${GREEN}Comandos disponibles:${NC}"
-            echo "  install     - Instalar el sistema completo"
+            echo "  install     - Instalar el sistema completo (interactivo)"
+            echo "  auto        - Instalar el sistema automáticamente con configuración por defecto"
             echo "  uninstall   - Desinstalar el sistema"
             echo "  help        - Mostrar esta ayuda"
             echo
             echo -e "${YELLOW}Ejemplos:${NC}"
-            echo "  $0 install          # Instalar el sistema"
+            echo "  $0 install          # Instalar el sistema (interactivo)"
+            echo "  $0 auto             # Instalar automáticamente"
             echo "  $0 uninstall        # Desinstalar el sistema"
             ;;
         *)

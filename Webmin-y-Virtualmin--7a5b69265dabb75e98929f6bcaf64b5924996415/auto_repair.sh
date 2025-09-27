@@ -39,6 +39,27 @@ fi
 source "${SCRIPT_DIR}/lib/common.sh"
 log_repair "SUCCESS" "Biblioteca común cargada correctamente"
 
+# ===== INCLUIR MÓDULO LARAVEL REPAIR =====
+source "${SCRIPT_DIR}/scripts/laravel_repair.sh"
+log_repair "SUCCESS" "Módulo de reparación Laravel cargado correctamente"
+
+# Redefinir funciones de logging del módulo Laravel para integración
+log() {
+    local level="$1"
+    local message="$2"
+    case "$level" in
+        "ERROR") log_repair "ERROR" "$message" ;;
+        "INFO") log_repair "INFO" "$message" ;;
+        "SUCCESS") log_repair "SUCCESS" "$message" ;;
+        "WARNING") log_repair "WARNING" "$message" ;;
+        *) log_repair "INFO" "$message" ;;
+    esac
+}
+error_log() { log "ERROR" "$1"; }
+info_log() { log "INFO" "$1"; }
+success_log() { log "SUCCESS" "$1"; }
+warning_log() { log "WARNING" "$1"; }
+
 # Variables de configuración
 REPAIR_LOG="${REPAIR_LOG:-./logs/auto_repair.log}"
 REPAIR_REPORT="${REPAIR_REPORT:-./logs/repair_report.html}"
@@ -1477,6 +1498,81 @@ EOF
     log_repair "SUCCESS" "Reporte de reparaciones generado: $REPAIR_REPORT"
 }
 
+# Función para reparación automática de aplicaciones Laravel
+laravel_auto_repair() {
+    log_repair "REPAIR" "Iniciando reparación automática de aplicaciones Laravel..."
+
+    ((REPAIRS_TOTAL++))
+
+    # Create log directory if it doesn't exist
+    mkdir -p "$(dirname "$LOG_FILE")"
+
+    # Detect Laravel applications
+    local apps=($(detect_laravel_apps))
+
+    if [[ ${#apps[@]} -eq 0 ]]; then
+        log_repair "WARNING" "No se encontraron aplicaciones Laravel"
+        ((REPAIRS_SUCCESSFUL++))
+        return 0
+    fi
+
+    local overall_status="success"
+    local all_errors=""
+
+    for app in "${apps[@]}"; do
+        info_log "Processing Laravel application: $app"
+
+        local app_errors=""
+
+        # Repair Composer dependencies
+        if ! repair_composer_deps "$app"; then
+            app_errors+="Composer repair failed\n"
+            overall_status="error"
+        fi
+
+        # Configure .env
+        if ! configure_env "$app"; then
+            app_errors+=".env configuration failed\n"
+            overall_status="warning"
+        fi
+
+        # Fix permissions
+        if ! fix_permissions "$app"; then
+            app_errors+="Permission fix failed\n"
+            overall_status="error"
+        fi
+
+        # Diagnose PHP errors
+        local php_errors=($(diagnose_php_errors "$app"))
+        if [[ ${#php_errors[@]} -gt 0 ]]; then
+            app_errors+="PHP Errors: ${php_errors[*]}\n"
+            overall_status="warning"
+        fi
+
+        # Repair database
+        if ! repair_database "$app"; then
+            app_errors+="Database repair failed\n"
+            overall_status="error"
+        fi
+
+        # Run Artisan commands
+        if ! run_artisan_commands "$app"; then
+            app_errors+="Artisan commands failed\n"
+            overall_status="warning"
+        fi
+
+        all_errors+="$app_errors"
+    done
+
+    if [[ "$overall_status" == "success" ]]; then
+        log_repair "SUCCESS" "Reparación de aplicaciones Laravel completada exitosamente"
+        ((REPAIRS_SUCCESSFUL++))
+    else
+        log_repair "WARNING" "Reparación de Laravel completada con algunos problemas"
+        ((REPAIRS_FAILED++))
+    fi
+}
+
     # ============================================================================
     # FUNCIÓN PRINCIPAL
     # ============================================================================
@@ -1501,6 +1597,7 @@ EOF
         repair_apache_automatic
         repair_critical_services
         repair_system_complete
+        laravel_auto_repair
         repair_performance_optimization
         repair_advanced_monitoring
         repair_advanced_security

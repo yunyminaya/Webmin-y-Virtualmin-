@@ -7,6 +7,7 @@ LOG_FILE="/var/log/auto_tunnel_system.log"
 CONFIG_FILE="/etc/auto_tunnel_config.conf"
 TUNNEL_PID_FILE="/var/run/ssh_tunnel.pid"
 MONITOR_PID_FILE="/var/run/tunnel_monitor.pid"
+DOMAIN_STATUS_FILE="/var/run/domain_status.json"
 
 # Función para verificar conectividad a internet
 check_internet() {
@@ -126,6 +127,16 @@ get_alerts() {
     echo "$alerts"
 }
 
+# Función para obtener estado de dominios
+get_domains_status() {
+    if [[ -f "$DOMAIN_STATUS_FILE" ]]; then
+        # Leer el archivo JSON y extraer solo el array de dominios
+        cat "$DOMAIN_STATUS_FILE" | jq -c '.domains // []' 2>/dev/null || echo "[]"
+    else
+        echo "[]"
+    fi
+}
+
 # Headers HTTP para JSON
 echo "Content-Type: application/json"
 echo "Access-Control-Allow-Origin: *"
@@ -156,6 +167,7 @@ monitor_status=$(check_monitor_status)
 logs=$(get_recent_logs)
 stats=$(get_stats)
 alerts=$(get_alerts)
+domains=$(get_domains_status)
 
 # Generar respuesta JSON
 cat << EOF
@@ -170,7 +182,8 @@ cat << EOF
   "logs": $logs,
   "stats": $stats,
   "alerts": $alerts,
+  "domains": $domains,
   "timestamp": "$(date '+%Y-%m-%d %H:%M:%S')",
-  "version": "1.0.0"
+  "version": "1.1.0"
 }
 EOF

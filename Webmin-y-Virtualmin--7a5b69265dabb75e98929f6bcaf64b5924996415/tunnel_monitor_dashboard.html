@@ -302,6 +302,103 @@
             font-size: 1.2em;
         }
 
+        /* Estilos para monitoreo de dominios */
+        .domain-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-left: 4px solid #4CAF50;
+        }
+
+        .domain-card.warning {
+            border-left-color: #ff9800;
+        }
+
+        .domain-card.error {
+            border-left-color: #f44336;
+        }
+
+        .domain-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .domain-name {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .domain-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .domain-status.online {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .domain-status.warning {
+            background-color: #ff9800;
+            color: white;
+        }
+
+        .domain-status.offline {
+            background-color: #f44336;
+            color: white;
+        }
+
+        .domain-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .metric-item {
+            text-align: center;
+            padding: 8px;
+            background: rgba(0,0,0,0.05);
+            border-radius: 8px;
+        }
+
+        .metric-value {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .metric-label {
+            font-size: 0.8em;
+            color: #666;
+            margin-top: 2px;
+        }
+
+        .domain-alerts {
+            margin-top: 10px;
+            padding: 8px;
+            background: rgba(244, 67, 54, 0.1);
+            border-radius: 6px;
+            border-left: 3px solid #f44336;
+        }
+
+        .domain-alerts.warning {
+            background: rgba(255, 152, 0, 0.1);
+            border-left-color: #ff9800;
+        }
+
+        .domain-alerts .alert-icon {
+            margin-right: 5px;
+        }
+
         @media (max-width: 768px) {
             .dashboard-grid {
                 grid-template-columns: 1fr;
@@ -392,6 +489,42 @@
             </div>
         </div>
 
+        <!-- Monitoreo de Dominios -->
+        <div class="log-section">
+            <div class="log-header">
+                <div class="log-title">🌐 Monitoreo de Dominios 24/7</div>
+                <div class="log-controls">
+                    <button class="btn btn-primary" onclick="refreshDomains()">Actualizar</button>
+                </div>
+            </div>
+            <div id="domains-container">
+                <div class="domain-card">
+                    <div class="domain-header">
+                        <span class="domain-name">Cargando dominios...</span>
+                        <span class="domain-status offline">CARGANDO</span>
+                    </div>
+                    <div class="domain-metrics">
+                        <div class="metric-item">
+                            <div class="metric-value">-</div>
+                            <div class="metric-label">DNS (ms)</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value">-</div>
+                            <div class="metric-label">Latencia (ms)</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value">-</div>
+                            <div class="metric-label">Pérdida (%)</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value">-</div>
+                            <div class="metric-label">Puertos</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Logs del Sistema -->
         <div class="log-section">
             <div class="log-header">
@@ -450,6 +583,9 @@
 
             // Actualizar alertas
             updateAlerts(data.alerts);
+
+            // Actualizar dominios
+            updateDomains(data.domains);
         }
 
         // Función para actualizar conectividad
@@ -602,6 +738,82 @@
             }
         }
 
+        // Función para actualizar dominios
+        function updateDomains(domains) {
+            const container = document.getElementById('domains-container');
+            container.innerHTML = '';
+
+            if (!domains || domains.length === 0) {
+                container.innerHTML = '<div class="domain-card"><div class="domain-header"><span class="domain-name">No hay dominios configurados</span></div></div>';
+                return;
+            }
+
+            domains.forEach(domain => {
+                const domainCard = document.createElement('div');
+                domainCard.className = 'domain-card';
+
+                // Determinar estado general del dominio
+                const dnsOk = domain.dns && domain.dns.status === 'success';
+                const reachable = domain.network && domain.network.reachable === true;
+                const hasAlerts = domain.alerts && domain.alerts.length > 0;
+
+                let statusClass = 'online';
+                let cardClass = '';
+
+                if (!dnsOk || !reachable || hasAlerts) {
+                    if (!dnsOk || !reachable) {
+                        statusClass = 'offline';
+                        cardClass = 'error';
+                    } else {
+                        statusClass = 'warning';
+                        cardClass = 'warning';
+                    }
+                }
+
+                if (cardClass) {
+                    domainCard.classList.add(cardClass);
+                }
+
+                const dnsTime = domain.dns ? domain.dns.time_ms : 0;
+                const latency = domain.network ? domain.network.avg_latency_ms : 9999;
+                const packetLoss = domain.network ? domain.network.packet_loss_percent : 100;
+                const ports = domain.connectivity ? domain.connectivity.ports : '';
+
+                domainCard.innerHTML = `
+                    <div class="domain-header">
+                        <span class="domain-name">${domain.domain}</span>
+                        <span class="domain-status ${statusClass}">${statusClass.toUpperCase()}</span>
+                    </div>
+                    <div class="domain-metrics">
+                        <div class="metric-item">
+                            <div class="metric-value">${dnsTime}ms</div>
+                            <div class="metric-label">DNS</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value">${latency === 9999 ? 'N/A' : latency + 'ms'}</div>
+                            <div class="metric-label">Latencia</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value">${packetLoss}%</div>
+                            <div class="metric-label">Pérdida</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value">${ports}</div>
+                            <div class="metric-label">Puertos</div>
+                        </div>
+                    </div>
+                    ${hasAlerts ? `
+                        <div class="domain-alerts ${statusClass === 'warning' ? 'warning' : ''}">
+                            <span class="alert-icon">⚠️</span>
+                            ${domain.alerts.join(', ')}
+                        </div>
+                    ` : ''}
+                `;
+
+                container.appendChild(domainCard);
+            });
+        }
+
         // Función para limpiar logs
         function clearLogs() {
             if (confirm('¿Está seguro de que desea limpiar todos los logs?')) {
@@ -621,6 +833,12 @@
         function refreshLogs() {
             updateDashboard();
             showAlert('Dashboard actualizado', 'info');
+        }
+
+        // Función para refrescar dominios
+        function refreshDomains() {
+            updateDashboard();
+            showAlert('Dominios actualizados', 'info');
         }
 
         // Función para calcular uptime

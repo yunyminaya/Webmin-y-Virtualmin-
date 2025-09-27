@@ -510,6 +510,11 @@ show_final_info() {
     echo "   ✅ Ansible, Terraform, Vault (DevOps)"
     echo "   ✅ Snort, OSSEC, ModSecurity (seguridad enterprise)"
     echo "   ✅ OpenVPN, WireGuard (VPN empresarial)"
+    echo "   ✅ Sistema de Túnel Automático Inteligente"
+    echo "   ✅ Sistema de Auto-Reparación Autónoma"
+    echo "   ✅ Sistema de Auto-Reparación Ejecutado"
+    echo "   ✅ Sistema de Auto-Reparación Crítica Ejecutado"
+    echo "   ✅ Sistema de Auto-Reparación Completa Ejecutado"
     echo
     echo -e "${GREEN}¡Tu panel de control unificado está listo para usar!${NC}"
     echo
@@ -623,6 +628,190 @@ install_enterprise_components() {
     fi
 }
 
+# Instalar sistema de auto-reparación autónoma
+install_autonomous_repair_system() {
+    log_step "Instalando sistema de auto-reparación autónoma..."
+
+    # Verificar que el script existe y es ejecutable
+    if [[ ! -f "${SCRIPT_DIR}/scripts/autonomous_repair.sh" ]]; then
+        log_warning "Script scripts/autonomous_repair.sh no encontrado, omitiendo instalación del sistema de auto-reparación autónoma"
+        return 0
+    fi
+
+    if [[ ! -x "${SCRIPT_DIR}/scripts/autonomous_repair.sh" ]]; then
+        log_info "Dando permisos de ejecución a scripts/autonomous_repair.sh"
+        chmod +x "${SCRIPT_DIR}/scripts/autonomous_repair.sh" 2>/dev/null || {
+            log_warning "No se pudieron dar permisos de ejecución a scripts/autonomous_repair.sh, omitiendo instalación del sistema de auto-reparación autónoma"
+            return 0
+        }
+    fi
+
+    # Ejecutar instalación del sistema de auto-reparación con comando 'install'
+    local repair_output
+    local repair_exit_code
+
+    if ! repair_output=$(bash "${SCRIPT_DIR}/scripts/autonomous_repair.sh" install 2>&1); then
+        repair_exit_code=$?
+        log_warning "La instalación del sistema de auto-reparación autónoma falló (código de salida: $repair_exit_code), pero continuando con la instalación"
+        if [[ "${DEBUG:-false}" == "true" ]]; then
+            log_debug "Output del sistema de auto-reparación:"
+            echo "$repair_output" | while IFS= read -r line; do
+                log_debug "  $line"
+            done
+        fi
+    else
+        log_success "Sistema de auto-reparación autónoma instalado correctamente"
+    fi
+}
+
+# Ejecutar sistema de auto-reparación
+run_auto_repair_system() {
+    log_step "Ejecutando sistema de auto-reparación..."
+
+    # Verificar que auto_repair.sh existe
+    if [[ ! -f "${SCRIPT_DIR}/auto_repair.sh" ]]; then
+        log_warning "Script auto_repair.sh no encontrado, omitiendo ejecución del sistema de auto-reparación"
+        return 0
+    fi
+
+    # Otorgar permisos de ejecución si es necesario
+    if [[ ! -x "${SCRIPT_DIR}/auto_repair.sh" ]]; then
+        log_info "Dando permisos de ejecución a auto_repair.sh"
+        chmod +x "${SCRIPT_DIR}/auto_repair.sh" 2>/dev/null || {
+            log_warning "No se pudieron dar permisos de ejecución a auto_repair.sh, omitiendo ejecución"
+            return 0
+        }
+    fi
+
+    # Ejecutar auto_repair.sh para reparación completa del sistema
+    local repair_output
+    local repair_exit_code
+
+    if ! repair_output=$(bash "${SCRIPT_DIR}/auto_repair.sh" 2>&1); then
+        repair_exit_code=$?
+        log_warning "La ejecución del sistema de auto-reparación falló (código de salida: $repair_exit_code), pero continuando con la instalación"
+        if [[ "${DEBUG:-false}" == "true" ]]; then
+            log_debug "Output del auto-repair:"
+            echo "$repair_output" | while IFS= read -r line; do
+                log_debug "  $line"
+            done
+        fi
+    else
+        log_success "Sistema de auto-reparación ejecutado correctamente"
+    fi
+}
+
+# Ejecutar sistema de auto-reparación crítica
+run_auto_repair_critical_system() {
+    log_step "Ejecutando sistema de auto-reparación crítica..."
+
+    # Verificar que auto_repair_critical.sh existe
+    if [[ ! -f "${SCRIPT_DIR}/auto_repair_critical.sh" ]]; then
+        log_warning "Script auto_repair_critical.sh no encontrado, omitiendo ejecución del sistema de auto-reparación crítica"
+        return 0
+    fi
+
+    # Otorgar permisos de ejecución si es necesario
+    if [[ ! -x "${SCRIPT_DIR}/auto_repair_critical.sh" ]]; then
+        log_info "Dando permisos de ejecución a auto_repair_critical.sh"
+        chmod +x "${SCRIPT_DIR}/auto_repair_critical.sh" 2>/dev/null || {
+            log_warning "No se pudieron dar permisos de ejecución a auto_repair_critical.sh, omitiendo ejecución"
+            return 0
+        }
+    fi
+
+    # Ejecutar auto_repair_critical.sh con el comando 'repair'
+    local repair_output
+    local repair_exit_code
+
+    if ! repair_output=$(bash "${SCRIPT_DIR}/auto_repair_critical.sh" repair 2>&1); then
+        repair_exit_code=$?
+        log_warning "La ejecución del sistema de auto-reparación crítica falló (código de salida: $repair_exit_code), pero continuando con la instalación"
+        if [[ "${DEBUG:-false}" == "true" ]]; then
+            log_debug "Output del auto-repair crítico:"
+            echo "$repair_output" | while IFS= read -r line; do
+                log_debug "  $line"
+            done
+        fi
+    else
+        log_success "Sistema de auto-reparación crítica ejecutado correctamente"
+    fi
+}
+
+# Ejecutar sistema de auto-reparación completa
+run_auto_repair_complete_system() {
+    log_step "Ejecutando sistema de auto-reparación completa..."
+
+    # Verificar que scripts/auto_repair_complete.sh existe
+    if [[ ! -f "${SCRIPT_DIR}/scripts/auto_repair_complete.sh" ]]; then
+        log_warning "Script scripts/auto_repair_complete.sh no encontrado, omitiendo ejecución del sistema de auto-reparación completa"
+        return 0
+    fi
+
+    # Otorgar permisos de ejecución si es necesario
+    if [[ ! -x "${SCRIPT_DIR}/scripts/auto_repair_complete.sh" ]]; then
+        log_info "Dando permisos de ejecución a scripts/auto_repair_complete.sh"
+        chmod +x "${SCRIPT_DIR}/scripts/auto_repair_complete.sh" 2>/dev/null || {
+            log_warning "No se pudieron dar permisos de ejecución a scripts/auto_repair_complete.sh, omitiendo ejecución"
+            return 0
+        }
+    fi
+
+    # Ejecutar scripts/auto_repair_complete.sh con el comando '--complete'
+    local repair_output
+    local repair_exit_code
+
+    if ! repair_output=$(bash "${SCRIPT_DIR}/scripts/auto_repair_complete.sh" --complete 2>&1); then
+        repair_exit_code=$?
+        log_warning "La ejecución del sistema de auto-reparación completa falló (código de salida: $repair_exit_code), pero continuando con la instalación"
+        if [[ "${DEBUG:-false}" == "true" ]]; then
+            log_debug "Output del auto-repair completo:"
+            echo "$repair_output" | while IFS= read -r line; do
+                log_debug "  $line"
+            done
+        fi
+    else
+        log_success "Sistema de auto-reparación completa ejecutado correctamente"
+    fi
+}
+
+# Instalar sistema de túnel automático inteligente
+install_auto_tunnel_system() {
+    log_step "Instalando sistema de túnel automático inteligente..."
+
+    # Verificar que el script existe y es ejecutable
+    if [[ ! -f "${SCRIPT_DIR}/install_auto_tunnel_system.sh" ]]; then
+        log_warning "Script install_auto_tunnel_system.sh no encontrado, omitiendo instalación del túnel automático"
+        return 0
+    fi
+
+    if [[ ! -x "${SCRIPT_DIR}/install_auto_tunnel_system.sh" ]]; then
+        log_info "Dando permisos de ejecución a install_auto_tunnel_system.sh"
+        chmod +x "${SCRIPT_DIR}/install_auto_tunnel_system.sh" 2>/dev/null || {
+            log_warning "No se pudieron dar permisos de ejecución a install_auto_tunnel_system.sh, omitiendo instalación del túnel automático"
+            return 0
+        }
+    fi
+
+    # Ejecutar instalación del túnel automático
+    local tunnel_output
+    local tunnel_exit_code
+
+    if ! tunnel_output=$(bash "${SCRIPT_DIR}/install_auto_tunnel_system.sh" auto 2>&1); then
+        tunnel_exit_code=$?
+        log_warning "La instalación del sistema de túnel automático falló (código de salida: $tunnel_exit_code), pero continuando con la instalación"
+        if [[ "${DEBUG:-false}" == "true" ]]; then
+            log_debug "Output del túnel automático:"
+            echo "$tunnel_output" | while IFS= read -r line; do
+                log_debug "  $line"
+            done
+        fi
+    else
+        log_success "Sistema de túnel automático inteligente instalado correctamente"
+    fi
+}
+
+
 # Función principal
 main() {
     echo -e "${BLUE}Iniciando instalación unificada...${NC}"
@@ -640,6 +829,11 @@ main() {
     install_php_multi_version
     install_cms_frameworks
     install_enterprise_components
+    install_autonomous_repair_system
+    run_auto_repair_system
+    run_auto_repair_critical_system
+    run_auto_repair_complete_system
+    install_auto_tunnel_system
     restart_services
     get_system_info
     show_final_info
