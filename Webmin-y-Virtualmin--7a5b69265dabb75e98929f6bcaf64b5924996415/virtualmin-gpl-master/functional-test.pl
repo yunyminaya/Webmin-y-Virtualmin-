@@ -50,7 +50,7 @@ $test_admin = "testadmin";
 $timeout = 240;			# Longest time a test should take
 $nowdate = strftime("%Y-%m-%d", localtime(time()));
 $yesterdaydate = strftime("%Y-%m-%d", localtime(time()-24*60*60));
-$wget_command = "wget -O - --cache=off --proxy=off --no-check-certificate ";
+$wget_command = "wget -O - --cache=off --proxy=off ";
 $curl_command = "curl --fail ";
 $migration_dir = "/usr/local/webadmin/virtualmin/migration";
 $migration_cpanel_domain = "hyccchina.com";
@@ -259,9 +259,7 @@ if ($miniserv{'ssl'}) {
 $webmin_port = $miniserv{'port'};
 $webmin_url = "$webmin_proto://localhost:$webmin_port";
 if ($webmin_proto eq "https") {
-	$webmin_wget_command .= "--no-check-certificate ";
-	$admin_webmin_wget_command .= "--no-check-certificate ";
-	$owner_webmin_wget_command .= "--no-check-certificate ";
+	# SSL certificate validation enabled
 	}
 $normal_agent_wget_command = $webmin_wget_command;
 $normal_agent_wget_command =~ s/--user-agent=\S+//;

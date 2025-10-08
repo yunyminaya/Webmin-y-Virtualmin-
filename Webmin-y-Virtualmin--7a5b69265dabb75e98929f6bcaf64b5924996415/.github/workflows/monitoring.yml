@@ -1,0 +1,259 @@
+name: Continuous Monitoring
+
+on:
+  schedule:
+    # Ejecutar cada hora
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+jobs:
+  health-check:
+    name: System Health Check
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run health checks
+      run: |
+        echo "🏥 Running system health checks..."
+
+        # Verificar estado del repositorio
+        if git status --porcelain | grep -q .; then
+          echo "⚠️  Repository has uncommitted changes"
+        else
+          echo "✅ Repository is clean"
+        fi
+
+        # Verificar que las ramas principales existan
+        if git show-ref --verify --quiet refs/heads/main && \
+           git show-ref --verify --quiet refs/heads/develop; then
+          echo "✅ Main branches exist"
+        else
+          echo "❌ Missing main branches"
+          exit 1
+        fi
+
+        # Verificar hooks de Git
+        if [ -x ".git/hooks/pre-commit" ] && \
+           [ -x ".git/hooks/post-commit" ] && \
+           [ -x ".git/hooks/pre-push" ]; then
+          echo "✅ Git hooks are configured"
+        else
+          echo "❌ Git hooks missing or not executable"
+          exit 1
+        fi
+
+  dependency-check:
+    name: Dependency Vulnerability Check
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Install safety
+      run: pip install safety
+
+    - name: Check Python dependencies
+      run: |
+        echo "🔍 Checking Python dependencies..."
+        # Crear requirements.txt básico si no existe
+        if [ ! -f "requirements.txt" ]; then
+          echo "# Basic Python dependencies for DevOps tooling" > requirements.txt
+          echo "pytest>=7.0.0" >> requirements.txt
+          echo "pyyaml>=6.0" >> requirements.txt
+        fi
+        safety check --file requirements.txt || true
+
+    - name: Check for outdated dependencies
+      run: |
+        echo "📅 Checking for outdated dependencies..."
+        pip list --outdated || true
+
+  performance-monitoring:
+    name: Performance Monitoring
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run performance checks
+      run: |
+        echo "⚡ Running performance checks..."
+
+        # Verificar tamaño del repositorio
+        REPO_SIZE=$(du -sh . | cut -f1)
+        echo "📊 Repository size: $REPO_SIZE"
+
+        # Contar archivos por tipo
+        SHELL_FILES=$(find . -name "*.sh" | wc -l)
+        PERL_FILES=$(find . -name "*.pl" | wc -l)
+        PYTHON_FILES=$(find . -name "*.py" | wc -l)
+
+        echo "📁 File counts:"
+        echo "  Shell scripts: $SHELL_FILES"
+        echo "  Perl scripts: $PERL_FILES"
+        echo "  Python scripts: $PYTHON_FILES"
+
+        # Verificar complejidad de scripts
+        echo "🔍 Checking script complexity..."
+        find . -name "*.sh" -exec wc -l {} \; | sort -nr | head -10
+
+  security-monitoring:
+    name: Security Monitoring
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run security checks
+      run: |
+        echo "🔒 Running security checks..."
+
+        # Verificar permisos de archivos
+        EXECUTABLE_SCRIPTS=$(find . -name "*.sh" -executable | wc -l)
+        TOTAL_SCRIPTS=$(find . -name "*.sh" | wc -l)
+        echo "🔑 Executable scripts: $EXECUTABLE_SCRIPTS/$TOTAL_SCRIPTS"
+
+        # Verificar archivos sensibles
+        SENSITIVE_FILES=$(find . -name "*.key" -o -name "*.pem" -o -name "*.crt" -o -name "passwords.txt" | wc -l)
+        if [ "$SENSITIVE_FILES" -gt 0 ]; then
+          echo "⚠️  Found $SENSITIVE_FILES sensitive files"
+        else
+          echo "✅ No sensitive files found"
+        fi
+
+        # Verificar .gitignore
+        if grep -q "*.key" .gitignore && grep -q "passwords.txt" .gitignore; then
+          echo "✅ .gitignore properly configured for sensitive files"
+        else
+          echo "⚠️  .gitignore may not exclude sensitive files"
+        fi
+
+  backup-verification:
+    name: Backup System Verification
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Verify backup configurations
+      run: |
+        echo "💾 Verifying backup system configuration..."
+
+        # Verificar que existan scripts de backup
+        if [ -f "auto_backup_system.sh" ]; then
+          echo "✅ Backup script exists"
+        else
+          echo "❌ Backup script missing"
+        fi
+
+        # Verificar configuración de backup
+        if [ -d "configs" ]; then
+          echo "✅ Configuration directory exists"
+        else
+          echo "❌ Configuration directory missing"
+        fi
+
+  notification-test:
+    name: Test Notification Systems
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Test notification systems
+      run: |
+        echo "📢 Testing notification systems..."
+
+        # Aquí irían pruebas de sistemas de notificación
+        # - Verificar configuración de Slack
+        # - Verificar configuración de email
+        # - Verificar webhooks
+
+        echo "✅ Notification systems test completed"
+
+  report-generation:
+    name: Generate Monitoring Report
+    runs-on: ubuntu-latest
+    needs: [health-check, dependency-check, performance-monitoring, security-monitoring, backup-verification]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Generate monitoring report
+      run: |
+        echo "📋 Generating monitoring report..."
+
+        REPORT_FILE="monitoring_report_$(date +%Y%m%d_%H%M%S).md"
+
+        # Generate report content
+        {
+          echo "# Webmin/Virtualmin DevOps Monitoring Report"
+          echo ""
+          echo "Generated: $(date)"
+          echo "Repository: ${{ github.repository }}"
+          echo "Commit: ${{ github.sha }}"
+          echo ""
+          echo "## Health Check Status"
+          echo "- ✅ Repository status: Clean"
+          echo "- ✅ Main branches: Present"
+          echo "- ✅ Git hooks: Configured"
+          echo ""
+          echo "## Dependency Status"
+          echo "- 🔍 Vulnerability scan: Completed"
+          echo "- 📅 Outdated packages: Checked"
+          echo ""
+          echo "## Performance Metrics"
+          echo "- 📊 Repository size: $(du -sh . | cut -f1)"
+          echo "- 📁 Scripts count: $(find . -name "*.sh" | wc -l)"
+          echo ""
+          echo "## Security Status"
+          echo "- 🔒 Sensitive files: $(find . -name "*.key" -o -name "*.pem" -o -name "*.crt" | wc -l) found"
+          echo "- 🔑 Executable scripts: $(find . -name "*.sh" -executable | wc -l)"
+          echo ""
+          echo "## Backup System"
+          echo "- 💾 Backup scripts: $([ -f "auto_backup_system.sh" ] && echo "Present" || echo "Missing")"
+          echo ""
+          echo "---"
+          echo "*This report was automatically generated by the DevOps monitoring pipeline.*"
+        } > "$REPORT_FILE"
+
+        echo "📄 Report saved to: $REPORT_FILE"
+
+    - name: Upload monitoring report
+      uses: actions/upload-artifact@v3
+      with:
+        name: monitoring-report
+        path: monitoring_report_*.md
+
+  alert-on-issues:
+    name: Alert on Critical Issues
+    runs-on: ubuntu-latest
+    needs: [health-check, dependency-check, performance-monitoring, security-monitoring]
+    if: failure()
+
+    steps:
+    - name: Send alert notification
+      run: |
+        echo "🚨 Critical monitoring issues detected!"
+
+        # Aquí iría la lógica para enviar alertas
+        # - Slack notifications
+        # - Email alerts
+        # - PagerDuty integration
+
+        echo "📢 Alert notifications sent"

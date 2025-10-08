@@ -7,6 +7,6 @@
 #
 use strict;
 
-do($ENV{'THEME_ROOT'} . "/authentic-lib.pl");
+do($root_directory/$current_theme . "/authentic-lib.pl");
 
 authentic();

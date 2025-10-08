@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cluster Server Manager - Gestión de Servidores</title>
+    <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/d3@7"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .app-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            text-align: center;
+        }
+        
+        .header h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .server-form {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            height: fit-content;
+        }
+        
+        .server-list {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .cluster-visualization {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            min-height: 500px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+        }
+        
+        .server-card {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .server-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .server-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .server-type-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .server-metrics {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+        }
+        
+        .metric-value {
+            font-weight: 600;
+        }
+        
+        .cluster-diagram {
+            width: 100%;
+            height: 500px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            position: relative;
+            background: #fafafa;
+            overflow: hidden;
+        }
+        
+        .node {
+            position: absolute;
+            padding: 12px 16px;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            z-index: 10;
+            min-width: 120px;
+        }
+        
+        .node:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 20;
+        }
+        
+        .connection {
+            position: absolute;
+            background: #666;
+            height: 2px;
+            transform-origin: left center;
+            z-index: 1;
+        }
+        
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+        }
+        
+        .status-active {
+            background: #4CAF50;
+        }
+        
+        .status-inactive {
+            background: #f44336;
+        }
+        
+        .status-pending {
+            background: #FF9800;
+        }
+        
+        .connection-form {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            margin-top: 20px;
+        }
+        
+        .connection-list {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            margin-top: 20px;
+        }
+        
+        .alert {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+        
+        function ClusterServerManager() {
+            const [servers, setServers] = useState([]);
+            const [connections, setConnections] = useState([]);
+            const [alerts, setAlerts] = useState([]);
+            const [selectedServer, setSelectedServer] = useState(null);
+            
+            // Form states
+            const [serverForm, setServerForm] = useState({
+                id: '',
+                name: '',
+                type: 'web',
+                ip: '',
+                region: 'us-east-1',
+                port: '22',
+                username: 'root',
+                status: 'pending'
+            });
+            
+            const [connectionForm, setConnectionForm] = useState({
+                from: '',
+                to: '',
+                type: 'http',
+                port: '80'
+            });
+            
+            const nodeColors = {
+                web: '#4CAF50',
+                database: '#2196F3',
+                dns: '#FF9800',
+                cache: '#9C27B0',
+                load_balancer: '#F44336',
+                file_system: '#795548',
+                monitoring: '#607D8B',
+                backup: '#FF5722',
+                security: '#E91E63'
+            };
+            
+            const nodeIcons = {
+                web: '🌐',
+                database: '🗄️',
+                dns: '🌍',
+                cache: '⚡',
+                load_balancer: '⚖️',
+                file_system: '📁',
+                monitoring: '📊',
+                backup: '💾',
+                security: '🛡️'
+            };
+            
+            // Show alert
+            const showAlert = (message, type = 'success') => {
+                const newAlert = { id: Date.now(), message, type };
+                setAlerts(prev => [...prev, newAlert]);
+                setTimeout(() => {
+                    setAlerts(prev => prev.filter(alert => alert.id !== newAlert.id));
+                }, 5000);
+            };
+            
+            // Add server
+            const addServer = () => {
+                if (!serverForm.id || !serverForm.name || !serverForm.ip) {
+                    showAlert('Por favor complete los campos obligatorios', 'error');
+                    return;
+                }
+                
+                if (servers.find(s => s.id === serverForm.id)) {
+                    showAlert('El ID del servidor ya existe', 'error');
+                    return;
+                }
+                
+                const newServer = {
+                    ...serverForm,
+                    created_at: new Date().toISOString(),
+                    metrics: {
+                        cpu: Math.random() * 100,
+                        memory: Math.random() * 100,
+                        disk: Math.random() * 100,
+                        network: Math.random() * 100
+                    }
+                };
+                
+                setServers(prev => [...prev, newServer]);
+                showAlert(`Servidor ${serverForm.name} agregado correctamente`, 'success');
+                
+                // Reset form
+                setServerForm({
+                    id: '',
+                    name: '',
+                    type: 'web',
+                    ip: '',
+                    region: 'us-east-1',
+                    port: '22',
+                    username: 'root',
+                    status: 'pending'
+                });
+            };
+            
+            // Remove server
+            const removeServer = (serverId) => {
+                setServers(prev => prev.filter(s => s.id !== serverId));
+                setConnections(prev => prev.filter(c => c.from !== serverId && c.to !== serverId));
+                showAlert('Servidor eliminado correctamente', 'warning');
+            };
+            
+            // Add connection
+            const addConnection = () => {
+                if (!connectionForm.from || !connectionForm.to) {
+                    showAlert('Por seleccione servidores de origen y destino', 'error');
+                    return;
+                }
+                
+                if (connectionForm.from === connectionForm.to) {
+                    showAlert('El servidor de origen y destino no pueden ser iguales', 'error');
+                    return;
+                }
+                
+                const newConnection = {
+                    id: `${connectionForm.from}_${connectionForm.to}_${Date.now()}`,
+                    from: connectionForm.from,
+                    to: connectionForm.to,
+                    type: connectionForm.type,
+                    port: connectionForm.port,
+                    status: 'active',
+                    created_at: new Date().toISOString(),
+                    latency: Math.random() * 100
+                };
+                
+                setConnections(prev => [...prev, newConnection]);
+                showAlert('Conexión agregada correctamente', 'success');
+                
+                // Reset form
+                setConnectionForm({
+                    from: '',
+                    to: '',
+                    type: 'http',
+                    port: '80'
+                });
+            };
+            
+            // Remove connection
+            const removeConnection = (connectionId) => {
+                setConnections(prev => prev.filter(c => c.id !== connectionId));
+                showAlert('Conexión eliminada correctamente', 'warning');
+            };
+            
+            // Test server connection
+            const testServerConnection = (server) => {
+                setSelectedServer(server.id);
+                setTimeout(() => {
+                    setServers(prev => prev.map(s => 
+                        s.id === server.id 
+                            ? { ...s, status: 'active' }
+                            : s
+                    ));
+                    showAlert(`Conexión con ${server.name} establecida correctamente`, 'success');
+                    setSelectedServer(null);
+                }, 2000);
+            };
+            
+            // Calculate node positions
+            const calculateNodePositions = () => {
+                const positions = {};
+                const centerX = 400;
+                const centerY = 250;
+                const radius = Math.min(200, 200 / Math.max(1, servers.length / 6));
+                
+                servers.forEach((server, index) => {
+                    const angle = (2 * Math.PI * index) / servers.length;
+                    positions[server.id] = {
+                        x: centerX + radius * Math.cos(angle),
+                        y: centerY + radius * Math.sin(angle)
+                    };
+                });
+                
+                return positions;
+            };
+            
+            const nodePositions = calculateNodePositions();
+            
+            return (
+                <div className="app-container">
+                    <div className="header">
+                        <h1>🚀 Cluster Server Manager</h1>
+                        <p>Gestión visual de servidores y conexiones de clustering</p>
+                    </div>
+                    
+                    {/* Alerts */}
+                    {alerts.map(alert => (
+                        <div key={alert.id} className={`alert alert-${alert.type}`}>
+                            {alert.message}
+                        </div>
+                    ))}
+                    
+                    <div className="main-content">
+                        {/* Server Form */}
+                        <div className="server-form">
+                            <h3>➕ Agregar Servidor</h3>
+                            
+                            <div className="form-group">
+                                <label>ID del Servidor *</label>
+                                <input
+                                    type="text"
+                                    value={serverForm.id}
+                                    onChange={(e) => setServerForm(prev => ({...prev, id: e.target.value}))}
+                                    placeholder="ej: web1"
+                                />
+                            </div>
+                            
+                            <div className="form-group">
+                                <label>Nombre del Servidor *</label>
+                                <input
+                                    type="text"
+                                    value={serverForm.name}
+                                    onChange={(e) => setServerForm(prev => ({...prev, name: e.target.value}))}
+                                    placeholder="ej: Servidor Web Principal"
+                                />
+                            </div>
+                            
+                            <div className="form-group">
+                                <label>Tipo de Servidor</label>
+                                <select
+                                    value={serverForm.type}
+                                    onChange={(e) => setServerForm(prev => ({...prev, type: e.target.value}))}
+                                >
+                                    <option value="web">🌐 Servidor Web</option>
+                                    <option value="database">🗄️ Base de Datos</option>
+                                    <option value="load_balancer">⚖️ Load Balancer</option>
+                                    <option value="cache">⚡ Cache</option>
+                                    <option value="monitoring">📊 Monitoreo</option>
+                                    <option value="backup">💾 Backup</option>
+                                    <option value="dns">🌍 DNS</option>
+                                    <option value="security">🛡️ Seguridad</option>
+                                </select>
+                            </div>
+                            
+                            <div className="form-group">
+                                <label>Dirección IP *</label>
+                                <input
+                                    type="text"
+                                    value={serverForm.ip}
+                                    onChange={(e) => setServerForm(prev => ({...prev, ip: e.target.value}))}
+                                    placeholder="ej: 192.168.1.10"
+                                />
+                            </div>
+                            
+                            <div className="form-group">
+                                <label>Región</label>
+                                <select
+                                    value={serverForm.region}
+                                    onChange={(e) => setServerForm(prev => ({...prev, region: e.target.value}))}
+                                >
+                                    <option value="us-east-1">US East 1</option>
+                                    <option value="us-west-1">US West 1</option>
+                                    <option value="eu-west-1">EU West 1</option>
+                                    <option value="ap-southeast-1">Asia Pacific</option>
+                                </select>
+                            </div>
+                            
+                            <div className="form-group">
+                                <label>Puerto SSH</label>
+                                <input
+                                    type="number"
+                                    value={serverForm.port}
+                                    onChange={(e) => setServerForm(prev => ({...prev, port: e.target.value}))}
+                                    placeholder="22"
+                                />
+                            </div>
+                            
+                            <div className="form-group">
+                                <label>Usuario SSH</label>
+                                <input
+                                    type="text"
+                                    value={serverForm.username}
+                                    onChange={(e) => setServerForm(prev => ({...prev, username: e.target.value}))}
+                                    placeholder="root"
+                                />
+                            </div>
+                            
+                            <button className="btn" onClick={addServer}>
+                                ➕ Agregar Servidor
+                            </button>
+                        </div>
+                        
+                        {/* Server List */}
+                        <div className="server-list">
+                            <h3>📋 Servidores Configurados ({servers.length})</h3>
+                            
+                            {servers.length === 0 ? (
+                                <p style={{textAlign: 'center', color: '#666', padding: '20px'}}>
+                                    No hay servidores configurados. Agregue su primer servidor usando el formulario.
+                                </p>
+                            ) : (
+                                servers.map(server => (
+                                    <div key={server.id} className="server-card">
+                                        <div className="server-card-header">
+                                            <div>
+                                                <span className={`status-indicator status-${server.status}`}></span>
+                                                <strong>{nodeIcons[server.type]} {server.name}</strong>
+                                                <span className="server-type-badge">{server.type}</span>
+                                            </div>
+                                            <div>
+                                                <button 
+                                                    className="btn btn-secondary" 
+                                                    style={{width: 'auto', padding: '6px 12px', marginRight: '5px'}}
+                                                    onClick={() => testServerConnection(server)}
+                                                    disabled={selectedServer === server.id}
+                                                >
+                                                    {selectedServer === server.id ? '🔄 Conectando...' : '🔗 Probar'}
+                                                </button>
+                                                <button 
+                                                    className="btn btn-danger" 
+                                                    style={{width: 'auto', padding: '6px 12px'}}
+                                                    onClick={() => removeServer(server.id)}
+                                                >
+                                                    🗑️
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div style={{fontSize: '12px', color: '#666'}}>
+                                            <strong>ID:</strong> {server.id} | 
+                                            <strong> IP:</strong> {server.ip} | 
+                                            <strong> Región:</strong> {server.region}
+                                        </div>
+                                        <div className="server-metrics">
+                                            <div className="metric">
+                                                <span>CPU:</span>
+                                                <span className="metric-value">{server.metrics.cpu.toFixed(1)}%</span>
+                                            </div>
+                                            <div className="metric">
+                                                <span>Memoria:</span>
+                                                <span className="metric-value">{server.metrics.memory.toFixed(1)}%</span>
+                                            </div>
+                                            <div className="metric">
+                                                <span>Disco:</span>
+                                                <span className="metric-value">{server.metrics.disk.toFixed(1)}%</span>
+                                            </div>
+                                            <div className="metric">
+                                                <span>Red:</span>
+                                                <span className="metric-value">{server.metrics.network.toFixed(1)}%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                    
+                    {/* Connection Form */}
+                    <div className="main-content">
+                        <div className="connection-form">
+                            <h3>🔗 Agregar Conexión</h3>
+                            
+                            <div className="form-group">
+                                <label>Servidor de Origen</label>
+                                <select
+                                    value={connectionForm.from}
+                                    onChange={(e) => setConnectionForm(prev => ({...prev, from: e.target.value}))}
+                                >
+                                    <option value="">Seleccione servidor</option>
+                                    {servers.map(server => (
+                                        <option key={server.id} value={server.id}>
+                                            {nodeIcons[server.type]} {server.name} ({server.id})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            
+                            <div className="form-group">
+                                <label>Servidor de Destino</label>
+                                <select
+                                    value={connectionForm.to}
+                                    onChange={(e) => setConnectionForm(prev => ({...prev, to: e.target.value}))}
+                                >
+                                    <option value="">Seleccione servidor</option>
+                                    {servers.map(server => (
+                                        <option key={server.id} value={server.id}>
+                                            {nodeIcons[server.type]} {server.name} ({server.id})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            
+                            <div className="form-group">
+                                <label>Tipo de Conexión</label>
+                                <select
+                                    value={connectionForm.type}
+                                    onChange={(e) => setConnectionForm(prev => ({...prev, type: e.target.value}))}
+                                >
+                                    <option value="http">HTTP</option>
+                                    <option value="database">Base de Datos</option>
+                                    <option value="replication">Replicación</option>
+                                    <option value="cache">Cache</option>
+                                    <option value="monitoring">Monitoreo</option>
+                                    <option value="backup">Backup</option>
+                                    <option value="dns">DNS</option>
+                                    <option value="firewall">Firewall</option>
+                                </select>
+                            </div>
+                            
+                            <div className="form-group">
+                                <label>Puerto</label>
+                                <input
+                                    type="number"
+                                    value={connectionForm.port}
+                                    onChange={(e) => setConnectionForm(prev => ({...prev, port: e.target.value}))}
+                                    placeholder="80"
+                                />
+                            </div>
+                            
+                            <button className="btn" onClick={addConnection}>
+                                🔗 Agregar Conexión
+                            </button>
+                        </div>
+                        
+                        {/* Connection List */}
+                        <div className="connection-list">
+                            <h3>🔗 Conexiones Configuradas ({connections.length})</h3>
+                            
+                            {connections.length === 0 ? (
+                                <p style={{textAlign: 'center', color: '#666', padding: '20px'}}>
+                                    No hay conexiones configuradas. Agregue conexiones entre servidores.
+                                </p>
+                            ) : (
+                                connections.map(connection => {
+                                    const fromServer = servers.find(s => s.id === connection.from);
+                                    const toServer = servers.find(s => s.id === connection.to);
+                                    
+                                    return (
+                                        <div key={connection.id} className="server-card">
+                                            <div className="server-card-header">
+                                                <div>
+                                                    <strong>{connection.type.toUpperCase()}</strong>
+                                                    <br />
+                                                    <span style={{fontSize: '12px', color: '#666'}}>
+                                                        {fromServer ? `${nodeIcons[fromServer.type]} ${fromServer.name}` : connection.from}
+                                                        {' → '}
+                                                        {toServer ? `${nodeIcons[toServer.type]} ${toServer.name}` : connection.to}
+                                                    </span>
+                                                </div>
+                                                <div>
+                                                    <button 
+                                                        className="btn btn-danger" 
+                                                        style={{width: 'auto', padding: '6px 12px'}}
+                                                        onClick={() => removeConnection(connection.id)}
+                                                    >
+                                                        🗑️
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div style={{fontSize: '12px', color: '#666'}}>
+                                                <strong>Puerto:</strong> {connection.port} | 
+                                                <strong> Latencia:</strong> {connection.latency.toFixed(2)}ms | 
+                                                <strong> Estado:</strong> <span className={`status-indicator status-${connection.status}`}></span>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </div>
+                    </div>
+                    
+                    {/* Cluster Visualization */}
+                    <div className="cluster-visualization">
+                        <h3>🌐 Visualización del Cluster</h3>
+                        <div className="cluster-diagram">
+                            {/* Render connections */}
+                            {connections.map(connection => {
+                                const fromPos = nodePositions[connection.from];
+                                const toPos = nodePositions[connection.to];
+                                if (!fromPos || !toPos) return null;
+                                
+                                const dx = toPos.x - fromPos.x;
+                                const dy = toPos.y - fromPos.y;
+                                const length = Math.sqrt(dx * dx + dy * dy);
+                                const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+                                
+                                return (
+                                    <div
+                                        key={connection.id}
+                                        className="connection"
+                                        style={{
+                                            width: length + 'px',
+                                            left: fromPos.x + 60 + 'px',
+                                            top: fromPos.y + 30 + 'px',
+                                            transform: `rotate(${angle}deg)`,
+                                            backgroundColor: '#666'
+                                        }}
+                                        title={`${connection.type}: ${connection.from} → ${connection.to}`}
+                                    />
+                                );
+                            })}
+                            
+                            {/* Render nodes */}
+                            {servers.map(server => {
+                                const pos = nodePositions[server.id];
+                                if (!pos) return null;
+                                
+                                const nodeColor = nodeColors[server.type] || '#666';
+                                
+                                return (
+                                    <div
+                                        key={server.id}
+                                        className="node"
+                                        style={{
+                                            left: pos.x + 'px',
+                                            top: pos.y + 'px',
+                                            backgroundColor: nodeColor,
+                                            transform: 'translate(-50%, -50%)'
+                                        }}
+                                        title={`${server.name}\nIP: ${server.ip}\nCPU: ${server.metrics.cpu.toFixed(1)}%`}
+                                    >
+                                        <div>{nodeIcons[server.type]}</div>
+                                        <div style={{fontSize: '10px'}}>{server.id}</div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+        
+        ReactDOM.render(<ClusterServerManager />, document.getElementById('root'));
+    </script>
+</body>
+</html>

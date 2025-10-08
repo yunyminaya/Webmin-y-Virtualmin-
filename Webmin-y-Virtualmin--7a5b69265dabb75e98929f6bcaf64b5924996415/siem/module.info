@@ -1,0 +1,6 @@
+desc=SIEM Security Information and Event Management
+category=Security
+longdesc=Comprehensive SIEM system for Webmin/Virtualmin with log aggregation, correlation, alerting, and compliance reporting
+author=Yunyminaya
+version=1.0
+depends=sqlite3

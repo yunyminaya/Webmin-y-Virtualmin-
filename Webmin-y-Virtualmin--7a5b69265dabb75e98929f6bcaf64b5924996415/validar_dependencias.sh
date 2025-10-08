@@ -58,7 +58,7 @@ check_internet_connection() {
     local test_urls=("https://google.com" "https://github.com" "https://software.virtualmin.com")
 
     for url in "${test_urls[@]}"; do
-        if curl -s --max-time "$timeout" "$url" > /dev/null 2>&1; then
+        if curl -s --ssl-reqd --connect-timeout 10 --max-time "$timeout" --retry 3 --retry-delay 2 --user-agent "Dependency-Validator/1.0" "$url" > /dev/null 2>&1; then
             log_success "Conectividad a internet OK (probado con $url)"
             return 0
         fi
@@ -290,6 +290,234 @@ check_python() {
     fi
 }
 
+# Función para verificar versiones mínimas de dependencias clave
+check_minimum_versions() {
+    log_step "Verificando versiones mínimas de dependencias clave..."
+
+    # Verificar PHP
+    if command -v php &> /dev/null; then
+        local php_version
+        php_version=$(php --version | head -1 | grep -oP '\d+\.\d+\.\d+')
+        if [[ -n "$php_version" ]]; then
+            log_info "Versión de PHP detectada: $php_version"
+            if [[ "$(printf '%s\n' "$php_version" "7.4.0" | sort -V | head -n1)" != "7.4.0" ]]; then
+                log_error "Versión de PHP demasiado antigua: $php_version. Mínimo requerido: 7.4.0"
+                exit 1
+            fi
+        else
+            log_warning "No se pudo determinar la versión de PHP"
+        fi
+    else
+        log_warning "PHP no está instalado"
+    fi
+
+    # Verificar MySQL/MariaDB
+    local mysql_cmd=""
+    if command -v mysql &> /dev/null; then
+        mysql_cmd="mysql"
+    elif command -v mariadb &> /dev/null; then
+        mysql_cmd="mariadb"
+    fi
+
+    if [[ -n "$mysql_cmd" ]]; then
+        local mysql_version
+        mysql_version=$("$mysql_cmd" --version | grep -oP '\d+\.\d+\.\d+' | head -1)
+        if [[ -n "$mysql_version" ]]; then
+            log_info "Versión de MySQL/MariaDB detectada: $mysql_version"
+            if [[ "$(printf '%s\n' "$mysql_version" "5.7.0" | sort -V | head -n1)" != "5.7.0" ]]; then
+                log_error "Versión de MySQL/MariaDB demasiado antigua: $mysql_version. Mínimo requerido: 5.7.0"
+                exit 1
+            fi
+        else
+            log_warning "No se pudo determinar la versión de MySQL/MariaDB"
+        fi
+    else
+        log_warning "MySQL/MariaDB no está instalado"
+    fi
+
+    # Verificar Apache
+    local apache_cmd=""
+    if command -v apache2 &> /dev/null; then
+        apache_cmd="apache2"
+    elif command -v httpd &> /dev/null; then
+        apache_cmd="httpd"
+    fi
+
+    if [[ -n "$apache_cmd" ]]; then
+        local apache_version
+        apache_version=$("$apache_cmd" -v | grep -oP 'Apache/\d+\.\d+\.\d+' | cut -d'/' -f2)
+        if [[ -n "$apache_version" ]]; then
+            log_info "Versión de Apache detectada: $apache_version"
+            if [[ "$(printf '%s\n' "$apache_version" "2.4.0" | sort -V | head -n1)" != "2.4.0" ]]; then
+                log_error "Versión de Apache demasiado antigua: $apache_version. Mínimo requerido: 2.4.0"
+                exit 1
+            fi
+        else
+            log_warning "No se pudo determinar la versión de Apache"
+        fi
+    else
+        log_warning "Apache no está instalado"
+    fi
+
+    log_success "Versiones mínimas verificadas"
+}
+
+# Función para verificar existencia de archivos críticos
+check_critical_files() {
+    log_step "Verificando existencia de archivos críticos..."
+
+    local critical_files=(
+        "/etc/passwd"
+        "/etc/group"
+        "/etc/shadow"
+        "/etc/sudoers"
+        "/etc/hosts"
+        "/etc/resolv.conf"
+    )
+
+    local missing_files=()
+
+    for file in "${critical_files[@]}"; do
+        if [[ ! -f "$file" ]]; then
+            missing_files+=("$file")
+        fi
+    done
+
+    if [[ ${#missing_files[@]} -gt 0 ]]; then
+        log_error "Archivos críticos faltantes: ${missing_files[*]}"
+        exit 1
+    fi
+
+    # Verificar archivos de configuración específicos
+    if command -v php &> /dev/null; then
+        if [[ ! -f /etc/php.ini ]] && [[ ! -f /etc/php/*/php.ini ]]; then
+            log_warning "Archivo de configuración de PHP no encontrado (/etc/php.ini)"
+        fi
+    fi
+
+    if command -v mysql &> /dev/null || command -v mariadb &> /dev/null; then
+        if [[ ! -f /etc/mysql/my.cnf ]] && [[ ! -f /etc/my.cnf ]]; then
+            log_warning "Archivo de configuración de MySQL/MariaDB no encontrado"
+        fi
+    fi
+
+    if command -v apache2 &> /dev/null || command -v httpd &> /dev/null; then
+        if [[ ! -f /etc/apache2/apache2.conf ]] && [[ ! -f /etc/httpd/conf/httpd.conf ]]; then
+            log_warning "Archivo de configuración de Apache no encontrado"
+        fi
+    fi
+
+    log_success "Archivos críticos verificados"
+}
+
+# Función para verificar existencia de bibliotecas comunes
+check_common_libraries() {
+    log_step "Verificando existencia de bibliotecas comunes..."
+
+    # Verificar extensiones PHP comunes
+    if command -v php &> /dev/null; then
+        local php_extensions=("mysqli" "pdo" "pdo_mysql" "mbstring" "curl" "gd" "json" "openssl")
+        local missing_extensions=()
+
+        for ext in "${php_extensions[@]}"; do
+            if ! php -m | grep -q "^$ext$"; then
+                missing_extensions+=("$ext")
+            fi
+        done
+
+        if [[ ${#missing_extensions[@]} -gt 0 ]]; then
+            log_warning "Extensiones PHP faltantes: ${missing_extensions[*]}"
+            log_info "Estas extensiones se pueden instalar con el gestor de paquetes"
+        else
+            log_success "Extensiones PHP comunes verificadas"
+        fi
+    fi
+
+    # Verificar bibliotecas del sistema comunes
+    local system_libs=("libssl.so" "libcrypto.so" "libz.so" "libxml2.so")
+    local missing_libs=()
+
+    for lib in "${system_libs[@]}"; do
+        if ! ldconfig -p | grep -q "$lib"; then
+            missing_libs+=("$lib")
+        fi
+    done
+
+    if [[ ${#missing_libs[@]} -gt 0 ]]; then
+        log_warning "Bibliotecas del sistema faltantes: ${missing_libs[*]}"
+    else
+        log_success "Bibliotecas del sistema comunes verificadas"
+    fi
+
+    log_success "Verificación de bibliotecas completada"
+}
+
+# Función para detectar versiones vulnerables y CVEs conocidas
+check_vulnerable_versions() {
+    log_step "Detectando versiones vulnerables y CVEs conocidas..."
+
+    # Verificar PHP vulnerabilidades conocidas
+    if command -v php &> /dev/null; then
+        local php_version
+        php_version=$(php --version | head -1 | grep -oP '\d+\.\d+\.\d+')
+        if [[ -n "$php_version" ]]; then
+            # PHP < 7.4 tiene múltiples CVEs críticas
+            if [[ "$(printf '%s\n' "$php_version" "7.4.0" | sort -V | head -n1)" != "7.4.0" ]]; then
+                log_error "Versión de PHP vulnerable detectada: $php_version"
+                log_info "CVEs conocidas: Múltiples vulnerabilidades en versiones < 7.4.0"
+                log_info "Recomendado: Actualizar a PHP 8.0+ para mayor seguridad"
+                exit 1
+            elif [[ "$(printf '%s\n' "$php_version" "8.0.0" | sort -V | head -n1)" != "8.0.0" ]]; then
+                log_warning "Versión de PHP potencialmente vulnerable: $php_version"
+                log_info "Recomendado: Actualizar a PHP 8.0+ para parches de seguridad recientes"
+            fi
+        fi
+    fi
+
+    # Verificar MySQL/MariaDB vulnerabilidades
+    local mysql_cmd=""
+    if command -v mysql &> /dev/null; then
+        mysql_cmd="mysql"
+    elif command -v mariadb &> /dev/null; then
+        mysql_cmd="mariadb"
+    fi
+
+    if [[ -n "$mysql_cmd" ]]; then
+        local mysql_version
+        mysql_version=$("$mysql_cmd" --version | grep -oP '\d+\.\d+\.\d+' | head -1)
+        if [[ -n "$mysql_version" ]]; then
+            # MySQL < 5.7 tiene vulnerabilidades conocidas
+            if [[ "$(printf '%s\n' "$mysql_version" "5.7.0" | sort -V | head -n1)" != "5.7.0" ]]; then
+                log_error "Versión de MySQL/MariaDB vulnerable: $mysql_version"
+                log_info "CVEs conocidas: Múltiples vulnerabilidades en versiones < 5.7.0"
+                exit 1
+            fi
+        fi
+    fi
+
+    # Verificar Apache vulnerabilidades
+    local apache_cmd=""
+    if command -v apache2 &> /dev/null; then
+        apache_cmd="apache2"
+    elif command -v httpd &> /dev/null; then
+        apache_cmd="httpd"
+    fi
+
+    if [[ -n "$apache_cmd" ]]; then
+        local apache_version
+        apache_version=$("$apache_cmd" -v | grep -oP 'Apache/\d+\.\d+\.\d+' | cut -d'/' -f2)
+        if [[ -n "$apache_version" ]]; then
+            # Apache < 2.4.41 tiene vulnerabilidades como CVE-2019-0211, etc.
+            if [[ "$(printf '%s\n' "$apache_version" "2.4.41" | sort -V | head -n1)" != "2.4.41" ]]; then
+                log_warning "Versión de Apache potencialmente vulnerable: $apache_version"
+                log_info "Recomendado: Actualizar a Apache 2.4.41+ para parches de seguridad"
+            fi
+        fi
+    fi
+
+    log_success "Verificación de vulnerabilidades completada"
+}
+
 # Función para verificar conectividad a repositorios
 check_repository_connectivity() {
     log_step "Verificando conectividad a repositorios..."
@@ -297,7 +525,7 @@ check_repository_connectivity() {
     local repos=("https://software.virtualmin.com" "https://github.com" "https://deb.debian.org" "https://archive.ubuntu.com")
 
     for repo in "${repos[@]}"; do
-        if curl -s --max-time 5 "$repo" > /dev/null 2>&1; then
+        if curl -s --ssl-reqd --connect-timeout 10 --max-time 5 --retry 3 --retry-delay 2 --user-agent "Dependency-Validator/1.0" "$repo" > /dev/null 2>&1; then
             log_debug "Repositorio accesible: $repo"
         else
             log_warning "Repositorio no accesible: $repo"
@@ -316,7 +544,7 @@ main() {
     echo "========================================"
     echo
 
-    local total_steps=10
+    local total_steps=14
     local current_step=0
 
     # Ejecutar validaciones paso a paso
@@ -359,6 +587,22 @@ main() {
     ((current_step++))
     show_progress "$current_step" "$total_steps" "Verificando repositorios..."
     check_repository_connectivity
+
+    ((current_step++))
+    show_progress "$current_step" "$total_steps" "Verificando versiones mínimas..."
+    check_minimum_versions
+
+    ((current_step++))
+    show_progress "$current_step" "$total_steps" "Verificando archivos críticos..."
+    check_critical_files
+
+    ((current_step++))
+    show_progress "$current_step" "$total_steps" "Verificando bibliotecas comunes..."
+    check_common_libraries
+
+    ((current_step++))
+    show_progress "$current_step" "$total_steps" "Detectando vulnerabilidades..."
+    check_vulnerable_versions
 
     echo # Nueva línea después del progreso
     log_success "¡Todas las validaciones pasaron exitosamente!"

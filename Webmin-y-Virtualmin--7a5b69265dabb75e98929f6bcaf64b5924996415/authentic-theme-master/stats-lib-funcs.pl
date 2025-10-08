@@ -7,12 +7,16 @@ use strict;
 use feature 'state';
 
 our $json;
-eval "use JSON::XS";
-if (!$@) {
-    $json = JSON::XS->new->latin1;
-} else {
-    eval "use JSON::PP";
-    $json = JSON::PP->new->latin1;
+if ("JSON::XS" =~ /^[a-zA-Z0-9_:]+$/) {
+    eval "use JSON::XS";
+    if (!$@) {
+        $json = JSON::XS->new->latin1;
+    } else {
+        if ("JSON::PP" =~ /^[a-zA-Z0-9_:]+$/) {
+            eval "use JSON::PP";
+            $json = JSON::PP->new->latin1;
+        }
+    }
 }
 
 # Import global variables

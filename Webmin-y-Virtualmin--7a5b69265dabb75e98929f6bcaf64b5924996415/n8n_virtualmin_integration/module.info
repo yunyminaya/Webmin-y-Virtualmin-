@@ -1,0 +1,10 @@
+name=n8n Automation Platform
+desc=Install n8n workflow automation platform with automatic configuration
+version=2.0.0
+long_desc=n8n is a fair-code licensed workflow automation tool that enables you to connect anything to everything. This module provides automatic installation and configuration of n8n with support for multiple databases, SSL configuration, and Virtualmin integration.
+category=Web Applications
+os_support=linux
+depends=webmin,virtualmin
+url=https://n8n.io/
+author=Virtualmin Pro Team
+license=MIT

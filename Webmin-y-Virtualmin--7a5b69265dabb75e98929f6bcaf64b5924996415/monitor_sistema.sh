@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# Script de Monitoreo Básico
+# Script de Monitoreo Básico - Integrado con Sistema Avanzado
 # Monitorea servicios Virtualmin/Webmin y recursos del sistema
-# Versión: 1.0.0 - Base para futuras integraciones
+# Versión: 2.0.0 - Integración completa con advanced_monitoring.sh
 
 set -euo pipefail
 IFS=$'\n\t'
@@ -327,8 +327,8 @@ monitor_continuous() {
 # Función para mostrar ayuda
 show_help() {
     cat << EOF
-Script de Monitoreo Básico - Virtualmin & Webmin
-Versión: 1.0.0
+Script de Monitoreo - Virtualmin & Webmin
+Versión: 2.0.0 (Integrado con Sistema Avanzado)
 
 USO:
     $0 [opciones]
@@ -339,28 +339,40 @@ OPCIONES:
     -l, --log           Habilitar logging de métricas
     -a, --alerts        Habilitar alertas por umbrales
     -r, --report        Generar reporte HTML
+    --advanced          Usar sistema de monitoreo avanzado
     -h, --help          Mostrar esta ayuda
 
+SISTEMA AVANZADO DISPONIBLE:
+    Si advanced_monitoring.sh está presente, se puede usar con --advanced
+    Características avanzadas incluyen:
+    - Monitoreo en tiempo real con métricas detalladas
+    - Alertas por email y Telegram
+    - Dashboard web interactivo con gráficos
+    - Almacenamiento histórico en base de datos
+    - Detección automática de anomalías
+
 EJEMPLOS:
-    $0                          # Monitoreo único
-    $0 -c -i 30                 # Monitoreo continuo cada 30s
-    $0 -c -r                    # Monitoreo continuo con reporte HTML
-    $0 --continuous --log       # Monitoreo continuo con logging
+    $0                          # Monitoreo único básico
+    $0 -c -i 30                 # Monitoreo continuo básico cada 30s
+    $0 --advanced               # Monitoreo avanzado único
+    $0 --advanced -c -i 30      # Monitoreo avanzado continuo cada 30s
 
 ARCHIVOS DE LOG:
-    /var/log/virtualmin_monitor.log    # Métricas de monitoreo
-    /var/log/virtualmin_install.log    # Logs de instalación
+    /var/log/virtualmin_monitor.log        # Métricas básicas
+    /var/log/advanced_monitoring/          # Logs avanzados
+    /var/lib/advanced_monitoring/metrics.db # Base de datos avanzada
 
 VARIABLES DE ENTORNO:
     MONITOR_INTERVAL    Intervalo de monitoreo (segundos)
     LOG_METRICS         Habilitar logging de métricas (true/false)
     ALERT_THRESHOLDS    Habilitar alertas (true/false)
     GENERATE_HTML       Generar reporte HTML (true/false)
+    USE_ADVANCED        Usar sistema avanzado por defecto (true/false)
 
 NOTAS:
     - Requiere permisos de root para acceso completo a métricas
     - Los reportes HTML se generan en /var/www/html/
-    - Las métricas se almacenan en /var/log/virtualmin_monitor.log
+    - Dashboard avanzado disponible en /monitoring/
 EOF
 }
 
@@ -408,7 +420,38 @@ main() {
     fi
 }
 
+# Función para verificar si el sistema avanzado está disponible
+check_advanced_system() {
+    local advanced_script="${SCRIPT_DIR}/advanced_monitoring.sh"
+    if [[ -f "$advanced_script" && -x "$advanced_script" ]]; then
+        log_info "Sistema de monitoreo avanzado detectado"
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Función para ejecutar monitoreo avanzado
+run_advanced_monitoring() {
+    local advanced_script="${SCRIPT_DIR}/advanced_monitoring.sh"
+    if check_advanced_system; then
+        log_info "Ejecutando sistema de monitoreo avanzado..."
+        exec "$advanced_script" "$@"
+    else
+        log_warning "Sistema avanzado no encontrado, usando monitoreo básico"
+        return 1
+    fi
+}
+
 # Ejecutar si se llama directamente
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    main "$@"
+    # Verificar si se solicita monitoreo avanzado
+    if [[ "${1:-}" == "--advanced" || "${1:-}" == "-a" ]]; then
+        shift
+        run_advanced_monitoring "$@"
+    elif check_advanced_system && [[ "${USE_ADVANCED:-false}" == "true" ]]; then
+        run_advanced_monitoring "$@"
+    else
+        main "$@"
+    fi
 fi

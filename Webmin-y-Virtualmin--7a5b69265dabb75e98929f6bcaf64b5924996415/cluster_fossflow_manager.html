@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cluster FossFlow Manager - Gestión Visual de Servidores</title>
+    <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/d3@7"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .app-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            text-align: center;
+        }
+        
+        .header h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .main-layout {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .control-panel {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            height: fit-content;
+        }
+        
+        .fossflow-container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            min-height: 700px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+        }
+        
+        .server-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .server-item {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+        
+        .server-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .server-item.selected {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .server-type-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        
+        .server-item.selected .server-type-badge {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+        }
+        
+        .status-active {
+            background: #4CAF50;
+        }
+        
+        .status-inactive {
+            background: #f44336;
+        }
+        
+        .status-pending {
+            background: #FF9800;
+        }
+        
+        .fossflow-canvas {
+            width: 100%;
+            height: 600px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            position: relative;
+            background: #fafafa;
+            overflow: hidden;
+        }
+        
+        .isometric-node {
+            position: absolute;
+            padding: 15px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            z-index: 10;
+            min-width: 120px;
+            background: linear-gradient(145deg, rgba(255,255,255,0.1), rgba(255,255,255,0.3));
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.3);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+        
+        .isometric-node:hover {
+            transform: translateY(-4px) scale(1.05);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+            z-index: 20;
+        }
+        
+        .isometric-node.selected {
+            box-shadow: 0 0 0 3px #FFD700, 0 12px 40px rgba(255,215,0,0.4);
+        }
+        
+        .isometric-connection {
+            position: absolute;
+            background: linear-gradient(90deg, #666, #999);
+            height: 3px;
+            transform-origin: left center;
+            z-index: 1;
+            border-radius: 2px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        
+        .isometric-connection:hover {
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            height: 5px;
+            z-index: 15;
+        }
+        
+        .connection-label {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #333;
+            z-index: 12;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .alert {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 1.8em;
+            font-weight: bold;
+        }
+        
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+        
+        .toolbar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .toolbar button {
+            flex: 1;
+            min-width: 120px;
+        }
+        
+        @media (max-width: 1024px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+        
+        function ClusterFossFlowManager() {
+            const [servers, setServers] = useState([]);
+            const [connections, setConnections] = useState([]);
+            const [alerts, setAlerts] = useState([]);
+            const [selectedServer, setSelectedServer] = useState(null);
+            const [isConnecting, setIsConnecting] = useState(false);
+            const [connectingFrom, setConnectingFrom] = useState(null);
+            const [viewMode, setViewMode] = useState('2d'); // '2d' o 'isometric'
+            
+            // Form states
+            const [serverForm, setServerForm] = useState({
+                id: '',
+                name: '',
+                type: 'web',
+                ip: '',
+                region: 'us-east-1',
+                port: '22',
+                username: 'root',
+                status: 'pending'
+            });
+            
+            const nodeColors = {
+                web: '#4CAF50',
+                database: '#2196F3',
+                dns: '#FF9800',
+                cache: '#9C27B0',
+                load_balancer: '#F44336',
+                file_system: '#795548',
+                monitoring: '#607D8B',
+                backup: '#FF5722',
+                security: '#E91E63'
+            };
+            
+            const nodeIcons = {
+                web: '🌐',
+                database: '🗄️',
+                dns: '🌍',
+                cache: '⚡',
+                load_balancer: '⚖️',
+                file_system: '📁',
+                monitoring: '📊',
+                backup: '💾',
+                security: '🛡️'
+            };
+            
+            // Show alert
+            const showAlert = (message, type = 'success') => {
+                const newAlert = { id: Date.now(), message, type };
+                setAlerts(prev => [...prev, newAlert]);
+                setTimeout(() => {
+                    setAlerts(prev => prev.filter(alert => alert.id !== newAlert.id));
+                }, 5000);
+            };
+            
+            // Add server
+            const addServer = () => {
+                if (!serverForm.id || !serverForm.name || !serverForm.ip) {
+                    showAlert('Por favor complete los campos obligatorios', 'error');
+                    return;
+                }
+                
+                if (servers.find(s => s.id === serverForm.id)) {
+                    showAlert('El ID del servidor ya existe', 'error');
+                    return;
+                }
+                
+                const newServer = {
+                    ...serverForm,
+                    created_at: new Date().toISOString(),
+                    metrics: {
+                        cpu: Math.random() * 100,
+                        memory: Math.random() * 100,
+                        disk: Math.random() * 100,
+                        network: Math.random() * 100
+                    }
+                };
+                
+                setServers(prev => [...prev, newServer]);
+                showAlert(`Servidor ${serverForm.name} agregado correctamente`, 'success');
+                
+                // Reset form
+                setServerForm({
+                    id: '',
+                    name: '',
+                    type: 'web',
+                    ip: '',
+                    region: 'us-east-1',
+                    port: '22',
+                    username: 'root',
+                    status: 'pending'
+                });
+            };
+            
+            // Remove server
+            const removeServer = (serverId) => {
+                setServers(prev => prev.filter(s => s.id !== serverId));
+                setConnections(prev => prev.filter(c => c.from !== serverId && c.to !== serverId));
+                showAlert('Servidor eliminado correctamente', 'warning');
+                if (selectedServer === serverId) {
+                    setSelectedServer(null);
+                }
+            };
+            
+            // Test server connection
+            const testServerConnection = (server) => {
+                setSelectedServer(server.id);
+                setTimeout(() => {
+                    setServers(prev => prev.map(s => 
+                        s.id === server.id 
+                            ? { ...s, status: 'active' }
+                            : s
+                    ));
+                    showAlert(`Conexión con ${server.name} establecida correctamente`, 'success');
+                }, 2000);
+            };
+            
+            // Start connection mode
+            const startConnection = (serverId) => {
+                setIsConnecting(true);
+                setConnectingFrom(serverId);
+                showAlert('Seleccione el servidor de destino para crear la conexión', 'warning');
+            };
+            
+            // Create connection
+            const createConnection = (toServerId) => {
+                if (!connectingFrom || connectingFrom === toServerId) return;
+                
+                const existingConnection = connections.find(
+                    c => (c.from === connectingFrom && c.to === toServerId) ||
+                         (c.from === toServerId && c.to === connectingFrom)
+                );
+                
+                if (existingConnection) {
+                    showAlert('La conexión ya existe', 'error');
+                    cancelConnection();
+                    return;
+                }
+                
+                const newConnection = {
+                    id: `${connectingFrom}_${toServerId}_${Date.now()}`,
+                    from: connectingFrom,
+                    to: toServerId,
+                    type: 'http',
+                    status: 'active',
+                    created_at: new Date().toISOString(),
+                    latency: Math.random() * 100
+                };
+                
+                setConnections(prev => [...prev, newConnection]);
+                showAlert('Conexión creada correctamente', 'success');
+                cancelConnection();
+            };
+            
+            // Cancel connection
+            const cancelConnection = () => {
+                setIsConnecting(false);
+                setConnectingFrom(null);
+            };
+            
+            // Remove connection
+            const removeConnection = (connectionId) => {
+                setConnections(prev => prev.filter(c => c.id !== connectionId));
+                showAlert('Conexión eliminada correctamente', 'warning');
+            };
+            
+            // Calculate node positions for isometric view
+            const calculateNodePositions = () => {
+                const positions = {};
+                const centerX = 400;
+                const centerY = 300;
+                const radius = Math.min(250, 300 / Math.max(1, servers.length / 6));
+                
+                servers.forEach((server, index) => {
+                    const angle = (2 * Math.PI * index) / servers.length;
+                    positions[server.id] = {
+                        x: centerX + radius * Math.cos(angle),
+                        y: centerY + radius * Math.sin(angle)
+                    };
+                });
+                
+                return positions;
+            };
+            
+            // Export to FossFlow format
+            const exportToFossFlow = () => {
+                const nodePositions = calculateNodePositions();
+                
+                const fossflowData = {
+                    title: 'Cluster Infrastructure Diagram',
+                    icons: [],
+                    colors: [
+                        { id: 'blue', value: '#0066cc' },
+                        { id: 'green', value: '#00aa00' },
+                        { id: 'red', value: '#cc0000' },
+                        { id: 'orange', value: '#ff9900' },
+                        { id: 'purple', value: '#9900cc' }
+                    ],
+                    items: servers.map((server, index) => {
+                        const pos = nodePositions[server.id];
+                        return {
+                            id: server.id,
+                            type: 'isometric',
+                            position: {
+                                x: pos.x * 1.5 - 200,
+                                y: pos.y * 1.2 - 150
+                            },
+                            text: `${nodeIcons[server.type] || '📦'} ${server.name}\n${server.ip}`,
+                            style: {
+                                backgroundColor: nodeColors[server.type] || '#666',
+                                color: 'white',
+                                fontSize: 14,
+                                fontWeight: 'bold',
+                                padding: '15px 20px',
+                                borderRadius: '8px'
+                            },
+                            data: server
+                        };
+                    }),
+                    connections: connections.map(conn => {
+                        const fromPos = nodePositions[conn.from];
+                        const toPos = nodePositions[conn.to];
+                        
+                        return {
+                            id: conn.id,
+                            from: conn.from,
+                            to: conn.to,
+                            type: 'curved',
+                            style: {
+                                stroke: '#666',
+                                strokeWidth: 3,
+                                strokeDasharray: '0'
+                            },
+                            label: `${conn.type.toUpperCase()}\n${conn.latency.toFixed(1)}ms`,
+                            data: conn
+                        };
+                    }),
+                    views: [],
+                    fitToScreen: true
+                };
+                
+                // Create and download JSON file
+                const jsonString = JSON.stringify(fossflowData, null, 2);
+                const blob = new Blob([jsonString], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `cluster-diagram-${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                showAlert('Diagrama exportado para FossFlow', 'success');
+            };
+            
+            // Generate sample data
+            const generateSampleData = () => {
+                const sampleServers = [
+                    { id: 'web1', name: 'Web Server 1', type: 'web', ip: '192.168.1.10', region: 'us-east-1', status: 'active' },
+                    { id: 'web2', name: 'Web Server 2', type: 'web', ip: '192.168.1.11', region: 'us-east-1', status: 'active' },
+                    { id: 'db1', name: 'Database Master', type: 'database', ip: '192.168.1.20', region: 'us-east-1', status: 'active' },
+                    { id: 'db2', name: 'Database Slave', type: 'database', ip: '192.168.1.21', region: 'us-east-1', status: 'active' },
+                    { id: 'lb1', name: 'Load Balancer', type: 'load_balancer', ip: '192.168.1.5', region: 'us-east-1', status: 'active' },
+                    { id: 'cache1', name: 'Redis Cache', type: 'cache', ip: '192.168.1.30', region: 'us-east-1', status: 'active' },
+                    { id: 'mon1', name: 'Monitoring', type: 'monitoring', ip: '192.168.1.40', region: 'us-east-1', status: 'active' },
+                    { id: 'backup1', name: 'Backup Server', type: 'backup', ip: '192.168.1.50', region: 'us-east-1', status: 'active' }
+                ];
+                
+                const sampleConnections = [
+                    { id: 'conn1', from: 'lb1', to: 'web1', type: 'http', status: 'active' },
+                    { id: 'conn2', from: 'lb1', to: 'web2', type: 'http', status: 'active' },
+                    { id: 'conn3', from: 'web1', to: 'db1', type: 'database', status: 'active' },
+                    { id: 'conn4', from: 'web2', to: 'db1', type: 'database', status: 'active' },
+                    { id: 'conn5', from: 'db1', to: 'db2', type: 'replication', status: 'active' },
+                    { id: 'conn6', from: 'web1', to: 'cache1', type: 'cache', status: 'active' },
+                    { id: 'conn7', from: 'web2', to: 'cache1', type: 'cache', status: 'active' },
+                    { id: 'conn8', from: 'mon1', to: 'web1', type: 'monitoring', status: 'active' },
+                    { id: 'conn9', from: 'mon1', to: 'web2', type: 'monitoring', status: 'active' },
+                    { id: 'conn10', from: 'mon1', to: 'db1', type: 'monitoring', status: 'active' },
+                    { id: 'conn11', from: 'backup1', to: 'db1', type: 'backup', status: 'active' }
+                ];
+                
+                setServers(sampleServers.map(s => ({
+                    ...s,
+                    port: '22',
+                    username: 'root',
+                    created_at: new Date().toISOString(),
+                    metrics: {
+                        cpu: Math.random() * 100,
+                        memory: Math.random() * 100,
+                        disk: Math.random() * 100,
+                        network: Math.random() * 100
+                    }
+                })));
+                
+                setConnections(sampleConnections.map(c => ({
+                    ...c,
+                    created_at: new Date().toISOString(),
+                    latency: Math.random() * 100
+                })));
+                
+                showAlert('Datos de ejemplo generados correctamente', 'success');
+            };
+            
+            const nodePositions = calculateNodePositions();
+            
+            return (
+                <div className="app-container">
+                    <div className="header">
+                        <h1>🚀 Cluster FossFlow Manager</h1>
+                        <p>Gestión visual de infraestructura con FossFlow integration</p>
+                    </div>
+                    
+                    {/* Alerts */}
+                    {alerts.map(alert => (
+                        <div key={alert.id} className={`alert alert-${alert.type}`}>
+                            {alert.message}
+                        </div>
+                    ))}
+                    
+                    <div className="main-layout">
+                        {/* Control Panel */}
+                        <div className="control-panel">
+                            <h3>🎛️ Panel de Control</h3>
+                            
+                            {/* Stats */}
+                            <div className="stats-grid">
+                                <div className="stat-card">
+                                    <div className="stat-number">{servers.length}</div>
+                                    <div className="stat-label">Servidores</div>
+                                </div>
+                                <div className="stat-card">
+                                    <div className="stat-number">{connections.length}</div>
+                                    <div className="stat-label">Conexiones</div>
+                                </div>
+                            </div>
+                            
+                            {/* Server Form */}
+                            <h4>➕ Agregar Servidor</h4>
+                            <div className="form-group">
+                                <label>ID *</label>
+                                <input
+                                    type="text"
+                                    value={serverForm.id}
+                                    onChange={(e) => setServerForm(prev => ({...prev, id: e.target.value}))}
+                                    placeholder="ej: web1"
+                                />
+                            </div>
+                            
+                            <div className="form-group">
+                                <label>Nombre *</label>
+                                <input
+                                    type="text"
+                                    value={serverForm.name}
+                                    onChange={(e) => setServerForm(prev => ({...prev, name: e.target.value}))}
+                                    placeholder="ej: Servidor Web Principal"
+                                />
+                            </div>
+                            
+                            <div className="form-group">
+                                <label>Tipo</label>
+                                <select
+                                    value={serverForm.type}
+                                    onChange={(e) => setServerForm(prev => ({...prev, type: e.target.value}))}
+                                >
+                                    <option value="web">🌐 Servidor Web</option>
+                                    <option value="database">🗄️ Base de Datos</option>
+                                    <option value="load_balancer">⚖️ Load Balancer</option>
+                                    <option value="cache">⚡ Cache</option>
+                                    <option value="monitoring">📊 Monitoreo</option>
+                                    <option value="backup">💾 Backup</option>
+                                    <option value="dns">🌍 DNS</option>
+                                    <option value="security">🛡️ Seguridad</option>
+                                </select>
+                            </div>
+                            
+                            <div className="form-group">
+                                <label>IP *</label>
+                                <input
+                                    type="text"
+                                    value={serverForm.ip}
+                                    onChange={(e) => setServerForm(prev => ({...prev, ip: e.target.value}))}
+                                    placeholder="ej: 192.168.1.10"
+                                />
+                            </div>
+                            
+                            <button className="btn" onClick={addServer}>
+                                ➕ Agregar Servidor
+                            </button>
+                            
+                            {/* Server List */}
+                            <h4>📋 Servidores ({servers.length})</h4>
+                            <div className="server-list">
+                                {servers.length === 0 ? (
+                                    <p style={{textAlign: 'center', color: '#666', padding: '20px'}}>
+                                        No hay servidores configurados
+                                    </p>
+                                ) : (
+                                    servers.map(server => (
+                                        <div
+                                            key={server.id}
+                                            className={`server-item ${selectedServer === server.id || connectingFrom === server.id ? 'selected' : ''}`}
+                                            onClick={() => {
+                                                if (isConnecting && connectingFrom && connectingFrom !== server.id) {
+                                                    createConnection(server.id);
+                                                } else {
+                                                    setSelectedServer(server.id);
+                                                }
+                                            }}
+                                        >
+                                            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                                                <div>
+                                                    <span className={`status-indicator status-${server.status}`}></span>
+                                                    <span className="server-type-badge">{nodeIcons[server.type]} {server.type}</span>
+                                                </div>
+                                                <div>
+                                                    <button 
+                                                        className="btn btn-secondary" 
+                                                        style={{width: 'auto', padding: '4px 8px', marginRight: '5px', fontSize: '12px'}}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            testServerConnection(server);
+                                                        }}
+                                                    >
+                                                        🔗
+                                                    </button>
+                                                    <button 
+                                                        className="btn btn-success" 
+                                                        style={{width: 'auto', padding: '4px 8px', marginRight: '5px', fontSize: '12px'}}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            startConnection(server.id);
+                                                        }}
+                                                    >
+                                                        🔌
+                                                    </button>
+                                                    <button 
+                                                        className="btn btn-danger" 
+                                                        style={{width: 'auto', padding: '4px 8px', fontSize: '12px'}}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            removeServer(server.id);
+                                                        }}
+                                                    >
+                                                        🗑️
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div style={{fontSize: '12px', marginTop: '5px'}}>
+                                                <strong>{server.name}</strong><br/>
+                                                IP: {server.ip} | Región: {server.region}
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                            
+                            {isConnecting && (
+                                <div style={{marginBottom: '10px'}}>
+                                    <button className="btn btn-danger" onClick={cancelConnection}>
+                                        ❌ Cancelar Conexión
+                                    </button>
+                                </div>
+                            )}
+                            
+                            {/* Connections */}
+                            <h4>🔗 Conexiones ({connections.length})</h4>
+                            <div className="server-list">
+                                {connections.length === 0 ? (
+                                    <p style={{textAlign: 'center', color: '#666', padding: '20px'}}>
+                                        No hay conexiones configuradas
+                                    </p>
+                                ) : (
+                                    connections.map(conn => {
+                                        const fromServer = servers.find(s => s.id === conn.from);
+                                        const toServer = servers.find(s => s.id === conn.to);
+                                        
+                                        return (
+                                            <div key={conn.id} className="server-item">
+                                                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                                                    <div>
+                                                        <strong>{conn.type.toUpperCase()}</strong><br/>
+                                                        <span style={{fontSize: '11px', color: '#666'}}>
+                                                            {fromServer ? nodeIcons[fromServer.type] : ''} {fromServer?.name || conn.from}
+                                                            {' → '}
+                                                            {toServer ? nodeIcons[toServer.type] : ''} {toServer?.name || conn.to}
+                                                        </span>
+                                                    </div>
+                                                    <button 
+                                                        className="btn btn-danger" 
+                                                        style={{width: 'auto', padding: '4px 8px', fontSize: '12px'}}
+                                                        onClick={() => removeConnection(conn.id)}
+                                                    >
+                                                        🗑️
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                )}
+                            </div>
+                        </div>
+                        
+                        {/* FossFlow Container */}
+                        <div className="fossflow-container">
+                            <div className="toolbar">
+                                <button className="btn btn-success" onClick={generateSampleData}>
+                                    🎲 Generar Datos de Ejemplo
+                                </button>
+                                <button className="btn btn-secondary" onClick={exportToFossFlow}>
+                                    📤 Exportar a FossFlow
+                                </button>
+                                <button className="btn" onClick={() => setViewMode(viewMode === '2d' ? 'isometric' : '2d')}>
+                                    🔄 {viewMode === '2d' ? 'Vista Isométrica' : 'Vista 2D'}
+                                </button>
+                            </div>
+                            
+                            <h3>🌐 Visualización FossFlow - Cluster Infrastructure</h3>
+                            <div className="fossflow-canvas">
+                                {servers.length === 0 && connections.length === 0 ? (
+                                    <div style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        height: '100%',
+                                        flexDirection: 'column',
+                                        color: '#666'
+                                    }}>
+                                        <div style={{fontSize: '48px', marginBottom: '20px'}}>🏗️</div>
+                                        <h3>No hay infraestructura configurada</h3>
+                                        <p>Agregue servidores o genere datos de ejemplo para comenzar</p>
+                                    </div>
+                                ) : (
+                                    <>
+                                        {/* Render connections */}
+                                        {connections.map(conn => {
+                                            const fromPos = nodePositions[conn.from];
+                                            const toPos = nodePositions[conn.to];
+                                            if (!fromPos || !toPos) return null;
+                                            
+                                            const dx = toPos.x - fromPos.x;
+                                            const dy = toPos.y - fromPos.y;
+                                            const length = Math.sqrt(dx * dx + dy * dy);
+                                            const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+                                            
+                                            const midX = (fromPos.x + toPos.x) / 2;
+                                            const midY = (fromPos.y + toPos.y) / 2;
+                                            
+                                            return (
+                                                <div key={conn.id}>
+                                                    <div
+                                                        className="isometric-connection"
+                                                        style={{
+                                                            width: length + 'px',
+                                                            left: fromPos.x + 60 + 'px',
+                                                            top: fromPos.y + 30 + 'px',
+                                                            transform: `rotate(${angle}deg)`
+                                                        }}
+                                                        title={`${conn.type}: ${conn.from} → ${conn.to} (${conn.latency.toFixed(1)}ms)`}
+                                                    />
+                                                    <div
+                                                        className="connection-label"
+                                                        style={{
+                                                            left: midX + 'px',
+                                                            top: midY - 20 + 'px',
+                                                            transform: 'translateX(-50%)'
+                                                        }}
+                                                    >
+                                                        {conn.type}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                        
+                                        {/* Render nodes */}
+                                        {servers.map(server => {
+                                            const pos = nodePositions[server.id];
+                                            if (!pos) return null;
+                                            
+                                            const nodeColor = nodeColors[server.type] || '#666';
+                                            
+                                            return (
+                                                <div
+                                                    key={server.id}
+                                                    className={`isometric-node ${selectedServer === server.id || connectingFrom === server.id ? 'selected' : ''}`}
+                                                    style={{
+                                                        left: pos.x + 'px',
+                                                        top: pos.y + 'px',
+                                                        backgroundColor: nodeColor,
+                                                        transform: `translate(-50%, -50%) ${viewMode === 'isometric' ? 'rotateX(30deg) rotateZ(45deg)' : ''}`
+                                                    }}
+                                                    onClick={() => {
+                                                        if (isConnecting && connectingFrom && connectingFrom !== server.id) {
+                                                            createConnection(server.id);
+                                                        } else {
+                                                            setSelectedServer(server.id);
+                                                        }
+                                                    }}
+                                                    title={`${server.name}\nIP: ${server.ip}\nCPU: ${server.metrics?.cpu?.toFixed(1)}%\nMemoria: ${server.metrics?.memory?.toFixed(1)}%`}
+                                                >
+                                                    <div>{nodeIcons[server.type]}</div>
+                                                    <div style={{fontSize: '12px'}}>{server.name}</div>
+                                                </div>
+                                            );
+                                        })}
+                                    </>
+                                )}
+                            </div>
+                            
+                            <div style={{marginTop: '20px', fontSize: '12px', color: '#666'}}>
+                                <strong>Instrucciones:</strong><br/>
+                                • Agregue servidores usando el formulario de la izquierda<br/>
+                                • Haga clic en 🔌 para iniciar una conexión, luego seleccione el servidor destino<br/>
+                                • Exporte el diagrama para usar en FossFlow<br/>
+                                • Cambie entre vista 2D e isométrica con el botón 🔄
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+        
+        ReactDOM.render(<ClusterFossFlowManager />, document.getElementById('root'));
+    </script>
+</body>
+</html>

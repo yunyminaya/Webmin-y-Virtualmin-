@@ -104,100 +104,6 @@ ensure_pro_scripts() {
     fi
 }
 
-# Función para crear configuración GPL override
-create_gpl_override() {
-    log_master "INFO" "Eliminando restricciones GPL..."
-
-    local override_dir="${SCRIPT_DIR}/gpl_override"
-    ensure_directory "$override_dir"
-
-    # Crear archivo de override GPL
-    cat > "${override_dir}/gpl_override.conf" << 'EOF'
-# GPL OVERRIDE - ELIMINA TODAS LAS RESTRICCIONES GPL
-# Este archivo convierte Virtualmin GPL en Pro sin restricciones
-
-# Licencia override
-license_type=PRO
-license_status=ACTIVE
-license_key=UNLIMITED_PRO_2024
-serial_number=PRO_UNLIMITED
-
-# Eliminar todas las restricciones GPL
-gpl_restrictions=0
-domain_limit=0
-user_limit=0
-bandwidth_limit=0
-storage_limit=0
-feature_restrictions=0
-
-# Activar todas las características Pro
-reseller_accounts=1
-commercial_features=1
-enterprise_features=1
-advanced_features=1
-api_full_access=1
-migration_tools=1
-clustering_support=1
-monitoring_advanced=1
-
-# Soporte Pro
-support_level=ENTERPRISE
-priority_support=1
-phone_support=1
-email_support=1
-remote_assistance=1
-
-# Sin limitaciones
-unlimited_everything=1
-no_nag_screens=1
-no_upgrade_prompts=1
-full_functionality=1
-EOF
-
-    # Crear script de aplicación
-    cat > "${override_dir}/apply_gpl_override.sh" << 'EOF'
-#!/bin/bash
-# Aplicar GPL Override
-
-WEBMIN_CONFIG="/etc/webmin"
-VIRTUALMIN_CONFIG="/etc/virtualmin"
-
-echo "🔓 Aplicando GPL Override..."
-
-# Aplicar a configuración de Webmin
-if [[ -d "$WEBMIN_CONFIG" ]]; then
-    cp gpl_override.conf "$WEBMIN_CONFIG/virtualmin-gpl-override.conf" 2>/dev/null || true
-    echo "✅ Override aplicado a Webmin"
-fi
-
-# Aplicar a configuración de Virtualmin
-if [[ -d "$VIRTUALMIN_CONFIG" ]]; then
-    cp gpl_override.conf "$VIRTUALMIN_CONFIG/gpl-override.conf" 2>/dev/null || true
-    echo "✅ Override aplicado a Virtualmin"
-fi
-
-# Crear archivo de licencia Pro simulada
-cat > "/tmp/virtualmin-pro.license" << 'LIC'
-LICENSE_TYPE=PRO
-STATUS=ACTIVE
-FEATURES=UNLIMITED
-RESTRICTIONS=NONE
-EXPIRY=NEVER
-LIC
-
-echo "🎉 GPL Override aplicado - Todas las funciones Pro activadas"
-EOF
-
-    chmod +x "${override_dir}/apply_gpl_override.sh"
-
-    # Ejecutar override
-    cd "$override_dir"
-    bash apply_gpl_override.sh
-    cd "$SCRIPT_DIR"
-
-    log_master "SUCCESS" "Restricciones GPL eliminadas completamente"
-    ((ACTIVATED_FEATURES++))
-}
 
 # Función para configurar variables de entorno Pro
 setup_pro_environment() {
@@ -349,7 +255,6 @@ fix_permissions() {
         "pro_clustering"
         "pro_api"
         "pro_monitoring"
-        "gpl_override"
     )
 
     for dir in "${pro_dirs[@]}"; do
@@ -435,7 +340,6 @@ main() {
     execute_pro_script "pro_features_advanced.sh" "Funciones Pro Avanzadas"
 
     # Activaciones adicionales del master
-    create_gpl_override
     setup_pro_environment
     create_pro_dashboard
     fix_permissions

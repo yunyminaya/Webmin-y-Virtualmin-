@@ -18,7 +18,6 @@ git add pro_migration/
 git add pro_clustering/
 git add pro_api/
 git add pro_monitoring/
-git add gpl_override/
 
 # Agregar documentación
 git add *.md *.txt

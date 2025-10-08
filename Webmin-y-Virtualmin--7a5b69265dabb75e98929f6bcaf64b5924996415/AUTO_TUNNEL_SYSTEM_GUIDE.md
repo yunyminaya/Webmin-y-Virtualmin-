@@ -1,4 +1,4 @@
-# 🚇 Sistema de Túnel Automático 24/7
+# 🚇 Sistema de Túnel Automático 24/7 - Incluye Modo Autónomo
 
 ## Guía Completa de Instalación y Configuración
 
@@ -10,24 +10,116 @@ El **Sistema de Túnel Automático** es una solución avanzada que garantiza la 
 
 - **🔍 Detección Automática**: Identifica IPs privadas vs públicas en tiempo real
 - **🚇 Túnel Inteligente**: Crea túneles SSH reverse automáticamente cuando es necesario
+- **🤖 Modo Autónomo**: Funcionamiento completamente automático sin servidores remotos (localtunnel, serveo, ngrok)
 - **👁️ Monitoreo 24/7**: Vigilancia continua del estado del túnel y conectividad
-- **🔄 Failover Automático**: Reconexión automática en caso de fallos
+- **🔄 Failover Automático**: Reconexión automática en caso de fallos con fallback entre servicios
 - **📊 Dashboard Web**: Interfaz visual para monitoreo en tiempo real
 - **📧 Alertas Configurables**: Notificaciones por email, webhook, etc.
 - **🔒 Seguridad Avanzada**: Configuración SSH hardening incluida
 
 ---
 
+## 🤖 Modo Autónomo (Recomendado)
+
+### ¿Qué es el Modo Autónomo?
+
+El **Modo Autónomo** permite que el sistema funcione completamente sin intervención manual, utilizando servicios de túnel públicos como localtunnel, serveo y ngrok. Este modo es ideal para:
+
+- **Servidores sin IP pública**: Funciona automáticamente detrás de NAT/firewalls
+- **Instalaciones rápidas**: No requiere configuración de servidores remotos
+- **Entornos de desarrollo**: Exposición temporal de aplicaciones locales
+- **Sistemas IoT**: Dispositivos edge que necesitan conectividad externa
+
+### Servicios de Túnel Soportados
+
+| Servicio | Gratuito | Autenticación | Características |
+|----------|----------|---------------|----------------|
+| **localtunnel** | ✅ Sí | No requerida | Subdominios aleatorios |
+| **serveo** | ✅ Sí | No requerida | SSH-based, estable |
+| **ngrok** | ⚠️ Limitado | Opcional (token) | URLs fijas con token |
+
+### Instalación en Modo Autónomo
+
+```bash
+# Instalación completamente automática
+sudo bash install_auto_tunnel_system.sh auto
+```
+
+**¡Eso es todo!** El sistema se instala y configura automáticamente para funcionar sin intervención manual.
+
+### Cómo Funciona
+
+1. **Detección Automática**: El sistema detecta cuando no hay IP pública
+2. **Selección de Servicio**: Prueba servicios disponibles por orden de prioridad
+3. **Establecimiento de Túnel**: Crea túnel automáticamente con el primer servicio disponible
+4. **Monitoreo Continuo**: Verifica estado del túnel cada 30 segundos
+5. **Fallback Automático**: Si un servicio falla, cambia automáticamente a otro
+
+### Ventajas del Modo Autónomo
+
+- **🚀 Instalación instantánea**: Funciona inmediatamente después de la instalación
+- **🔄 Alta disponibilidad**: Fallback automático entre múltiples servicios
+- **🛡️ Sin configuración manual**: No requiere setup de servidores remotos
+- **💰 Costo cero**: Utiliza servicios gratuitos
+- **🔧 Mantenimiento cero**: Actualizaciones y fallos se manejan automáticamente
+
+### Estado del Sistema en Modo Autónomo
+
+```bash
+auto-tunnel status
+```
+
+**Salida típica:**
+```
+=== ESTADO DEL SISTEMA DE TÚNEL AUTOMÁTICO ===
+
+🔗 Conectividad a Internet: ✅ Conectado
+🌐 IP Externa: 192.168.1.100 (Privada)
+🏠 Tipo de IP: Privada (Requiere túnel)
+🚇 Estado del Túnel: ✅ Activo (Tipo: localtunnel, PID: 1234)
+🌐 URL: https://random-subdomain.loca.lt
+```
+
+### Configuración Avanzada (Opcional)
+
+Si desea personalizar el comportamiento:
+
+```bash
+sudo nano /etc/auto_tunnel_config.conf
+```
+
+```bash
+# Modo de túnel (autonomous = automático)
+TUNNEL_MODE="autonomous"
+
+# Servicios de túnel por prioridad
+TUNNEL_SERVICES=("localtunnel" "serveo" "ngrok")
+
+# Token opcional para ngrok (mejora URLs fijas)
+NGROK_AUTH_TOKEN="your_token_here"
+```
+
+---
+
 ## 🚀 Instalación Automática
 
-### Paso 1: Descargar e Instalar
+### Opción 1: Modo Autónomo (Recomendado - Sin Configuración Manual)
 
 ```bash
 # Clonar el repositorio
 git clone https://github.com/yunyminaya/Webmin-y-Virtualmin-.git
 cd Webmin-y-Virtualmin-
 
-# Ejecutar el instalador automático
+# Instalación completamente automática - ¡Funciona inmediatamente!
+sudo bash install_auto_tunnel_system.sh auto
+```
+
+**Ventajas:** Funciona automáticamente sin configurar servidores remotos.
+
+### Opción 2: Modo SSH Tradicional (Requiere Configuración Manual)
+
+```bash
+# Instalación interactiva con configuración manual
 sudo bash install_auto_tunnel_system.sh install
 ```
 
@@ -130,29 +222,57 @@ curl http://su-servidor:8081/cgi-bin/tunnel_status.cgi
 
 ### Archivo de Configuración Completo
 
+#### Configuración para Modo Autónomo (Recomendado)
+
 ```bash
 # Archivo: /etc/auto_tunnel_config.conf
 
-# === CONFIGURACIÓN BÁSICA ===
-TUNNEL_REMOTE_HOST="tu-servidor-remoto.com"
-TUNNEL_REMOTE_USER="tunnel_user"
-TUNNEL_REMOTE_PORT="22"
+# === CONFIGURACIÓN DE MODO DE TÚNEL ===
+TUNNEL_MODE="autonomous"       # autonomous, ssh, o auto
+
+# === CONFIGURACIÓN DE TÚNELES AUTÓNOMOS ===
+ENABLE_AUTONOMOUS_TUNNEL="true"
+TUNNEL_SERVICES=("localtunnel" "serveo" "ngrok")  # Prioridad de servicios
+NGROK_AUTH_TOKEN=""             # Opcional para ngrok premium
 TUNNEL_LOCAL_PORT="80"
-TUNNEL_PORT="8080"
 
 # === CONFIGURACIÓN DE MONITOREO ===
-MONITOR_INTERVAL="60"          # Segundos entre verificaciones
+TUNNEL_MONITOR_INTERVAL="30"   # Segundos entre verificaciones
 ENABLE_AUTO_RESTART="true"     # Reinicio automático del servicio
 
 # === CONFIGURACIÓN DE ALERTAS ===
-ALERT_EMAIL="admin@tu-dominio.com"
-ALERT_WEBHOOK="https://hooks.slack.com/services/..."
+ALERT_EMAIL_RECIPIENTS="admin@tu-dominio.com"
+ALERT_WEBHOOK_URLS=""
+ALERT_LEVEL_THRESHOLD="1"       # 0=DEBUG, 1=INFO, 2=WARNING, 3=ERROR, 4=CRITICAL
+
+# === SISTEMA DE RESPALDO AVANZADO ===
+ENABLE_AUTO_BACKUP="true"
+BACKUP_INTERVAL="21600"         # 6 horas
+```
+
+#### Configuración para Modo SSH Tradicional
+
+```bash
+# Archivo: /etc/auto_tunnel_config.conf
+
+# === CONFIGURACIÓN DE MODO DE TÚNEL ===
+TUNNEL_MODE="ssh"              # Modo SSH tradicional
+
+# === CONFIGURACIÓN DE SERVIDORES REMOTOS ===
+TUNNEL_REMOTE_SERVERS=(
+    "tu-servidor.com:tunnel_user:22:10"
+    "backup-servidor.com:tunnel_user:22:8"
+)
+TUNNEL_LOCAL_PORT="80"
+TUNNEL_PORT_BASE="8080"
+ENABLE_LOAD_BALANCING="true"
+ENABLE_FAILOVER="true"
 
 # === CONFIGURACIÓN AVANZADA ===
 SSH_KEY_PATH="/root/.ssh/auto_tunnel_key"
-LOG_LEVEL="INFO"               # DEBUG, INFO, WARNING, ERROR
-MAX_RETRY_ATTEMPTS="5"         # Máximo número de reintentos
-RETRY_DELAY="30"              # Segundos entre reintentos
+LOG_LEVEL="INFO"
+MAX_RETRY_ATTEMPTS="5"
+RETRY_DELAY="30"
 ```
 
 ### Configuración de SSH
@@ -314,6 +434,72 @@ echo "Test alert" | mail -s "Test" admin@tu-dominio.com
 curl -X POST -H 'Content-type: application/json' \
   --data '{"text":"Test alert"}' \
   YOUR_WEBHOOK_URL
+```
+
+### Problema: Modo Autónomo - Ningún servicio de túnel disponible
+
+**Síntomas:**
+- Modo autónomo activado pero túnel no se establece
+- Logs muestran "No hay servicios de túnel disponibles"
+
+**Solución:**
+```bash
+# Verificar conectividad a internet
+ping -c 3 8.8.8.8
+
+# Verificar servicios de túnel manualmente
+curl -s --connect-timeout 5 https://localtunnel.me
+curl -s --connect-timeout 5 https://serveo.net
+curl -s --connect-timeout 5 https://ngrok.com
+
+# Verificar instalación de Node.js
+node --version
+npm --version
+
+# Verificar configuración
+grep TUNNEL_SERVICES /etc/auto_tunnel_config.conf
+```
+
+### Problema: Modo Autónomo - Túnel se cae frecuentemente
+
+**Síntomas:**
+- Túnel se establece pero se desconecta frecuentemente
+- Fallback automático ocurre muy seguido
+
+**Solución:**
+```bash
+# Verificar estabilidad de la conexión
+ping -c 10 8.8.8.8
+
+# Revisar logs por errores específicos
+grep "Falló configuración con" /var/log/auto_tunnel_system.log | tail -10
+
+# Verificar si es un problema de firewall
+sudo ufw status
+sudo iptables -L
+
+# Probar servicios individualmente
+auto-tunnel test
+```
+
+### Problema: Modo Autónomo - Node.js no instalado
+
+**Síntomas:**
+- localtunnel no funciona
+- Error "npm: command not found"
+
+**Solución:**
+```bash
+# Instalar Node.js manualmente
+curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# Verificar instalación
+node --version
+npm --version
+
+# Reiniciar el servicio
+sudo systemctl restart auto-tunnel
 ```
 
 ---
@@ -518,21 +704,30 @@ grep "reconectar\|falló\|establecido" /var/log/auto_tunnel_system.log | tail -1
 
 ## 🎯 Casos de Uso
 
-### 1. Servidores en Redes Privadas
+### 1. Servidores en Redes Privadas (Modo Autónomo)
 - **Escenario**: VPS en red privada que necesita acceso público
-- **Solución**: Túnel automático mantiene disponibilidad 24/7
+- **Solución**: Modo autónomo funciona automáticamente sin configuración de servidores remotos
+- **Comando**: `sudo bash install_auto_tunnel_system.sh auto`
 
-### 2. Desarrollo Local
-- **Escenario**: Desarrollador que necesita exponer aplicación local
-- **Solución**: Túnel automático para demos y testing
+### 2. Desarrollo Local (Modo Autónomo)
+- **Escenario**: Desarrollador que necesita exponer aplicación local para demos/testing
+- **Solución**: Túnel instantáneo con localtunnel/serveo/ngrok
+- **Ventaja**: Funciona inmediatamente sin setup de infraestructura
 
-### 3. Backup de Servidores
+### 3. Backup de Servidores (Modo Autónomo)
 - **Escenario**: Servidores sin IP pública para backups remotos
-- **Solución**: Túnel automático garantiza conectividad
+- **Solución**: Túnel automático garantiza conectividad 24/7
+- **Beneficio**: Alta disponibilidad sin mantenimiento manual
 
-### 4. IoT y Dispositivos Edge
-- **Escenario**: Dispositivos IoT detrás de NAT
+### 4. IoT y Dispositivos Edge (Modo Autónomo)
+- **Escenario**: Dispositivos IoT/Raspberry Pi detrás de NAT/firewalls
 - **Solución**: Túnel automático mantiene conectividad bidireccional
+- **Ideal para**: Proyectos IoT, sensores remotos, dispositivos edge
+
+### 5. Servidores Empresariales (Modo SSH)
+- **Escenario**: Entornos enterprise que requieren control total
+- **Solución**: Túneles SSH tradicionales con balanceo de carga
+- **Beneficio**: Máxima seguridad y control sobre infraestructura
 
 ---
 

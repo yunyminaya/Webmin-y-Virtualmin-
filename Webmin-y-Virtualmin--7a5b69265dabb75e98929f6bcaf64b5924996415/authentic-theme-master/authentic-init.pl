@@ -38,7 +38,7 @@ our (@theme_bundle_css,
      $theme_root_directory,
      $title);
 
-do($ENV{'THEME_ROOT'} . "/authentic-funcs.pl");
+do("$theme_root_directory/authentic-funcs.pl");
 
 init_prefail();
 init_vars();
@@ -96,7 +96,7 @@ sub get_theme_color
 
 sub load_devel_dependencies
 {
-do("$ENV{'THEME_ROOT'}/dependencies.pl")
+do("$theme_root_directory/dependencies.pl")
     if (!@theme_bundle_css || !@theme_bundle_js);
 }
 
@@ -1719,7 +1719,7 @@ sub theme_debug_mode
 {
     my $mode_cache = getvar('theme-debug-mode');
     return $mode_cache if (defined($mode_cache));
-    if (-r "$ENV{'THEME_ROOT'}/dependencies.pl") {
+    if (-r "$theme_root_directory/dependencies.pl") {
         setvar('theme-debug-mode', 1);
         return 1;
     } else {

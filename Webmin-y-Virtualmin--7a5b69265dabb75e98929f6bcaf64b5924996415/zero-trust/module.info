@@ -1,0 +1,6 @@
+desc=Zero-Trust Security Architecture
+longdesc=Implementa una arquitectura de seguridad Zero-Trust completa con verificación continua, microsegmentación, control contextual y monitoreo avanzado
+category=Security
+depends=rbac,siem,intelligent-firewall
+version=1.0
+hidden=0

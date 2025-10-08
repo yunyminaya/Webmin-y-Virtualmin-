@@ -8,7 +8,7 @@ use lib ($ENV{'LIBROOT'} . "/vendor_perl");
 BEGIN {push(@INC, "..");}
 use WebminCore;
 init_config();
-do($ENV{'THEME_ROOT'} . "/authentic-funcs.pl");
-do($ENV{'THEME_ROOT'} . "/stats-lib-funcs.pl");
+do($root_directory/$current_theme . "/authentic-funcs.pl");
+do($root_directory/$current_theme . "/stats-lib-funcs.pl");
 
 1;

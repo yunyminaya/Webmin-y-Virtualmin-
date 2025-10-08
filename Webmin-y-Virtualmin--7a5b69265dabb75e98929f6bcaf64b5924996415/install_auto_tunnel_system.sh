@@ -60,29 +60,64 @@ install_dependencies() {
         "ubuntu"|"debian")
             apt-get update
             apt-get install -y curl wget ssh openssh-client openssh-server jq net-tools
+
+            # Instalar Node.js para servicios de túnel autónomos
+            log "INFO" "Instalando Node.js para servicios de túnel autónomos..."
+            curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -
+            apt-get install -y nodejs
             ;;
         "centos"|"rhel"|"fedora")
             if command -v dnf >/dev/null 2>&1; then
                 dnf install -y curl wget openssh-clients openssh-server jq net-tools
+
+                # Instalar Node.js para servicios de túnel autónomos
+                log "INFO" "Instalando Node.js para servicios de túnel autónomos..."
+                curl -fsSL https://rpm.nodesource.com/setup_lts.x | bash -
+                dnf install -y nodejs
             else
                 yum install -y curl wget openssh-clients openssh-server jq net-tools
+
+                # Instalar Node.js para servicios de túnel autónomos
+                log "INFO" "Instalando Node.js para servicios de túnel autónomos..."
+                curl -fsSL https://rpm.nodesource.com/setup_lts.x | bash -
+                yum install -y nodejs
             fi
             ;;
         "opensuse"|"sles")
             zypper install -y curl wget openssh jq net-tools
+
+            # Instalar Node.js para servicios de túnel autónomos
+            log "INFO" "Instalando Node.js para servicios de túnel autónomos..."
+            zypper install -y nodejs npm
             ;;
         *)
             log "WARNING" "Sistema operativo no reconocido. Intentando instalación genérica..."
             if command -v apt-get >/dev/null 2>&1; then
                 apt-get update && apt-get install -y curl wget ssh jq net-tools
+
+                # Instalar Node.js
+                curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -
+                apt-get install -y nodejs
             elif command -v yum >/dev/null 2>&1; then
                 yum install -y curl wget openssh-clients jq net-tools
+
+                # Instalar Node.js
+                curl -fsSL https://rpm.nodesource.com/setup_lts.x | bash -
+                yum install -y nodejs
             else
                 log "ERROR" "No se pudo instalar dependencias automáticamente"
                 return 1
             fi
             ;;
     esac
+
+    # Verificar instalación de Node.js
+    if command -v node >/dev/null 2>&1; then
+        local node_version=$(node --version 2>/dev/null)
+        log "SUCCESS" "Node.js instalado: $node_version"
+    else
+        log "WARNING" "Node.js no se pudo instalar - algunos servicios de túnel pueden no funcionar"
+    fi
 
     log "SUCCESS" "Dependencias instaladas correctamente"
 }
@@ -259,35 +294,116 @@ create_auto_config() {
 
     cat > "$config_file" << 'EOF'
 # Configuración del Sistema de Túnel Automático - Configuración Automática
-# Valores por defecto configurados automáticamente
+# Valores por defecto configurados automáticamente para funcionamiento autónomo
 
-# Configuración del servidor remoto para túnel SSH
-TUNNEL_REMOTE_HOST="tunnel.example.com"
-TUNNEL_REMOTE_USER="tunnel"
-TUNNEL_REMOTE_PORT="22"
+# === CONFIGURACIÓN DE MODO DE TÚNEL ===
+# Modos disponibles: "autonomous" (automático), "ssh" (servidores remotos), "auto" (inteligente)
+TUNNEL_MODE="autonomous"  # Recomendado: autonomous para funcionamiento sin intervención
+
+# === CONFIGURACIÓN DE TÚNELES AUTÓNOMOS ===
+# Servicios de túnel automático (prioridad: localtunnel > serveo > ngrok)
+ENABLE_AUTONOMOUS_TUNNEL="true"
+TUNNEL_SERVICES=("localtunnel" "serveo" "ngrok")
+NGROK_AUTH_TOKEN=""  # Opcional: token de ngrok para acceso premium
+
+# === CONFIGURACIÓN DE SERVIDORES REMOTOS SSH (modo legacy) ===
+# Formato: "host:user:port:weight" - weight determina prioridad en balanceo de carga
+TUNNEL_REMOTE_SERVERS=(
+    "tunnel.example.com:tunnel_user:22:10"
+    "backup-tunnel.example.com:tunnel_user:22:8"
+)
 TUNNEL_LOCAL_PORT="80"
-TUNNEL_PORT="8080"
-
-# Configuración de túnel inteligente
-TUNNEL_TYPE="smart"
+TUNNEL_PORT_BASE="8080"
 ENABLE_LOAD_BALANCING="true"
-AUTO_FAILOVER="true"
+ENABLE_FAILOVER="true"
 
-# Configuración de monitoreo
-MONITOR_INTERVAL="60"
+# Configuración de monitoreo avanzado
+TUNNEL_MONITOR_INTERVAL="30"          # Intervalo de monitoreo principal en segundos
+MONITOR_INTERVAL="30"
 ENABLE_AUTO_RESTART="true"
 
-# Configuración de alertas
-ALERT_EMAIL="admin@localhost"
-ALERT_WEBHOOK=""
-ENABLE_EMAIL_ALERTS="true"
-ENABLE_WEBHOOK_ALERTS="false"
+# Configuración de alertas avanzadas
+ENABLE_SYSTEM_NOTIFICATIONS="true"    # Notificaciones del sistema (notify-send)
+ALERT_LEVEL_THRESHOLD="1"              # Nivel mínimo de alertas (0=DEBUG, 1=INFO, 2=WARNING, 3=ERROR, 4=CRITICAL)
+ALERT_EMAIL_RECIPIENTS="admin@localhost"  # Destinatarios de email separados por comas
+ALERT_WEBHOOK_URLS=""                 # URLs de webhooks separados por comas
+ALERT_DASHBOARD_FILE="/var/log/auto_tunnel_alerts.json"  # Archivo para dashboard de alertas
 
-# Configuración avanzada
-SSH_KEY_PATH="/root/.ssh/auto_tunnel_key"
-LOG_LEVEL="INFO"
-MAX_RETRY_ATTEMPTS="5"
-RETRY_DELAY="30"
+# Configuración de monitoreo de dominios 24/7
+MONITORED_DOMAINS=(
+    "google.com:80:443"
+    "cloudflare.com:80:443"
+    "github.com:22:80:443"
+)
+DNS_TIMEOUT="5"           # Timeout para resolución DNS en segundos (< 5s recomendado)
+LATENCY_THRESHOLD="500"   # Umbral de latencia en ms (< 500ms recomendado)
+PACKET_LOSS_THRESHOLD="10" # Umbral de pérdida de paquetes en porcentaje (< 10% recomendado)
+DOMAIN_MONITOR_INTERVAL="60" # Intervalo de monitoreo de dominios en segundos
+ENABLE_DOMAIN_ALERTS="true"   # Habilitar alertas automáticas para dominios
+DOMAIN_ALERT_EMAIL=""         # Email para alertas de dominios
+DOMAIN_ALERT_WEBHOOK=""       # Webhook para alertas de dominios
+
+# Configuración de DNS local (bind9)
+ENABLE_DNS_LOCAL="true"
+DNS_DOMAIN="tunnel.local"
+DNS_ZONE_FILE="/var/lib/bind/db.${DNS_DOMAIN}"
+DNS_CONFIG_FILE="/etc/bind/named.conf.local"
+DNS_UPDATE_KEY="/etc/bind/ddns.key"
+
+# === CONFIGURACIÓN DEL SISTEMA DE RESPALDO AVANZADO ===
+
+# Configuración de respaldo automático
+ENABLE_AUTO_BACKUP="true"              # Habilitar respaldo automático de configuraciones
+BACKUP_INTERVAL="21600"                # Intervalo de respaldo en segundos (6 horas)
+MAX_BACKUP_RETENTION="10"              # Número máximo de respaldos a mantener
+
+# Configuración de recuperación automática de servicios
+ENABLE_AUTO_SERVICE_RECOVERY="true"    # Habilitar recuperación automática de servicios
+SERVICE_RECOVERY_INTERVAL="300"        # Intervalo de verificación de servicios en segundos (5 min)
+
+# Configuración de monitoreo de interfaces de red
+ENABLE_INTERFACE_MONITORING="true"     # Habilitar monitoreo de múltiples interfaces
+INTERFACE_CHECK_INTERVAL="30"          # Intervalo de verificación de interfaces en segundos
+
+# Configuración de failover avanzado
+ENABLE_ADVANCED_FAILOVER="true"        # Habilitar failover avanzado
+FAILOVER_TIMEOUT="10"                  # Timeout para failover en segundos (< 10s)
+MAX_CONSECUTIVE_FAILURES="3"           # Máximo de fallos consecutivos antes de alerta crítica
+
+# Configuración de detección de escenarios específicos
+ENABLE_SCENARIO_DETECTION="true"       # Habilitar detección automática de escenarios
+SCENARIO_CHECK_INTERVAL="120"          # Intervalo de verificación de escenarios en segundos
+
+# Umbrales para detección de ataques DDoS
+DDOS_TCP_CONNECTION_THRESHOLD="500"    # Umbral de conexiones TCP para DDoS
+DDOS_UDP_CONNECTION_THRESHOLD="1000"   # Umbral de conexiones UDP para DDoS
+
+# Umbrales para detección de sobrecarga
+SYSTEM_LOAD_THRESHOLD="5.0"            # Umbral de carga del sistema
+
+# Configuración de rotación automática de conexiones
+ENABLE_CONNECTION_ROTATION="true"      # Habilitar rotación automática de conexiones
+CONNECTION_PRIORITY_ORDER=("ethernet" "wifi" "mobile")  # Orden de prioridad para rotación
+
+# Configuración de respaldo de configuraciones críticas
+CRITICAL_CONFIG_FILES=(
+    "/etc/network/interfaces"
+    "/etc/resolv.conf"
+    "/etc/hosts"
+    "/etc/ssh/sshd_config"
+    "/etc/fail2ban/jail.local"
+    "/etc/iptables/rules.v4"
+    "/etc/iptables/rules.v6"
+)
+
+# Servicios críticos para recuperación automática
+CRITICAL_SERVICES=(
+    "ssh:ssh.service"
+    "networking:networking.service"
+    "fail2ban:fail2ban.service"
+    "bind9:bind9.service"
+    "iptables:iptables.service"
+)
 EOF
 
     chmod 600 "$config_file"
@@ -301,6 +417,7 @@ create_tunnel_servers_config() {
     local servers_file="/etc/auto-tunnel/tunnel_servers.conf"
 
     mkdir -p /etc/auto-tunnel
+    chmod 700 /etc/auto-tunnel
 
     cat > "$servers_file" << 'EOF'
 # Configuración de servidores de túnel
@@ -315,7 +432,7 @@ backup-tunnel.example.com:22:tunnel:Servidor de respaldo
 # tunnel3.example.com:22:tunnel:Servidor terciario
 EOF
 
-    chmod 644 "$servers_file"
+    chmod 600 "$servers_file"
     log "SUCCESS" "Configuración de servidores creada: $servers_file"
 }
 
@@ -344,7 +461,7 @@ test.example.com:80:Dominio de pruebas
 # admin.example.com:8443:Dominio administración
 EOF
 
-    chmod 644 "$domains_file"
+    chmod 600 "$domains_file"
     log "SUCCESS" "Configuración de dominios creada: $domains_file"
 }
 
@@ -379,7 +496,7 @@ ENABLE_DEDUPLICATION="true"
 DEDUPLICATION_WINDOW="300"
 EOF
 
-    chmod 644 "$alerts_file"
+    chmod 600 "$alerts_file"
     log "SUCCESS" "Configuración de alertas creada: $alerts_file"
 }
 
@@ -450,7 +567,7 @@ test_installation() {
     fi
 
     # Verificar conectividad
-    if ! curl -s --connect-timeout 5 https://api.ipify.org >/dev/null 2>&1; then
+    if ! curl -s --ssl-reqd --connect-timeout 10 --max-time 30 --retry 3 --retry-delay 2 --user-agent "Auto-Tunnel-Installer/$SCRIPT_VERSION" https://api.ipify.org >/dev/null 2>&1; then
         log "WARNING" "No se puede acceder a servicios externos (posible problema de red)"
     fi
 
@@ -471,13 +588,29 @@ show_post_install_info() {
     echo -e "${BLUE}╚════════════════════════════════════════════════════════════════╝${NC}"
     echo
     echo -e "${GREEN}✅ Sistema de Túnel Automático instalado exitosamente${NC}"
+    echo -e "${GREEN}✅ Configurado para modo AUTÓNOMO - Sin intervención manual requerida${NC}"
     echo
-    echo -e "${CYAN}📋 PASOS SIGUIENTES:${NC}"
-    echo -e "   1. Configure el archivo: ${YELLOW}/etc/auto_tunnel_config.conf${NC}"
-    echo -e "   2. Configure el servidor remoto para túnel SSH"
-    echo -e "   3. Inicie el servicio: ${YELLOW}systemctl start auto-tunnel${NC}"
-    echo -e "   4. Habilite inicio automático: ${YELLOW}systemctl enable auto-tunnel${NC}"
-    echo
+
+    # Verificar si se instaló con configuración automática
+    if [[ -f "/etc/auto_tunnel_config.conf" ]] && grep -q "TUNNEL_MODE=\"autonomous\"" "/etc/auto_tunnel_config.conf" 2>/dev/null; then
+        echo -e "${CYAN}🤖 MODO AUTÓNOMO ACTIVADO:${NC}"
+        echo -e "   El sistema funcionará automáticamente sin configuración adicional"
+        echo -e "   Servicios de túnel: localtunnel, serveo, ngrok (con fallback automático)"
+        echo
+        echo -e "${CYAN}📋 PASOS SIGUIENTES:${NC}"
+        echo -e "   1. Inicie el servicio: ${YELLOW}systemctl start auto-tunnel${NC}"
+        echo -e "   2. Habilite inicio automático: ${YELLOW}systemctl enable auto-tunnel${NC}"
+        echo -e "   3. Verifique estado: ${YELLOW}auto-tunnel status${NC}"
+        echo
+    else
+        echo -e "${CYAN}📋 PASOS SIGUIENTES:${NC}"
+        echo -e "   1. Configure el archivo: ${YELLOW}/etc/auto_tunnel_config.conf${NC}"
+        echo -e "   2. Configure el servidor remoto para túnel SSH"
+        echo -e "   3. Inicie el servicio: ${YELLOW}systemctl start auto-tunnel${NC}"
+        echo -e "   4. Habilite inicio automático: ${YELLOW}systemctl enable auto-tunnel${NC}"
+        echo
+    fi
+
     echo -e "${CYAN}🌐 DASHBOARD WEB:${NC}"
     echo -e "   URL: ${YELLOW}http://su-servidor/tunnel-monitor/${NC}"
     echo -e "   CGI: ${YELLOW}http://su-servidor:8081/cgi-bin/tunnel_status.cgi${NC}"

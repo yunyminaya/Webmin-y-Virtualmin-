@@ -12,7 +12,7 @@ use Net::WebSocket::Server;
 use utf8;
 
 our ($current_theme, $json);
-require($ENV{'THEME_ROOT'} . "/stats-lib.pl");
+require("$root_directory/$current_theme/stats-lib.pl");
 
 # Get port number
 my ($port) = @ARGV;

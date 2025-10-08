@@ -1,0 +1,10 @@
+[Unit]
+Description=Temporizador para Monitoreo SSL cada hora
+Requires=ssl_monitor.service
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+
+[Install]
+WantedBy=timers.target

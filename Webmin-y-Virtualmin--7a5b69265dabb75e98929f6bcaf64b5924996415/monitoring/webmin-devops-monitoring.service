@@ -1,0 +1,35 @@
+[Unit]
+Description=Webmin/Virtualmin DevOps Monitoring Service
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+ExecStart=/usr/local/bin/webmin-devops-monitoring.sh
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=webmin-devops-monitoring
+
+# Environment variables
+Environment=MONITORING_INTERVAL=300
+Environment=ALERT_THRESHOLD_CPU=80
+Environment=ALERT_THRESHOLD_MEMORY=85
+Environment=ALERT_THRESHOLD_DISK=90
+Environment=SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
+Environment=EMAIL_RECIPIENTS=${EMAIL_RECIPIENTS}
+Environment=PAGERDUTY_INTEGRATION_KEY=${PAGERDUTY_INTEGRATION_KEY}
+Environment=WEBHOOK_URL=${WEBHOOK_URL}
+
+# Security settings
+NoNewPrivileges=yes
+ProtectHome=yes
+ProtectSystem=strict
+ReadWritePaths=/var/log/webmin_devops /tmp
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

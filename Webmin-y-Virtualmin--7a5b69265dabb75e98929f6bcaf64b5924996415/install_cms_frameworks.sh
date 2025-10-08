@@ -25,12 +25,104 @@ WEB_ROOT="/var/www/html"
 DB_PREFIX="wp_"
 LARAVEL_DB_PREFIX="lara_"
 
+# ===== FUNCIONES DE VALIDACIÓN =====
+
+# Función para validar dominio
+validate_domain() {
+    local domain="$1"
+    # Regex básico para dominio: letras, números, guiones, puntos
+    if [[ ! "$domain" =~ ^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$ ]]; then
+        log_error "Dominio inválido: $domain"
+        return 1
+    fi
+    # Verificar que no sea localhost o IP
+    if [[ "$domain" =~ ^(localhost|127\.|192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.) ]]; then
+        log_error "Dominio no permitido (localhost/IP privada): $domain"
+        return 1
+    fi
+    return 0
+}
+
+# Función para validar URL
+validate_url() {
+    local url="$1"
+    # Regex básico para URL HTTP/HTTPS
+    if [[ ! "$url" =~ ^https?://[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*(:\d{1,5})?(/.*)?$ ]]; then
+        log_error "URL inválida: $url"
+        return 1
+    fi
+    return 0
+}
+
+# Función para validar nombre de usuario
+validate_username() {
+    local username="$1"
+    # Solo letras, números, guiones bajos y guiones, 3-32 caracteres
+    if [[ ! "$username" =~ ^[a-zA-Z0-9_-]{3,32}$ ]]; then
+        log_error "Nombre de usuario inválido: $username (solo letras, números, _ y -, 3-32 caracteres)"
+        return 1
+    fi
+    return 0
+}
+
+# Función para validar contraseña
+validate_password() {
+    local password="$1"
+    # Mínimo 8 caracteres, al menos una mayúscula, una minúscula, un número
+    if [[ ${#password} -lt 8 ]]; then
+        log_error "Contraseña demasiado corta: mínimo 8 caracteres"
+        return 1
+    fi
+    if [[ ! "$password" =~ [A-Z] ]]; then
+        log_error "Contraseña debe contener al menos una letra mayúscula"
+        return 1
+    fi
+    if [[ ! "$password" =~ [a-z] ]]; then
+        log_error "Contraseña debe contener al menos una letra minúscula"
+        return 1
+    fi
+    if [[ ! "$password" =~ [0-9] ]]; then
+        log_error "Contraseña debe contener al menos un número"
+        return 1
+    fi
+    return 0
+}
+
+# Función para validar nombre de base de datos
+validate_db_name() {
+    local db_name="$1"
+    # Solo letras, números, guiones bajos, 1-64 caracteres
+    if [[ ! "$db_name" =~ ^[a-zA-Z0-9_]{1,64}$ ]]; then
+        log_error "Nombre de base de datos inválido: $db_name (solo letras, números, _, 1-64 caracteres)"
+        return 1
+    fi
+    return 0
+}
+
 # Función para instalar WordPress
 install_wordpress() {
     local domain="$1"
     local db_name="$2"
     local db_user="$3"
     local db_pass="$4"
+
+    # Validar entradas
+    if ! validate_domain "$domain"; then
+        handle_error "$ERROR_INVALID_INPUT" "Dominio inválido: $domain"
+        return 1
+    fi
+    if ! validate_db_name "$db_name"; then
+        handle_error "$ERROR_INVALID_INPUT" "Nombre de BD inválido: $db_name"
+        return 1
+    fi
+    if ! validate_username "$db_user"; then
+        handle_error "$ERROR_INVALID_INPUT" "Usuario de BD inválido: $db_user"
+        return 1
+    fi
+    if ! validate_password "$db_pass"; then
+        handle_error "$ERROR_INVALID_INPUT" "Contraseña de BD inválida"
+        return 1
+    fi
 
     log_step "Instalando WordPress para dominio: $domain"
 
@@ -42,7 +134,7 @@ install_wordpress() {
     log_info "Descargando WordPress desde wordpress.org..."
     cd "$site_dir"
 
-    if ! wget -q -O wordpress.tar.gz "https://wordpress.org/${WP_VERSION}.tar.gz"; then
+    if ! wget --no-check-certificate=false --connect-timeout=10 --read-timeout=30 --tries=3 --waitretry=2 --user-agent="CMS-Installer/1.0" -q -O wordpress.tar.gz "https://wordpress.org/${WP_VERSION}.tar.gz"; then
         handle_error "$ERROR_DOWNLOAD_FAILED" "No se pudo descargar WordPress"
         return 1
     fi
@@ -62,7 +154,7 @@ install_wordpress() {
 
     # Generar salts seguros
     local salts
-    salts=$(curl -s https://api.wordpress.org/secret-key/1.1/salt/)
+    salts=$(curl -s --ssl-reqd --connect-timeout 10 --max-time 30 --retry 3 --retry-delay 2 --user-agent "CMS-Installer/1.0" https://api.wordpress.org/secret-key/1.1/salt/)
 
     # Configurar base de datos y salts
     sed -i "s/database_name_here/${db_name}/g" wp-config.php
@@ -185,6 +277,24 @@ install_laravel() {
     local db_name="$2"
     local db_user="$3"
     local db_pass="$4"
+
+    # Validar entradas
+    if ! validate_domain "$domain"; then
+        handle_error "$ERROR_INVALID_INPUT" "Dominio inválido: $domain"
+        return 1
+    fi
+    if ! validate_db_name "$db_name"; then
+        handle_error "$ERROR_INVALID_INPUT" "Nombre de BD inválido: $db_name"
+        return 1
+    fi
+    if ! validate_username "$db_user"; then
+        handle_error "$ERROR_INVALID_INPUT" "Usuario de BD inválido: $db_user"
+        return 1
+    fi
+    if ! validate_password "$db_pass"; then
+        handle_error "$ERROR_INVALID_INPUT" "Contraseña de BD inválida"
+        return 1
+    fi
 
     log_step "Instalando Laravel para dominio: $domain"
 
@@ -359,7 +469,7 @@ install_composer() {
     cd /tmp
 
     # Descargar e instalar Composer
-    if ! curl -sS https://getcomposer.org/installer | php; then
+    if ! curl -s --ssl-reqd --connect-timeout 10 --max-time 30 --retry 3 --retry-delay 2 --user-agent "CMS-Installer/1.0" https://getcomposer.org/installer | php; then
         log_error "No se pudo descargar Composer"
         return 1
     fi

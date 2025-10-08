@@ -131,10 +131,10 @@ verify_file_permissions() {
         fi
     done < <(find . -name "*.sh" -type f -print0)
 
-    # Archivos de configuración deben ser legibles
+    # Archivos de configuración deben ser legibles solo por propietario
     while IFS= read -r -d '' file; do
         if [[ ! -r "$file" ]]; then
-            chmod 644 "$file"
+            chmod 600 "$file"
             log_prepare "INFO" "Permisos de configuración corregidos: $file"
             ((fixed_count++))
         fi

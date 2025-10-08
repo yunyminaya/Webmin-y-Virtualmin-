@@ -29,7 +29,6 @@ pro_migration/                            # Herramientas de migración
 pro_clustering/                           # Gestión de clustering
 pro_api/                                  # API completa
 pro_monitoring/                           # Monitoreo empresarial
-gpl_override/                             # Override de GPL
 
 ## ARCHIVOS DE CONFIGURACIÓN
 .pro_environment                          # Variables de entorno Pro

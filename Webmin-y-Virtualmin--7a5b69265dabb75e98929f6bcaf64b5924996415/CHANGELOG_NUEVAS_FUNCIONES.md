@@ -79,7 +79,6 @@
 - ✅ **Resumen del sistema:** `RESUMEN_SISTEMA_SEGURO.md`
 
 ### 🔥 **ELIMINACIÓN DE RESTRICCIONES GPL**
-- ✅ **Override GPL:** `gpl_override/`
 - ✅ **Variables Pro:** `.pro_environment`
 - ✅ **Estado Pro:** `pro_status.json`
 

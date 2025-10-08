@@ -23,6 +23,48 @@ PURPLE='\033[0;35m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
+# ===== FUNCIÓN DE CLEANUP PARA SEÑALES DEL SISTEMA =====
+
+# Función de cleanup para señales del sistema
+cleanup() {
+    log_shield "WARNING" "Recibida señal de terminación - Iniciando cleanup de escudo DDoS"
+
+    # Detener servicios de monitoreo
+    systemctl stop ddos-ai-monitor 2>/dev/null || true
+    systemctl stop fail2ban 2>/dev/null || true
+
+    # Detener procesos de monitoreo continuo
+    pkill -f "ai_monitor.sh" 2>/dev/null || true
+    pkill -f "main_monitoring_loop" 2>/dev/null || true
+
+    # Limpiar archivos temporales de DDoS
+    find /tmp -name "ddos_*" -type f -mtime +1 -delete 2>/dev/null || true
+
+    # Limpiar archivos de estado temporales
+    rm -f "$SHIELD_DIR"/*.tmp 2>/dev/null || true
+    rm -f "$SHIELD_DIR/monitoring"/*.tmp 2>/dev/null || true
+
+    # Limpiar procesos huérfanos
+    local ddos_pids=$(pgrep -f "ddos_shield\|ai_monitor\|ddos-ai-monitor" 2>/dev/null || true)
+    for pid in $ddos_pids; do
+        if kill -0 "$pid" 2>/dev/null; then
+            kill "$pid" 2>/dev/null || true
+        fi
+    done
+
+    # Restaurar iptables a configuración básica si es necesario
+    # (Opcional: solo si se quiere restaurar completamente)
+    # iptables -F DDOS_PROTECTION 2>/dev/null || true
+    # iptables -X DDOS_PROTECTION 2>/dev/null || true
+
+    log_shield "INFO" "Cleanup de escudo DDoS completado - Recursos liberados"
+
+    exit 0
+}
+
+# Configurar traps para señales del sistema
+trap cleanup TERM INT EXIT
+
 # Variables del sistema
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SHIELD_DIR="/shield_ddos"
@@ -538,7 +580,7 @@ trigger_emergency_response() {
     iptables -I INPUT -p tcp --dport 80 -j DROP 2>/dev/null || true
 
     # Notificar a administradores
-    echo "ATAQUE DDOS MASIVO DETECTADO EN $(hostname)" | mail -s "EMERGENCIA DDOS" admin@empresa.com 2>/dev/null || true
+    echo "ATAQUE DDOS MASIVO DETECTADO EN $(hostname)" | mail -s "EMERGENCIA DDOS" "${ALERT_EMAIL:-}" 2>/dev/null || true
 
     # Activar modo de protección máxima
     echo 1 > /proc/sys/net/ipv4/tcp_syncookies 2>/dev/null || true
@@ -612,10 +654,10 @@ setup_alert_system() {
 #!/bin/bash
 
 # Sistema de alertas multi-canal
-ALERT_EMAIL="admin@empresa.com"
-WEBHOOK_URL="https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
-TELEGRAM_BOT_TOKEN="YOUR_BOT_TOKEN"
-TELEGRAM_CHAT_ID="YOUR_CHAT_ID"
+ALERT_EMAIL="${ALERT_EMAIL:-}"
+WEBHOOK_URL="${WEBHOOK_URL:-}"
+TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN:-}"
+TELEGRAM_CHAT_ID="${TELEGRAM_CHAT_ID:-}"
 
 send_email_alert() {
     local subject="$1"

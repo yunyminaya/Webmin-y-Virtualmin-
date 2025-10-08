@@ -40,7 +40,7 @@ our ($get_user_level,
      $user_module_config_directory,
      $theme_webprefix);
 
-do($ENV{'THEME_ROOT'} . "/authentic-init.pl");
+do($root_directory/$current_theme . "/authentic-init.pl");
 
 sub theme_header
 {

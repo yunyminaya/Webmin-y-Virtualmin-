@@ -23,6 +23,42 @@ CYAN='\033[0;36m'
 WHITE='\033[1;37m'
 NC='\033[0m'
 
+# ===== FUNCIÓN DE CLEANUP PARA SEÑALES DEL SISTEMA =====
+
+# Función de cleanup para señales del sistema
+cleanup() {
+    ai_log "WARNING" "SYSTEM" "Recibida señal de terminación - Iniciando cleanup de IA"
+
+    # Detener servicio de monitoreo de IA
+    systemctl stop ai-defense-monitor 2>/dev/null || true
+
+    # Detener procesos de monitoreo continuo
+    pkill -f "continuous_learning_loop" 2>/dev/null || true
+    pkill -f "ai_monitor.sh" 2>/dev/null || true
+
+    # Limpiar archivos temporales de IA
+    find /tmp -name "ai_defense_*" -type f -mtime +1 -delete 2>/dev/null || true
+
+    # Limpiar archivos de estado temporales
+    rm -f "$AI_DIR"/*.tmp 2>/dev/null || true
+    rm -f "$DATA_DIR"/*.tmp 2>/dev/null || true
+
+    # Limpiar procesos huérfanos
+    local ai_pids=$(pgrep -f "ai_defense\|ai_monitor" 2>/dev/null || true)
+    for pid in $ai_pids; do
+        if kill -0 "$pid" 2>/dev/null; then
+            kill "$pid" 2>/dev/null || true
+        fi
+    done
+
+    ai_log "INFO" "SYSTEM" "Cleanup de sistema IA completado - Recursos liberados"
+
+    exit 0
+}
+
+# Configurar traps para señales del sistema
+trap cleanup TERM INT EXIT
+
 # Variables del sistema de IA
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 AI_DIR="/ai_defense"
@@ -468,8 +504,14 @@ Revisar logs en: $LOG_FILE"
     echo "$message" | mail -s "$subject" "admin@empresa.com" 2>/dev/null || true
 
     # Webhook para integración con otros sistemas
-    curl -X POST -H 'Content-Type: application/json' \
+    curl -s -X POST -H 'Content-Type: application/json' \
+         -H "User-Agent: AI-Defense-System/$SCRIPT_VERSION" \
          -d "{\"alert\":\"AI_THREAT\",\"score\":\"$threat_score\",\"type\":\"$detection_type\"}" \
+         --ssl-reqd \
+         --connect-timeout 10 \
+         --max-time 30 \
+         --retry 3 \
+         --retry-delay 2 \
          "https://webhook.site/your-webhook-url" 2>/dev/null || true
 }
 

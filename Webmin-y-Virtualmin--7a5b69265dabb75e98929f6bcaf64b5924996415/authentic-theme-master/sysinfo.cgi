@@ -26,8 +26,8 @@ our (%in,
 
 $trust_unknown_referers = 1;
 
-do($ENV{'THEME_ROOT'} . "/authentic-lib.pl");
-do($ENV{'THEME_ROOT'} . "/stats-lib-funcs.pl");
+do($root_directory/$current_theme . "/authentic-lib.pl");
+do($root_directory/$current_theme . "/stats-lib-funcs.pl");
 
 header($title, 'stripped');
 

@@ -7,6 +7,6 @@
 #
 use strict;
 
-require($ENV{'THEME_ROOT'} . "/extensions/file-manager/file-manager-lib.pl");
+require($root_directory/$current_theme . "/extensions/file-manager/file-manager-lib.pl");
 
 print_content();

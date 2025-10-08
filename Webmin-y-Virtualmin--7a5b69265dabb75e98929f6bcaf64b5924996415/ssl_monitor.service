@@ -1,0 +1,9 @@
+[Unit]
+Description=Sistema de Monitoreo SSL Avanzado
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/advanced_ssl_manager.sh validate
+StandardOutput=journal
+StandardError=journal

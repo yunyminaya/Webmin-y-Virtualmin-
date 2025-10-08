@@ -191,8 +191,8 @@ parse_args() {
       ;;
     --insecure-downloads | -i)
       shift
-      insecure_download_wget_flag=' --no-check-certificate'
-      insecure_download_curl_flag=' -k'
+      insecure_download_wget_flag=''
+      insecure_download_curl_flag=''
       ;;
     --no-package-updates | -x)
       shift

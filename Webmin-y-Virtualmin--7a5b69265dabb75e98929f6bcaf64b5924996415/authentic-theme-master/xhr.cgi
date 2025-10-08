@@ -9,7 +9,7 @@ use strict;
 
 our (%in);
 
-do($ENV{'THEME_ROOT'} . "/authentic-lib.pl");
-do($ENV{'THEME_ROOT'} . "/xhr-lib.pl");
+do($root_directory/$current_theme . "/authentic-lib.pl");
+do($root_directory/$current_theme . "/xhr-lib.pl");
 
 xhr();

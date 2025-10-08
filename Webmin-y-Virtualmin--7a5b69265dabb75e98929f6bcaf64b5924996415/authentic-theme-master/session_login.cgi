@@ -8,8 +8,8 @@ no strict 'refs';
 our (%in, %gconfig, %tconfig, %text, %theme_text);
 our ($miniserv, $webprefix, $bg, $textbox_attrs, $hostname);
 
-require("$ENV{'THEME_ROOT'}/authentic-lib.pl");
-require("$ENV{'THEME_ROOT'}/login-lib.pl");
+require("$root_directory/$current_theme/authentic-lib.pl");
+require("$root_directory/$current_theme/login-lib.pl");
 
 # Filter the username returned by the server, if needed
 login_username_filter(\%in);

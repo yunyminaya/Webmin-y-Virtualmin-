@@ -26,7 +26,8 @@ our (
 
 init_type();
 init_config();
-do($ENV{'THEME_ROOT'} . "/authentic-init.pl");
+$theme_root_directory = "$root_directory/$current_theme";
+do("$theme_root_directory/authentic-init.pl");
 
 sub authentic
 {
@@ -1909,7 +1910,7 @@ sub content
     print '</div>' . "\n";
 
     # Navigation
-    do($ENV{'THEME_ROOT'} . "/navigation-lib.pl");
+    do($root_directory/$current_theme . "/navigation-lib.pl");
     print "<aside style=\"$nav_styles_extra\" id=\"sidebar\" class=\"hidden-xs\">\n";
     print_switch();
     print "<ul class=\"navigation\">\n";

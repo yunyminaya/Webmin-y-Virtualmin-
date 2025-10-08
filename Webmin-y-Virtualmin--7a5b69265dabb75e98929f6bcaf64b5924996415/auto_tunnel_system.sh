@@ -33,6 +33,180 @@ PURPLE='\033[0;35m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
+# ===== FUNCIÓN DE CLEANUP PARA SEÑALES DEL SISTEMA =====
+
+# Función de cleanup para señales del sistema
+cleanup() {
+    log "WARNING" "Recibida señal de terminación - Iniciando cleanup"
+
+    # Detener túnel SSH
+    stop_tunnel
+
+    # Detener monitor si está corriendo
+    if [[ -f "$MONITOR_PID_FILE" ]]; then
+        local monitor_pid=$(cat "$MONITOR_PID_FILE")
+        if kill -0 "$monitor_pid" 2>/dev/null; then
+            kill "$monitor_pid" 2>/dev/null
+            sleep 1
+            if kill -0 "$monitor_pid" 2>/dev/null; then
+                kill -9 "$monitor_pid" 2>/dev/null
+            fi
+        fi
+        rm -f "$MONITOR_PID_FILE"
+    fi
+
+    # Detener monitor de dominios si está corriendo
+    if [[ -f "$DOMAIN_MONITOR_PID_FILE" ]]; then
+        local domain_pid=$(cat "$DOMAIN_MONITOR_PID_FILE")
+        if kill -0 "$domain_pid" 2>/dev/null; then
+            kill "$domain_pid" 2>/dev/null
+            sleep 1
+            if kill -0 "$domain_pid" 2>/dev/null; then
+                kill -9 "$domain_pid" 2>/dev/null
+            fi
+        fi
+        rm -f "$DOMAIN_MONITOR_PID_FILE"
+    fi
+
+    # Limpiar archivos PID
+    rm -f "$PID_FILE" "$TUNNEL_PID_FILE"
+
+    # Limpiar archivos temporales
+    find /tmp -name "auto_tunnel_*" -type f -mtime +1 -delete 2>/dev/null || true
+
+    # Limpiar archivos de estado temporales
+    rm -f /var/run/auto_tunnel_*.tmp 2>/dev/null || true
+
+    log "INFO" "Cleanup completado - Recursos liberados"
+
+    exit 0
+}
+
+# Configurar traps para señales del sistema
+trap cleanup TERM INT EXIT
+
+# ===== FUNCIONES DE VALIDACIÓN =====
+
+# Función para validar dominio
+validate_domain() {
+    local domain="$1"
+    # Regex básico para dominio: letras, números, guiones, puntos
+    if [[ ! "$domain" =~ ^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$ ]]; then
+        log "ERROR" "Dominio inválido: $domain"
+        return 1
+    fi
+    # Verificar que no sea localhost o IP privada
+    if [[ "$domain" =~ ^(localhost|127\.|192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.) ]]; then
+        log "ERROR" "Dominio no permitido (localhost/IP privada): $domain"
+        return 1
+    fi
+    return 0
+}
+
+# Función para validar URL
+validate_url() {
+    local url="$1"
+    # Regex básico para URL HTTP/HTTPS
+    if [[ ! "$url" =~ ^https?://[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*(:\d{1,5})?(/.*)?$ ]]; then
+        log "ERROR" "URL inválida: $url"
+        return 1
+    fi
+    return 0
+}
+
+# Función para validar email
+validate_email() {
+    local email="$1"
+    # Regex básico para email
+    if [[ ! "$email" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
+        log "ERROR" "Email inválido: $email"
+        return 1
+    fi
+    return 0
+}
+
+# Función para validar IP
+validate_ip() {
+    local ip="$1"
+    # Regex para IPv4
+    if [[ ! "$ip" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
+        log "ERROR" "IP inválida: $ip"
+        return 1
+    fi
+    # Verificar rangos válidos
+    IFS='.' read -ra OCTETS <<< "$ip"
+    for octet in "${OCTETS[@]}"; do
+        if (( octet < 0 || octet > 255 )); then
+            log "ERROR" "IP inválida: $ip (octeto fuera de rango)"
+            return 1
+        fi
+    done
+    return 0
+}
+
+# Función para validar puerto
+validate_port() {
+    local port="$1"
+    if [[ ! "$port" =~ ^[0-9]+$ ]] || (( port < 1 || port > 65535 )); then
+        log "ERROR" "Puerto inválido: $port (debe ser 1-65535)"
+        return 1
+    fi
+    return 0
+}
+
+# Función para validar nombre de usuario
+validate_username() {
+    local username="$1"
+    # Solo letras, números, guiones bajos y guiones, 3-32 caracteres
+    if [[ ! "$username" =~ ^[a-zA-Z0-9_-]{3,32}$ ]]; then
+        log "ERROR" "Nombre de usuario inválido: $username (solo letras, números, _ y -, 3-32 caracteres)"
+        return 1
+    fi
+    return 0
+}
+
+# Función para validar peso (número positivo)
+validate_weight() {
+    local weight="$1"
+    if [[ ! "$weight" =~ ^[0-9]+$ ]] || (( weight < 1 )); then
+        log "ERROR" "Peso inválido: $weight (debe ser número positivo)"
+        return 1
+    fi
+    return 0
+}
+
+# Función para validar lista de emails separados por coma
+validate_email_list() {
+    local email_list="$1"
+    if [[ -z "$email_list" ]]; then
+        return 0  # Lista vacía es válida
+    fi
+    IFS=',' read -ra EMAILS <<< "$email_list"
+    for email in "${EMAILS[@]}"; do
+        email=$(echo "$email" | xargs)  # Trim whitespace
+        if ! validate_email "$email"; then
+            return 1
+        fi
+    done
+    return 0
+}
+
+# Función para validar lista de URLs separadas por coma
+validate_url_list() {
+    local url_list="$1"
+    if [[ -z "$url_list" ]]; then
+        return 0  # Lista vacía es válida
+    fi
+    IFS=',' read -ra URLS <<< "$url_list"
+    for url in "${URLS[@]}"; do
+        url=$(echo "$url" | xargs)  # Trim whitespace
+        if ! validate_url "$url"; then
+            return 1
+        fi
+    done
+    return 0
+}
+
 # Verificar que el script se ejecute como root
 if [[ $EUID -ne 0 ]]; then
     echo -e "${RED}Este script debe ejecutarse como root${NC}"
@@ -125,8 +299,11 @@ IP Externa: $(get_external_ip)"
                 -H "Content-Type: application/json" \
                 -H "User-Agent: Auto-Tunnel-System/$SCRIPT_VERSION" \
                 -d "$webhook_data" \
-                --connect-timeout 5 \
-                --max-time 10 >/dev/null 2>&1 || true
+                --ssl-reqd \
+                --connect-timeout 10 \
+                --max-time 30 \
+                --retry 3 \
+                --retry-delay 2 >/dev/null 2>&1 || true
         done
     fi
 }
@@ -171,7 +348,7 @@ get_external_ip() {
 
     # Obtener IPs de múltiples fuentes
     for service in "${ip_services[@]}"; do
-        local ip=$(curl -s --connect-timeout 3 --max-time 8 "$service" 2>/dev/null | tr -d '[:space:]' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$')
+        local ip=$(curl -s --ssl-reqd --connect-timeout 10 --max-time 30 --retry 3 --retry-delay 2 --user-agent "Auto-Tunnel-System/$SCRIPT_VERSION" "$service" 2>/dev/null | tr -d '[:space:]' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$')
         if [[ -n "$ip" ]]; then
             # Buscar si la IP ya existe en el array
             local found=false
@@ -211,7 +388,7 @@ get_external_ip() {
 
     # Fallback: usar la primera IP válida si no hay consenso
     for service in "${ip_services[@]}"; do
-        local ip=$(curl -s --connect-timeout 5 --max-time 10 "$service" 2>/dev/null | tr -d '[:space:]')
+        local ip=$(curl -s --ssl-reqd --connect-timeout 10 --max-time 30 --retry 3 --retry-delay 2 --user-agent "Auto-Tunnel-System/$SCRIPT_VERSION" "$service" 2>/dev/null | tr -d '[:space:]')
         if [[ -n "$ip" ]] && [[ $ip =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             log "WARNING" "Usando IP de fallback (sin consenso): $ip"
             echo "$ip"
@@ -244,7 +421,7 @@ check_internet() {
     fi
 
     # Verificar conectividad HTTP como respaldo
-    if curl -s --connect-timeout 5 --max-time 10 "https://www.google.com" >/dev/null 2>&1; then
+    if curl -s --ssl-reqd --connect-timeout 10 --max-time 30 --retry 3 --retry-delay 2 --user-agent "Auto-Tunnel-System/$SCRIPT_VERSION" "https://www.google.com" >/dev/null 2>&1; then
         return 0
     fi
 
@@ -757,9 +934,285 @@ get_failover_server() {
     return 1
 }
 
-# Función para configurar el túnel SSH con balanceo de carga y failover
+# Función para verificar disponibilidad de servicios de túnel
+check_tunnel_service_availability() {
+    local service="$1"
+    local timeout="${2:-10}"
+
+    case "$service" in
+        "localtunnel")
+            # Verificar conectividad al servidor de localtunnel
+            if command -v curl >/dev/null 2>&1 && curl -s --connect-timeout "$timeout" --max-time "$timeout" "https://localtunnel.me" >/dev/null 2>&1; then
+                return 0
+            fi
+            ;;
+
+        "serveo")
+            # Verificar conectividad al servidor de serveo
+            if command -v curl >/dev/null 2>&1 && curl -s --connect-timeout "$timeout" --max-time "$timeout" "https://serveo.net" >/dev/null 2>&1; then
+                return 0
+            fi
+            ;;
+
+        "ngrok")
+            # Verificar conectividad al servidor de ngrok
+            if command -v curl >/dev/null 2>&1 && curl -s --connect-timeout "$timeout" --max-time "$timeout" "https://ngrok.com" >/dev/null 2>&1; then
+                return 0
+            fi
+            ;;
+    esac
+
+    return 1
+}
+
+# Función para configurar túneles autónomos (ngrok, localtunnel, serveo)
+setup_autonomous_tunnel() {
+    local local_port="${TUNNEL_LOCAL_PORT:-80}"
+    local tunnel_type="${TUNNEL_TYPE:-auto}"
+
+    log "INFO" "Configurando túnel autónomo (tipo: $tunnel_type)"
+
+    # Usar servicios configurados o por defecto
+    local tunnel_services=("${TUNNEL_SERVICES[@]:-localtunnel serveo ngrok}")
+    local available_services=()
+
+    # Verificar disponibilidad de servicios
+    log "INFO" "Verificando disponibilidad de servicios de túnel..."
+    for service in "${tunnel_services[@]}"; do
+        if check_tunnel_service_availability "$service" 5; then
+            available_services+=("$service")
+            log "INFO" "Servicio $service está disponible"
+        else
+            log "WARNING" "Servicio $service no está disponible"
+        fi
+    done
+
+    if [[ ${#available_services[@]} -eq 0 ]]; then
+        log "ERROR" "Ningún servicio de túnel está disponible"
+        send_alert "CRITICAL" "No hay servicios de túnel disponibles - Sistema sin conectividad externa" "TUNNEL_SERVICES_UNAVAILABLE"
+        return 1
+    fi
+
+    log "INFO" "Servicios disponibles: ${available_services[*]}"
+
+    # Intentar configurar túnel con servicios disponibles
+    for service in "${available_services[@]}"; do
+        log "INFO" "Intentando configurar túnel con $service"
+
+        case "$service" in
+            "localtunnel")
+                if setup_localtunnel_tunnel "$local_port"; then
+                    log "SUCCESS" "Túnel localtunnel establecido exitosamente"
+                    send_alert "INFO" "Túnel autónomo establecido usando localtunnel" "AUTONOMOUS_TUNNEL_SUCCESS"
+                    return 0
+                fi
+                ;;
+
+            "serveo")
+                if setup_serveo_tunnel "$local_port"; then
+                    log "SUCCESS" "Túnel serveo establecido exitosamente"
+                    send_alert "INFO" "Túnel autónomo establecido usando serveo" "AUTONOMOUS_TUNNEL_SUCCESS"
+                    return 0
+                fi
+                ;;
+
+            "ngrok")
+                if setup_ngrok_tunnel "$local_port"; then
+                    log "SUCCESS" "Túnel ngrok establecido exitosamente"
+                    send_alert "INFO" "Túnel autónomo establecido usando ngrok" "AUTONOMOUS_TUNNEL_SUCCESS"
+                    return 0
+                fi
+                ;;
+        esac
+
+        log "WARNING" "Falló configuración con $service, intentando siguiente..."
+    done
+
+    log "ERROR" "No se pudo establecer ningún túnel autónomo con los servicios disponibles"
+    send_alert "CRITICAL" "Falló configuración de túnel autónomo - Todos los servicios disponibles fallaron" "AUTONOMOUS_TUNNEL_FAILURE"
+    return 1
+}
+
+# Función para configurar túnel con localtunnel
+setup_localtunnel_tunnel() {
+    local local_port="$1"
+
+    # Verificar si localtunnel está instalado
+    if ! command -v lt >/dev/null 2>&1; then
+        log "INFO" "Instalando localtunnel..."
+        if command -v npm >/dev/null 2>&1; then
+            npm install -g localtunnel >/dev/null 2>&1
+        else
+            log "WARNING" "npm no disponible, omitiendo localtunnel"
+            return 1
+        fi
+    fi
+
+    # Verificar que localtunnel esté disponible
+    if ! command -v lt >/dev/null 2>&1; then
+        log "WARNING" "localtunnel no se pudo instalar"
+        return 1
+    fi
+
+    log "INFO" "Iniciando túnel localtunnel en puerto $local_port"
+
+    # Ejecutar localtunnel en background
+    nohup lt --port "$local_port" --subdomain "auto-tunnel-$(hostname | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]//g')" >/tmp/localtunnel.log 2>&1 &
+    local tunnel_pid=$!
+
+    # Guardar PID
+    echo "$tunnel_pid:localtunnel:$(date +%s)" > "$TUNNEL_PID_FILE"
+
+    # Esperar a que se establezca el túnel
+    sleep 10
+
+    # Verificar que el proceso esté corriendo
+    if kill -0 "$tunnel_pid" 2>/dev/null; then
+        # Obtener URL del túnel
+        local tunnel_url=$(grep -o 'https://[^ ]*\.loca\.lt' /tmp/localtunnel.log | head -1)
+        if [[ -n "$tunnel_url" ]]; then
+            log "SUCCESS" "Túnel localtunnel activo: $tunnel_url"
+            send_alert "INFO" "Túnel autónomo localtunnel establecido: $tunnel_url" "AUTONOMOUS_TUNNEL_ESTABLISHED"
+            return 0
+        fi
+    fi
+
+    # Limpiar si falló
+    kill "$tunnel_pid" 2>/dev/null || true
+    rm -f "$TUNNEL_PID_FILE"
+    return 1
+}
+
+# Función para configurar túnel con serveo
+setup_serveo_tunnel() {
+    local local_port="$1"
+
+    log "INFO" "Iniciando túnel serveo en puerto $local_port"
+
+    # Verificar conectividad a serveo
+    if ! curl -s --connect-timeout 5 https://serveo.net >/dev/null 2>&1; then
+        log "WARNING" "Serveo no está disponible"
+        return 1
+    fi
+
+    # Ejecutar túnel SSH a serveo (servicio gratuito)
+    local ssh_cmd="ssh -R 80:localhost:$local_port serveo.net"
+
+    # Ejecutar en background
+    nohup $ssh_cmd >/tmp/serveo.log 2>&1 &
+    local tunnel_pid=$!
+
+    # Guardar PID
+    echo "$tunnel_pid:serveo:$(date +%s)" > "$TUNNEL_PID_FILE"
+
+    # Esperar a que se establezca
+    sleep 15
+
+    # Verificar que esté corriendo y obtener URL
+    if kill -0 "$tunnel_pid" 2>/dev/null; then
+        local tunnel_url=$(grep -o 'Forwarding HTTP traffic from https://[^ ]*' /tmp/serveo.log | head -1 | awk '{print $5}')
+        if [[ -n "$tunnel_url" ]]; then
+            log "SUCCESS" "Túnel serveo activo: $tunnel_url"
+            send_alert "INFO" "Túnel autónomo serveo establecido: $tunnel_url" "AUTONOMOUS_TUNNEL_ESTABLISHED"
+            return 0
+        fi
+    fi
+
+    # Limpiar si falló
+    kill "$tunnel_pid" 2>/dev/null || true
+    rm -f "$TUNNEL_PID_FILE"
+    return 1
+}
+
+# Función para configurar túnel con ngrok
+setup_ngrok_tunnel() {
+    local local_port="$1"
+
+    # Verificar si ngrok está instalado
+    if ! command -v ngrok >/dev/null 2>&1; then
+        log "INFO" "Instalando ngrok..."
+        # Descargar e instalar ngrok automáticamente
+        local arch=$(uname -m)
+        local os=$(uname -s | tr '[:upper:]' '[:lower:]')
+
+        case "$os-$arch" in
+            "linux-x86_64") local ngrok_url="https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz" ;;
+            "linux-aarch64") local ngrok_url="https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-arm64.tgz" ;;
+            "darwin-x86_64") local ngrok_url="https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-darwin-amd64.tgz" ;;
+            "darwin-arm64") local ngrok_url="https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-darwin-arm64.tgz" ;;
+            *) log "WARNING" "Arquitectura no soportada para ngrok automático"; return 1 ;;
+        esac
+
+        curl -s "$ngrok_url" | tar xzf - -C /usr/local/bin/ >/dev/null 2>&1
+        chmod +x /usr/local/bin/ngrok
+    fi
+
+    # Verificar instalación
+    if ! command -v ngrok >/dev/null 2>&1; then
+        log "WARNING" "ngrok no se pudo instalar"
+        return 1
+    fi
+
+    # Configurar ngrok (intentar con token gratuito si está disponible)
+    local ngrok_config="/root/.ngrok2/ngrok.yml"
+    mkdir -p /root/.ngrok2
+
+    # Intentar obtener token gratuito automáticamente (si está configurado)
+    if [[ -n "$NGROK_AUTH_TOKEN" ]]; then
+        ngrok authtoken "$NGROK_AUTH_TOKEN" >/dev/null 2>&1
+    fi
+
+    log "INFO" "Iniciando túnel ngrok en puerto $local_port"
+
+    # Ejecutar ngrok en background
+    nohup ngrok http "$local_port" >/tmp/ngrok.log 2>&1 &
+    local tunnel_pid=$!
+
+    # Guardar PID
+    echo "$tunnel_pid:ngrok:$(date +%s)" > "$TUNNEL_PID_FILE"
+
+    # Esperar a que se establezca
+    sleep 10
+
+    # Verificar que esté corriendo y obtener URL
+    if kill -0 "$tunnel_pid" 2>/dev/null; then
+        # Obtener URL de ngrok
+        local tunnel_url=""
+        local retries=5
+        while [[ $retries -gt 0 ]] && [[ -z "$tunnel_url" ]]; do
+            tunnel_url=$(curl -s http://localhost:4040/api/tunnels 2>/dev/null | grep -o '"public_url":"[^"]*' | grep -o 'https://[^"]*' | head -1)
+            if [[ -z "$tunnel_url" ]]; then
+                sleep 2
+                ((retries--))
+            fi
+        done
+
+        if [[ -n "$tunnel_url" ]]; then
+            log "SUCCESS" "Túnel ngrok activo: $tunnel_url"
+            send_alert "INFO" "Túnel autónomo ngrok establecido: $tunnel_url" "AUTONOMOUS_TUNNEL_ESTABLISHED"
+            return 0
+        fi
+    fi
+
+    # Limpiar si falló
+    kill "$tunnel_pid" 2>/dev/null || true
+    rm -f "$TUNNEL_PID_FILE"
+    return 1
+}
+
+# Función para configurar el túnel SSH con balanceo de carga y failover (modo legacy)
 setup_ssh_tunnel() {
     local selected_server
+
+    # Verificar si debe usar túneles autónomos
+    if [[ "${TUNNEL_MODE:-auto}" == "autonomous" ]] || [[ "${TUNNEL_MODE:-auto}" == "auto" && -z "${TUNNEL_REMOTE_SERVERS:-}" ]]; then
+        log "INFO" "Modo autónomo detectado, usando servicios de túnel automáticos"
+        setup_autonomous_tunnel
+        return $?
+    fi
+
+    # Modo legacy: túneles SSH tradicionales
+    log "INFO" "Usando modo legacy: túneles SSH tradicionales"
 
     # Seleccionar servidor remoto usando balanceo de carga
     if [[ "$ENABLE_LOAD_BALANCING" == "true" ]] || [[ "$ENABLE_FAILOVER" == "true" ]]; then
@@ -849,25 +1302,48 @@ setup_ssh_tunnel() {
     fi
 }
 
-# Función para verificar estado del túnel
+# Función para verificar estado del túnel (soporta SSH y autónomos)
 check_tunnel_status() {
     if [[ -f "$TUNNEL_PID_FILE" ]]; then
         local tunnel_info=$(cat "$TUNNEL_PID_FILE")
-        IFS=':' read -r tunnel_pid server_config timestamp <<< "$tunnel_info"
+        IFS=':' read -r tunnel_pid service_type timestamp <<< "$tunnel_info"
 
         if kill -0 "$tunnel_pid" 2>/dev/null; then
-            # Verificar que el puerto del túnel esté abierto
-            IFS=':' read -r host user port weight <<< "$server_config"
-            local tunnel_port="${TUNNEL_PORT_BASE:-8080}"
+            # Verificar según el tipo de túnel
+            case "$service_type" in
+                "localtunnel")
+                    # Para localtunnel, verificar que el proceso esté corriendo y tenga URL
+                    if [[ -f "/tmp/localtunnel.log" ]] && grep -q "https://.*\.loca\.lt" /tmp/localtunnel.log; then
+                        return 0
+                    fi
+                    ;;
 
-            # Verificar conectividad al puerto del túnel
-            if nc -z localhost "$tunnel_port" 2>/dev/null; then
-                return 0  # Túnel activo y funcional
-            else
-                log "WARNING" "Túnel PID existe pero puerto $tunnel_port no responde"
-                rm -f "$TUNNEL_PID_FILE"
-                return 1
-            fi
+                "serveo")
+                    # Para serveo, verificar que el proceso esté corriendo y tenga URL
+                    if [[ -f "/tmp/serveo.log" ]] && grep -q "Forwarding HTTP traffic from https://" /tmp/serveo.log; then
+                        return 0
+                    fi
+                    ;;
+
+                "ngrok")
+                    # Para ngrok, verificar API local
+                    if curl -s http://localhost:4040/api/tunnels 2>/dev/null | grep -q '"public_url"'; then
+                        return 0
+                    fi
+                    ;;
+
+                *)
+                    # Para túneles SSH tradicionales, verificar puerto local
+                    local tunnel_port="${TUNNEL_PORT_BASE:-8080}"
+                    if nc -z localhost "$tunnel_port" 2>/dev/null; then
+                        return 0
+                    fi
+                    ;;
+            esac
+
+            log "WARNING" "Túnel PID existe pero el servicio $service_type no responde correctamente"
+            rm -f "$TUNNEL_PID_FILE"
+            return 1
         else
             # Limpiar PID file si el proceso no existe
             rm -f "$TUNNEL_PID_FILE"
@@ -1226,21 +1702,36 @@ domain_monitor() {
     done
 }
 
-# Función para detener el túnel
+# Función para detener el túnel (soporta SSH y autónomos)
 stop_tunnel() {
     if [[ -f "$TUNNEL_PID_FILE" ]]; then
         local tunnel_info=$(cat "$TUNNEL_PID_FILE")
-        IFS=':' read -r tunnel_pid server_config timestamp <<< "$tunnel_info"
+        IFS=':' read -r tunnel_pid service_type timestamp <<< "$tunnel_info"
         if kill -0 "$tunnel_pid" 2>/dev/null; then
-            log "INFO" "Deteniendo túnel SSH (PID: $tunnel_pid)"
+            log "INFO" "Deteniendo túnel $service_type (PID: $tunnel_pid)"
             kill "$tunnel_pid" 2>/dev/null
             sleep 2
             if kill -0 "$tunnel_pid" 2>/dev/null; then
                 kill -9 "$tunnel_pid" 2>/dev/null
             fi
         fi
+
+        # Limpiar archivos temporales específicos del servicio
+        case "$service_type" in
+            "localtunnel")
+                rm -f /tmp/localtunnel.log
+                ;;
+            "serveo")
+                rm -f /tmp/serveo.log
+                ;;
+            "ngrok")
+                rm -f /tmp/ngrok.log
+                ;;
+        esac
+
         rm -f "$TUNNEL_PID_FILE"
-        log "SUCCESS" "Túnel SSH detenido"
+        log "SUCCESS" "Túnel $service_type detenido"
+        send_alert "INFO" "Túnel $service_type detenido exitosamente" "TUNNEL_STOPPED"
     fi
 }
 
@@ -1406,6 +1897,104 @@ tunnel_monitor() {
     done
 }
 
+# Función para validar configuración
+validate_config() {
+    log "INFO" "Validando configuración del sistema"
+
+    # Validar modo de túnel
+    case "${TUNNEL_MODE:-auto}" in
+        "autonomous"|"ssh"|"auto")
+            log "INFO" "Modo de túnel válido: $TUNNEL_MODE"
+            ;;
+        *)
+            log "ERROR" "Modo de túnel inválido: $TUNNEL_MODE (debe ser: autonomous, ssh, o auto)"
+            return 1
+            ;;
+    esac
+
+    # Validar servicios de túnel autónomos
+    if [[ "$TUNNEL_MODE" == "autonomous" ]] || [[ "$TUNNEL_MODE" == "auto" ]]; then
+        if [[ ${#TUNNEL_SERVICES[@]} -gt 0 ]]; then
+            for service in "${TUNNEL_SERVICES[@]}"; do
+                case "$service" in
+                    "localtunnel"|"serveo"|"ngrok")
+                        log "INFO" "Servicio de túnel válido: $service"
+                        ;;
+                    *)
+                        log "ERROR" "Servicio de túnel inválido: $service"
+                        return 1
+                        ;;
+                esac
+            done
+        fi
+    fi
+
+    # Validar servidores remotos (solo si se usan)
+    if [[ "$TUNNEL_MODE" == "ssh" ]] || ([[ "$TUNNEL_MODE" == "auto" ]] && [[ ${#TUNNEL_REMOTE_SERVERS[@]} -gt 0 ]]); then
+        if [[ ${#TUNNEL_REMOTE_SERVERS[@]} -gt 0 ]]; then
+            for server_config in "${TUNNEL_REMOTE_SERVERS[@]}"; do
+                IFS=':' read -r host user port weight <<< "$server_config"
+                if ! validate_domain "$host" && ! validate_ip "$host"; then
+                    log "ERROR" "Servidor remoto inválido: $host"
+                    return 1
+                fi
+                if ! validate_username "$user"; then
+                    return 1
+                fi
+                if ! validate_port "$port"; then
+                    return 1
+                fi
+                if ! validate_weight "$weight"; then
+                    return 1
+                fi
+            done
+        else
+            log "WARNING" "Modo SSH seleccionado pero no hay servidores remotos configurados"
+        fi
+    fi
+
+    # Validar dominios monitoreados
+    if [[ ${#MONITORED_DOMAINS[@]} -gt 0 ]]; then
+        for domain_config in "${MONITORED_DOMAINS[@]}"; do
+            IFS=':' read -r domain ports <<< "$domain_config"
+            if ! validate_domain "$domain"; then
+                return 1
+            fi
+            # Validar puertos
+            IFS=':' read -ra PORT_ARRAY <<< "$ports"
+            for port in "${PORT_ARRAY[@]}"; do
+                if ! validate_port "$port"; then
+                    return 1
+                fi
+            done
+        done
+    fi
+
+    # Validar emails
+    if [[ -n "$ALERT_EMAIL_RECIPIENTS" ]]; then
+        if ! validate_email_list "$ALERT_EMAIL_RECIPIENTS"; then
+            return 1
+        fi
+    fi
+
+    # Validar webhooks
+    if [[ -n "$ALERT_WEBHOOK_URLS" ]]; then
+        if ! validate_url_list "$ALERT_WEBHOOK_URLS"; then
+            return 1
+        fi
+    fi
+
+    # Validar dominio DNS
+    if [[ -n "$DNS_DOMAIN" ]]; then
+        if ! validate_domain "$DNS_DOMAIN"; then
+            return 1
+        fi
+    fi
+
+    log "SUCCESS" "Configuración validada correctamente"
+    return 0
+}
+
 # Función para configurar el sistema
 configure_system() {
     log "INFO" "Configurando sistema de túnel automático"
@@ -1426,7 +2015,17 @@ configure_system() {
 # Configuración del Sistema de Túnel Automático con Respaldo Avanzado
 # Modificar estos valores según sus necesidades
 
-# Configuración de servidores remotos para túnel SSH (múltiples con balanceo de carga)
+# === CONFIGURACIÓN DE MODO DE TÚNEL ===
+# Modos disponibles: "autonomous" (automático), "ssh" (servidores remotos), "auto" (inteligente)
+TUNNEL_MODE="autonomous"  # Recomendado: autonomous para funcionamiento sin intervención
+
+# === CONFIGURACIÓN DE TÚNELES AUTÓNOMOS ===
+# Servicios de túnel automático (prioridad: localtunnel > serveo > ngrok)
+ENABLE_AUTONOMOUS_TUNNEL="true"
+TUNNEL_SERVICES=("localtunnel" "serveo" "ngrok")
+NGROK_AUTH_TOKEN=""  # Opcional: token de ngrok para acceso premium
+
+# === CONFIGURACIÓN DE SERVIDORES REMOTOS SSH (modo legacy) ===
 # Formato: "host:user:port:weight" - weight determina prioridad en balanceo de carga
 TUNNEL_REMOTE_SERVERS=(
     "tu-servidor-remoto1.com:tunnel_user1:22:10"
@@ -1560,6 +2159,42 @@ EOF
         fi
     fi
 
+    # Instalar Node.js y npm para servicios de túnel autónomos si están habilitados
+    if [[ "$ENABLE_AUTONOMOUS_TUNNEL" == "true" ]] && [[ "${#TUNNEL_SERVICES[@]}" -gt 0 ]]; then
+        log "INFO" "Verificando Node.js y npm para servicios de túnel autónomos"
+
+        # Verificar si Node.js está instalado
+        if ! command -v node >/dev/null 2>&1; then
+            log "INFO" "Instalando Node.js..."
+
+            if command -v apt-get >/dev/null 2>&1; then
+                curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -
+                apt-get install -y nodejs
+            elif command -v yum >/dev/null 2>&1; then
+                curl -fsSL https://rpm.nodesource.com/setup_lts.x | bash -
+                yum install -y nodejs
+            elif command -v dnf >/dev/null 2>&1; then
+                curl -fsSL https://rpm.nodesource.com/setup_lts.x | bash -
+                dnf install -y nodejs
+            else
+                log "WARNING" "No se pudo instalar Node.js automáticamente - algunos servicios de túnel pueden no funcionar"
+            fi
+        fi
+
+        # Verificar instalación de Node.js
+        if command -v node >/dev/null 2>&1; then
+            local node_version=$(node --version 2>/dev/null)
+            log "SUCCESS" "Node.js instalado: $node_version"
+        else
+            log "WARNING" "Node.js no se pudo instalar"
+        fi
+
+        # Verificar si npm está disponible
+        if ! command -v npm >/dev/null 2>&1; then
+            log "WARNING" "npm no está disponible - servicios que requieren npm pueden fallar"
+        fi
+    fi
+
     # Configurar DNS local si está habilitado
     if [[ "$ENABLE_DNS_LOCAL" == "true" ]]; then
         setup_bind9_dns
@@ -1596,9 +2231,34 @@ show_status() {
     echo -e "${CYAN}🚇 Estado del Túnel:${NC}"
     if check_tunnel_status; then
         local tunnel_info=$(cat "$TUNNEL_PID_FILE" 2>/dev/null)
-        IFS=':' read -r tunnel_pid server_config timestamp <<< "$tunnel_info"
-        IFS=':' read -r host user port weight <<< "$server_config"
-        echo -e "   ✅ ${GREEN}Activo${NC} (PID: $tunnel_pid, Servidor: $host, Puerto: $port)"
+        IFS=':' read -r tunnel_pid service_type timestamp <<< "$tunnel_info"
+
+        case "$service_type" in
+            "localtunnel"|"serveo"|"ngrok")
+                # Mostrar información del túnel autónomo
+                local tunnel_url=""
+                case "$service_type" in
+                    "localtunnel")
+                        tunnel_url=$(grep -o 'https://[^ ]*\.loca\.lt' /tmp/localtunnel.log 2>/dev/null | head -1)
+                        ;;
+                    "serveo")
+                        tunnel_url=$(grep -o 'https://[^ ]*' /tmp/serveo.log 2>/dev/null | head -1)
+                        ;;
+                    "ngrok")
+                        tunnel_url=$(curl -s http://localhost:4040/api/tunnels 2>/dev/null | grep -o '"public_url":"[^"]*' | grep -o 'https://[^"]*' | head -1)
+                        ;;
+                esac
+                echo -e "   ✅ ${GREEN}Activo${NC} (Tipo: $service_type, PID: $tunnel_pid)"
+                if [[ -n "$tunnel_url" ]]; then
+                    echo -e "   🌐 ${BLUE}URL:${NC} $tunnel_url"
+                fi
+                ;;
+            *)
+                # Túnel SSH tradicional
+                IFS=':' read -r host user port weight <<< "$service_type"
+                echo -e "   ✅ ${GREEN}Activo${NC} (PID: $tunnel_pid, Servidor: $host, Puerto: $port)"
+                ;;
+        esac
     else
         echo -e "   ❌ ${RED}Inactivo${NC}"
     fi
@@ -1773,6 +2433,15 @@ stop_service() {
 # Función principal
 main() {
     local command="${1:-status}"
+
+    # Validar configuración si existe
+    if [[ -f "$CONFIG_FILE" ]]; then
+        source "$CONFIG_FILE"
+        if ! validate_config; then
+            echo -e "${RED}Configuración inválida. Revisa $CONFIG_FILE${NC}"
+            exit 1
+        fi
+    fi
 
     case "$command" in
         "start")

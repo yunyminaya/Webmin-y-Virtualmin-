@@ -1,0 +1,34 @@
+# Dependencias para el Sistema de Optimización con IA
+
+# Machine Learning
+scikit-learn>=1.3.0
+pandas>=2.0.0
+numpy>=1.24.0
+joblib>=1.3.0
+
+# Utilidades del sistema
+psutil>=5.9.0
+schedule>=1.2.0
+
+# Web framework para dashboard
+flask>=2.3.0
+flask-cors>=4.0.0
+
+# Base de datos y caching
+redis>=4.5.0
+
+# Logging y monitoreo
+structlog>=23.1.0
+
+# Configuración
+pyyaml>=6.0
+
+# HTTP requests
+requests>=2.31.0
+
+# Graficos (opcional para visualizaciones)
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# API de Prometheus (para integración)
+prometheus-client>=0.17.0

@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Backup Inteligente - Webmin/Virtualmin</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .sidebar .nav-link {
+            color: rgba(255,255,255,.75);
+            transition: all 0.3s;
+        }
+        .sidebar .nav-link:hover {
+            color: white;
+            background-color: rgba(255,255,255,.1);
+        }
+        .sidebar .nav-link.active {
+            color: white;
+            background-color: rgba(255,255,255,.2);
+        }
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+        }
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .status-online { background-color: #28a745; }
+        .status-offline { background-color: #dc3545; }
+        .status-warning { background-color: #ffc107; }
+        .progress-circle {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: conic-gradient(#28a745 0% 75%, #e9ecef 75% 100%);
+        }
+        .progress-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-weight: bold;
+        }
+        .backup-job-card {
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .backup-job-card:hover {
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+        }
+        .running { border-left: 4px solid #ffc107; }
+        .success { border-left: 4px solid #28a745; }
+        .error { border-left: 4px solid #dc3545; }
+    </style>
+</head>
+<body>
+
+<div class="container-fluid">
+    <div class="row">
+
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 px-0 sidebar">
+            <div class="d-flex flex-column p-3">
+                <h5 class="mb-4">
+                    <i class="fas fa-shield-alt me-2"></i>
+                    Backup Inteligente
+                </h5>
+
+                <nav class="nav nav-pills flex-column">
+                    <a class="nav-link active" href="#dashboard" data-bs-toggle="pill">
+                        <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                    </a>
+                    <a class="nav-link" href="#jobs" data-bs-toggle="pill">
+                        <i class="fas fa-tasks me-2"></i>Trabajos
+                    </a>
+                    <a class="nav-link" href="#restore" data-bs-toggle="pill">
+                        <i class="fas fa-undo me-2"></i>Restaurar
+                    </a>
+                    <a class="nav-link" href="#storage" data-bs-toggle="pill">
+                        <i class="fas fa-server me-2"></i>Almacenamiento
+                    </a>
+                    <a class="nav-link" href="#verification" data-bs-toggle="pill">
+                        <i class="fas fa-check-circle me-2"></i>Verificación
+                    </a>
+                    <a class="nav-link" href="#logs" data-bs-toggle="pill">
+                        <i class="fas fa-file-alt me-2"></i>Logs
+                    </a>
+                    <a class="nav-link" href="#settings" data-bs-toggle="pill">
+                        <i class="fas fa-cog me-2"></i>Configuración
+                    </a>
+                </nav>
+
+                <div class="mt-auto">
+                    <div class="text-center">
+                        <div class="progress-circle mx-auto mb-2">
+                            <div class="progress-text">98%</div>
+                        </div>
+                        <small>Sistema Saludable</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-9 col-lg-10 px-4 py-4">
+
+            <!-- Tab Content -->
+            <div class="tab-content">
+
+                <!-- Dashboard Tab -->
+                <div class="tab-pane fade show active" id="dashboard">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2><i class="fas fa-tachometer-alt me-2"></i>Dashboard</h2>
+                        <button class="btn btn-primary" onclick="refreshDashboard()">
+                            <i class="fas fa-sync-alt me-2"></i>Actualizar
+                        </button>
+                    </div>
+
+                    <!-- System Status Cards -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <div class="status-indicator status-online"></div>
+                                    <h5 class="card-title">Sistema</h5>
+                                    <p class="card-text">Operativo</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <i class="fas fa-database fa-2x text-primary mb-2"></i>
+                                    <h5 id="totalBackups">-</h5>
+                                    <p class="card-text">Total Backups</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <i class="fas fa-hdd fa-2x text-success mb-2"></i>
+                                    <h5 id="storageUsed">-</h5>
+                                    <p class="card-text">Almacenamiento Usado</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <i class="fas fa-compress fa-2x text-info mb-2"></i>
+                                    <h5 id="compressionRatio">-</h5>
+                                    <p class="card-text">Ratio Compresión</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Jobs -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5><i class="fas fa-clock me-2"></i>Trabajos Recientes</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="recentJobs" class="list-group">
+                                <!-- Jobs will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- System Health Chart -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-chart-line me-2"></i>Salud del Sistema</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="healthChart" width="400" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Jobs Tab -->
+                <div class="tab-pane fade" id="jobs">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2><i class="fas fa-tasks me-2"></i>Trabajos de Backup</h2>
+                        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#newJobModal">
+                            <i class="fas fa-plus me-2"></i>Nuevo Trabajo
+                        </button>
+                    </div>
+
+                    <div id="jobsList" class="row">
+                        <!-- Jobs will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Restore Tab -->
+                <div class="tab-pane fade" id="restore">
+                    <h2><i class="fas fa-undo me-2"></i>Restaurar Backup</h2>
+
+                    <div class="card">
+                        <div class="card-body">
+                            <form id="restoreForm">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <label for="restoreBackupId" class="form-label">ID del Backup</label>
+                                        <input type="text" class="form-control" id="restoreBackupId" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="restoreTargetPath" class="form-label">Directorio de Destino</label>
+                                        <input type="text" class="form-control" id="restoreTargetPath" value="/tmp/restore" required>
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <label for="restoreFiles" class="form-label">Archivos Específicos (opcional, uno por línea)</label>
+                                    <textarea class="form-control" id="restoreFiles" rows="3" placeholder="Dejar vacío para restaurar todo"></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary mt-3">
+                                    <i class="fas fa-undo me-2"></i>Iniciar Restauración
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Storage Tab -->
+                <div class="tab-pane fade" id="storage">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2><i class="fas fa-server me-2"></i>Destinos de Almacenamiento</h2>
+                        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#newDestinationModal">
+                            <i class="fas fa-plus me-2"></i>Agregar Destino
+                        </button>
+                    </div>
+
+                    <div id="destinationsList" class="row">
+                        <!-- Destinations will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Verification Tab -->
+                <div class="tab-pane fade" id="verification">
+                    <h2><i class="fas fa-check-circle me-2"></i>Verificación de Integridad</h2>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>Historial de Verificaciones</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="verificationHistory" class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Fecha</th>
+                                            <th>Backup ID</th>
+                                            <th>Archivos</th>
+                                            <th>Válidos</th>
+                                            <th>Corruptos</th>
+                                            <th>Tiempo</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="verificationTableBody">
+                                        <!-- Verification history will be loaded here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Logs Tab -->
+                <div class="tab-pane fade" id="logs">
+                    <h2><i class="fas fa-file-alt me-2"></i>Logs del Sistema</h2>
+
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="logsContainer" style="height: 500px; overflow-y: auto; background: #f8f9fa; padding: 10px; font-family: monospace;">
+                                <!-- Logs will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings Tab -->
+                <div class="tab-pane fade" id="settings">
+                    <h2><i class="fas fa-cog me-2"></i>Configuración</h2>
+
+                    <div class="card">
+                        <div class="card-body">
+                            <h5>Configuración General</h5>
+                            <form id="settingsForm">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Retención por Defecto (días)</label>
+                                            <input type="number" class="form-control" value="30">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Tamaño de Bloque (KB)</label>
+                                            <input type="number" class="form-control" value="4">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" checked>
+                                            <label class="form-check-label">Compresión Automática</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" checked>
+                                            <label class="form-check-label">Encriptación AES-256</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary mt-3">
+                                    <i class="fas fa-save me-2"></i>Guardar Configuración
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- New Job Modal -->
+<div class="modal fade" id="newJobModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Nuevo Trabajo de Backup</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="newJobForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="jobId" class="form-label">ID del Trabajo</label>
+                                <input type="text" class="form-control" id="jobId" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="jobName" class="form-label">Nombre</label>
+                                <input type="text" class="form-control" id="jobName" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="sourcePaths" class="form-label">Directorios de Origen</label>
+                        <textarea class="form-control" id="sourcePaths" rows="2" placeholder="/etc&#10;/var/www" required></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="jobCompression" checked>
+                                <label class="form-check-label">Compresión</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="jobEncryption" checked>
+                                <label class="form-check-label">Encriptación</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="jobDeduplication" checked>
+                                <label class="form-check-label">Deduplicación</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="jobIncremental" checked>
+                                <label class="form-check-label">Backup Incremental</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="retentionDays" class="form-label">Días de Retención</label>
+                        <input type="number" class="form-control" id="retentionDays" value="30">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="createJob()">Crear Trabajo</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Custom JavaScript -->
+<script>
+// Global variables
+let refreshInterval;
+
+// Initialize dashboard
+document.addEventListener('DOMContentLoaded', function() {
+    loadDashboard();
+    loadJobs();
+    loadDestinations();
+    loadVerificationHistory();
+    loadLogs();
+
+    // Auto-refresh every 30 seconds
+    refreshInterval = setInterval(refreshDashboard, 30000);
+});
+
+// Dashboard functions
+async function loadDashboard() {
+    try {
+        const response = await fetch('/api/status');
+        const data = await response.json();
+
+        document.getElementById('totalBackups').textContent = data.total_jobs || 0;
+        document.getElementById('storageUsed').textContent = formatBytes(data.storage?.total_backups_size || 0);
+        document.getElementById('compressionRatio').textContent = '2.1x';
+
+        // Load recent jobs
+        loadRecentJobs();
+
+    } catch (error) {
+        console.error('Error loading dashboard:', error);
+    }
+}
+
+async function loadRecentJobs() {
+    try {
+        const response = await fetch('/api/jobs');
+        const data = await response.json();
+
+        const recentJobsContainer = document.getElementById('recentJobs');
+        recentJobsContainer.innerHTML = '';
+
+        data.jobs.slice(0, 5).forEach(job => {
+            const jobElement = document.createElement('div');
+            jobElement.className = 'list-group-item d-flex justify-content-between align-items-center';
+            jobElement.innerHTML = `
+                <div>
+                    <strong>${job.name}</strong>
+                    <br><small class="text-muted">${job.source_paths.join(', ')}</small>
+                </div>
+                <div>
+                    <span class="badge bg-${job.is_running ? 'warning' : 'secondary'}">
+                        ${job.is_running ? 'Ejecutándose' : 'Inactivo'}
+                    </span>
+                </div>
+            `;
+            recentJobsContainer.appendChild(jobElement);
+        });
+
+    } catch (error) {
+        console.error('Error loading recent jobs:', error);
+    }
+}
+
+function refreshDashboard() {
+    loadDashboard();
+    loadJobs();
+}
+
+// Jobs functions
+async function loadJobs() {
+    try {
+        const response = await fetch('/api/jobs');
+        const data = await response.json();
+
+        const jobsContainer = document.getElementById('jobsList');
+        jobsContainer.innerHTML = '';
+
+        data.jobs.forEach(job => {
+            const jobCard = document.createElement('div');
+            jobCard.className = 'col-md-6 mb-4';
+
+            jobCard.innerHTML = `
+                <div class="card backup-job-card ${job.is_running ? 'running' : ''}" onclick="showJobDetails('${job.id}')">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h5 class="card-title">${job.name}</h5>
+                                <p class="card-text text-muted">${job.source_paths.join(', ')}</p>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-${job.is_running ? 'warning' : 'secondary'} mb-2">
+                                    ${job.is_running ? 'Ejecutándose' : 'Inactivo'}
+                                </span>
+                                <br>
+                                <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); runJob('${job.id}')">
+                                    <i class="fas fa-play"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="row text-center mt-3">
+                            <div class="col-3">
+                                <i class="fas fa-compress text-info"></i>
+                                <br><small>${job.compression ? 'Sí' : 'No'}</small>
+                            </div>
+                            <div class="col-3">
+                                <i class="fas fa-lock text-warning"></i>
+                                <br><small>${job.encryption ? 'Sí' : 'No'}</small>
+                            </div>
+                            <div class="col-3">
+                                <i class="fas fa-copy text-success"></i>
+                                <br><small>${job.deduplication ? 'Sí' : 'No'}</small>
+                            </div>
+                            <div class="col-3">
+                                <i class="fas fa-clock text-primary"></i>
+                                <br><small>${job.retention_days}d</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            jobsContainer.appendChild(jobCard);
+        });
+
+    } catch (error) {
+        console.error('Error loading jobs:', error);
+    }
+}
+
+async function createJob() {
+    const formData = {
+        id: document.getElementById('jobId').value,
+        name: document.getElementById('jobName').value,
+        source_paths: document.getElementById('sourcePaths').value.split('\n').filter(p => p.trim()),
+        compression: document.getElementById('jobCompression').checked,
+        encryption: document.getElementById('jobEncryption').checked,
+        deduplication: document.getElementById('jobDeduplication').checked,
+        incremental: document.getElementById('jobIncremental').checked,
+        retention_days: parseInt(document.getElementById('retentionDays').value) || 30
+    };
+
+    try {
+        const response = await fetch('/api/jobs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            bootstrap.Modal.getInstance(document.getElementById('newJobModal')).hide();
+            document.getElementById('newJobForm').reset();
+            loadJobs();
+            showAlert('Trabajo creado exitosamente', 'success');
+        } else {
+            showAlert(result.error || 'Error creando trabajo', 'danger');
+        }
+
+    } catch (error) {
+        console.error('Error creating job:', error);
+        showAlert('Error creando trabajo', 'danger');
+    }
+}
+
+async function runJob(jobId) {
+    try {
+        const response = await fetch(`/api/jobs/${jobId}/run`, { method: 'POST' });
+        const result = await response.json();
+
+        if (result.success) {
+            showAlert('Trabajo iniciado', 'success');
+            loadJobs();
+        } else {
+            showAlert(result.error || 'Error ejecutando trabajo', 'danger');
+        }
+
+    } catch (error) {
+        console.error('Error running job:', error);
+        showAlert('Error ejecutando trabajo', 'danger');
+    }
+}
+
+// Storage functions
+async function loadDestinations() {
+    try {
+        const response = await fetch('/api/storage/destinations');
+        const data = await response.json();
+
+        const destinationsContainer = document.getElementById('destinationsList');
+        destinationsContainer.innerHTML = '';
+
+        data.destinations.forEach(dest => {
+            const destCard = document.createElement('div');
+            destCard.className = 'col-md-6 mb-4';
+
+            destCard.innerHTML = `
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h5 class="card-title">${dest.name}</h5>
+                                <p class="card-text text-muted">${dest.type.toUpperCase()}</p>
+                            </div>
+                            <div>
+                                <span class="badge bg-${dest.enabled ? 'success' : 'secondary'}">
+                                    ${dest.enabled ? 'Habilitado' : 'Deshabilitado'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            destinationsContainer.appendChild(destCard);
+        });
+
+    } catch (error) {
+        console.error('Error loading destinations:', error);
+    }
+}
+
+// Verification functions
+async function loadVerificationHistory() {
+    try {
+        const response = await fetch('/api/verification/history');
+        const data = await response.json();
+
+        const tbody = document.getElementById('verificationTableBody');
+        tbody.innerHTML = '';
+
+        data.history.forEach(item => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${new Date(item.timestamp).toLocaleString()}</td>
+                <td>${item.backup_id}</td>
+                <td>${item.total_files}</td>
+                <td><span class="text-success">${item.valid_files}</span></td>
+                <td><span class="text-danger">${item.corrupted_files}</span></td>
+                <td>${item.processing_time.toFixed(2)}s</td>
+            `;
+            tbody.appendChild(row);
+        });
+
+    } catch (error) {
+        console.error('Error loading verification history:', error);
+    }
+}
+
+// Logs functions
+async function loadLogs() {
+    try {
+        const response = await fetch('/api/logs');
+        const data = await response.json();
+
+        const logsContainer = document.getElementById('logsContainer');
+        logsContainer.innerHTML = '';
+
+        data.logs.forEach(log => {
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${log.level.toLowerCase()}`;
+            logEntry.innerHTML = `[${new Date(log.timestamp).toLocaleTimeString()}] ${log.level}: ${log.message}`;
+            logsContainer.appendChild(logEntry);
+        });
+
+        // Scroll to bottom
+        logsContainer.scrollTop = logsContainer.scrollHeight;
+
+    } catch (error) {
+        console.error('Error loading logs:', error);
+    }
+}
+
+// Utility functions
+function formatBytes(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function showAlert(message, type = 'info') {
+    // Create alert element
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alert.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+
+    document.body.appendChild(alert);
+
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (alert.parentNode) {
+            alert.remove();
+        }
+    }, 5000);
+}
+
+function showJobDetails(jobId) {
+    // This would open a detailed view of the job
+    console.log('Showing details for job:', jobId);
+}
+
+// Restore form handler
+document.getElementById('restoreForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const formData = {
+        backup_id: document.getElementById('restoreBackupId').value,
+        target_path: document.getElementById('restoreTargetPath').value,
+        files: document.getElementById('restoreFiles').value.split('\n').filter(f => f.trim()) || null
+    };
+
+    try {
+        const response = await fetch('/api/restore', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+        });
+
+        const result = await response.json();
+
+        if (result.success || response.ok) {
+            showAlert(`Restauración completada: ${result.files_restored} archivos restaurados`, 'success');
+        } else {
+            showAlert(result.error || 'Error en restauración', 'danger');
+        }
+
+    } catch (error) {
+        console.error('Error restoring backup:', error);
+        showAlert('Error en restauración', 'danger');
+    }
+});
+
+// Settings form handler
+document.getElementById('settingsForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    showAlert('Configuración guardada (simulado)', 'success');
+});
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', function() {
+    if (refreshInterval) {
+        clearInterval(refreshInterval);
+    }
+});
+</script>
+
+</body>
+</html>

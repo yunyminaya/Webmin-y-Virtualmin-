@@ -1,0 +1,159 @@
+index_title=n8n Automation Platform
+index=Panel Principal
+
+# Dashboard
+dashboard_title=Panel de n8n Automation Platform
+not_installed=n8n no está instalado
+installed_info=Información de la Instalación
+installed=n8n está instalado y funcionando
+description=Descripción
+n8n_description=n8n es una plataforma de automatización de flujos de trabajo de código abierto que te permite conectar cualquier aplicación con cualquier otra a través de una interfaz visual intuitiva.
+
+# Installation
+install_n8n=Instalar n8n
+install_title=Instalar n8n Automation Platform
+install_button=Instalar n8n
+installation_config=Configuración de Instalación
+domain=Dominio
+port=Puerto
+database_type=Tipo de Base de Datos
+enable_ssl=Habilitar SSL/HTTPS
+ssl_email=Correo para Certificado SSL
+admin_user=Usuario Administrador
+admin_password=Contraseña Administradora
+missing_fields=Faltan campos obligatorios
+missing_config=La configuración es incompleta
+
+# Features
+features=Características Principales
+feature=Característica
+workflow_automation=Automatización de Flujos
+workflow_desc=Crea flujos de trabajo complejos con arrastrar y soltar
+visual_editor=Editor Visual
+visual_editor_desc=Interfaz intuitiva para diseñar flujos sin código
+integrations=Integraciones
+integrations_desc=Conecta con cientos de servicios y APIs
+self_hosted=Auto-hospedado
+self_hosted_desc=Control total sobre tus datos y flujos
+api_access=Acceso API
+api_access_desc=API RESTful completa para integración personalizada
+multi_user=Multiusuario
+multi_user_desc=Gestión de usuarios y permisos avanzada
+
+# Status
+status=Estado
+running=Ejecutándose
+stopped=Detenido
+version=Versión
+url=URL de Acceso
+database=Base de Datos
+memory_usage=Uso de Memoria
+uptime=Tiempo de Actividad
+
+# Actions
+actions=Acciones
+manage_instance=Gestionar Instancia
+manage_instance_title=Gestionar Instancia: $1
+backup_instance=Respaldar Instancia
+restore_instance=Restaurar Instancia
+delete_instance=Eliminar Instancia
+start_service=Iniciar Servicio
+stop_service=Detener Servicio
+restart_service=Reiniciar Servicio
+
+# Instance Management
+instance_info=Información de la Instancia
+management_actions=Acciones de Gestión
+
+# Statistics
+statistics=Estadísticas
+system_stats=Estadísticas del Sistema
+cpu_usage=Uso de CPU
+memory_usage=Uso de Memoria
+disk_usage=Uso de Disco
+network_io=I/O de Red
+
+# Backup and Restore
+backup_title=Respaldar Instancia de n8n
+restore_title=Restaurar Instancia de n8n
+backup_file=Archivo de Respaldo
+restore_button=Restaurar
+
+# Templates
+template_name=Plantilla n8n
+template_desc=Plantilla para instalar n8n con configuración automática
+template_category=Aplicaciones Web
+
+# Logs
+logs=Registros
+view_logs=Ver Registros
+download_logs=Descargar Registros
+clear_logs=Limpiar Registros
+
+# Security
+security=Seguridad
+ssl_configuration=Configuración SSL
+security_headers=Cabeceras de Seguridad
+access_control=Control de Acceso
+
+# Performance
+performance=Rendimiento
+optimization=Optimización
+cache=Cache
+monitoring=Monitoreo
+
+# Advanced
+advanced=Avanzado
+configuration=Configuración
+debug=Depuración
+maintenance=Mantenimiento
+
+# Error Messages
+error=Error
+success=Éxito
+warning=Advertencia
+info=Información
+
+# Navigation
+home=Inicio
+dashboard=Panel
+install=Instalar
+manage=Gestionar
+settings=Configuración
+help=Ayuda
+about=Acerca de
+
+# Form Validation
+required_field=Este campo es obligatorio
+invalid_domain=Dominio inválido
+invalid_port=Puerto inválido
+invalid_email=Correo inválido
+password_mismatch=Las contraseñas no coinciden
+
+# Status Messages
+installation_started=La instalación ha comenzado
+installation_completed=La instalación se completó exitosamente
+installation_failed=La instalación falló
+service_started=El servicio se inició correctamente
+service_stopped=El servicio se detuvo correctamente
+service_restarted=El servicio se reinició correctamente
+backup_created=El respaldo se creó correctamente
+backup_restored=El respaldo se restauró correctamente
+instance_deleted=La instancia se eliminó correctamente
+
+# Confirmation Messages
+confirm_delete=¿Estás seguro de que deseas eliminar esta instancia?
+confirm_restart=¿Estás seguro de que deseas reiniciar el servicio?
+confirm_stop=¿Estás seguro de que deseas detener el servicio?
+
+# Help
+help_title=Ayuda de n8n Automation Platform
+help_content=Este módulo permite instalar y gestionar instancias de n8n Automation Platform en tu servidor Virtualmin.
+
+# About
+about_title=Acerca de n8n Automation Platform
+about_content=n8n es una plataforma de automatización de flujos de trabajo de código abierto que te permite conectar aplicaciones y servicios mediante una interfaz visual intuitiva.
+
+# Footer
+footer_text=n8n Automation Platform Module v2.0.0
+footer_copyright=© 2025 Virtualmin Pro Team

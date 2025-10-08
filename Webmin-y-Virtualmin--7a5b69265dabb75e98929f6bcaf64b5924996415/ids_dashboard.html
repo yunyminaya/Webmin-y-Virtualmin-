@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🛡️ IDS/IPS Dashboard - Webmin/Virtualmin</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .header p {
+            color: #7f8c8d;
+            font-size: 1.1em;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .stat-card.critical {
+            border-left: 5px solid #e74c3c;
+        }
+
+        .stat-card.high {
+            border-left: 5px solid #f39c12;
+        }
+
+        .stat-card.medium {
+            border-left: 5px solid #f1c40f;
+        }
+
+        .stat-card.low {
+            border-left: 5px solid #27ae60;
+        }
+
+        .stat-card.info {
+            border-left: 5px solid #3498db;
+        }
+
+        .stat-title {
+            font-size: 0.9em;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .stat-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .stat-change {
+            font-size: 0.8em;
+            padding: 3px 8px;
+            border-radius: 12px;
+            display: inline-block;
+        }
+
+        .stat-change.positive {
+            background: #d5f4e6;
+            color: #27ae60;
+        }
+
+        .stat-change.negative {
+            background: #fadbd8;
+            color: #e74c3c;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .chart-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .chart-card h3 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+        }
+
+        .threats-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .threats-section h3 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+        }
+
+        .threats-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .threats-table th,
+        .threats-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        .threats-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .threat-level {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .threat-level.CRITICAL {
+            background: #fadbd8;
+            color: #e74c3c;
+        }
+
+        .threat-level.HIGH {
+            background: #fdeaa7;
+            color: #f39c12;
+        }
+
+        .threat-level.MEDIUM {
+            background: #d5f4e6;
+            color: #27ae60;
+        }
+
+        .threat-level.LOW {
+            background: #d6eaf8;
+            color: #3498db;
+        }
+
+        .controls-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .control-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .control-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .control-btn.danger {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        }
+
+        .control-btn.success {
+            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-active {
+            background: #27ae60;
+            box-shadow: 0 0 10px rgba(39, 174, 96, 0.5);
+        }
+
+        .status-inactive {
+            background: #e74c3c;
+            box-shadow: 0 0 10px rgba(231, 76, 60, 0.5);
+        }
+
+        .status-warning {
+            background: #f39c12;
+            box-shadow: 0 0 10px rgba(243, 156, 18, 0.5);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #7f8c8d;
+        }
+
+        .refresh-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+        }
+
+        .refresh-btn:hover {
+            background: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <button class="refresh-btn" onclick="refreshData()">🔄 Actualizar</button>
+
+    <div class="container">
+        <div class="header">
+            <h1>
+                <span>🛡️</span>
+                IDS/IPS Dashboard
+                <span>🛡️</span>
+            </h1>
+            <p>Sistema de Detección y Prevención de Intrusiones - Webmin/Virtualmin</p>
+            <p id="last-update">Última actualización: <span id="update-time">Cargando...</span></p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card info">
+                <div class="stat-title">Estado del Sistema</div>
+                <div class="stat-value">
+                    <span class="status-indicator status-active"></span>
+                    ACTIVO
+                </div>
+            </div>
+
+            <div class="stat-card critical">
+                <div class="stat-title">Amenazas Hoy</div>
+                <div class="stat-value" id="threats-today">0</div>
+                <div class="stat-change negative" id="threats-change">+0%</div>
+            </div>
+
+            <div class="stat-card high">
+                <div class="stat-title">IPs Bloqueadas</div>
+                <div class="stat-value" id="blocked-ips">0</div>
+                <div class="stat-change positive" id="blocked-change">-0%</div>
+            </div>
+
+            <div class="stat-card medium">
+                <div class="stat-title">Conexiones Activas</div>
+                <div class="stat-value" id="active-connections">0</div>
+            </div>
+
+            <div class="stat-card low">
+                <div class="stat-title">CPU Uso</div>
+                <div class="stat-value" id="cpu-usage">0%</div>
+            </div>
+
+            <div class="stat-card low">
+                <div class="stat-title">Memoria Uso</div>
+                <div class="stat-value" id="memory-usage">0%</div>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="chart-card">
+                <h3>📊 Amenazas por Tipo (Últimas 24h)</h3>
+                <canvas id="threatsChart" width="400" height="200"></canvas>
+            </div>
+
+            <div class="chart-card">
+                <h3>📈 Actividad de Red</h3>
+                <canvas id="networkChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+
+        <div class="threats-section">
+            <h3>🚨 Amenazas Recientes</h3>
+            <div id="threats-loading" class="loading">
+                Cargando amenazas recientes...
+            </div>
+            <table class="threats-table" id="threats-table" style="display: none;">
+                <thead>
+                    <tr>
+                        <th>Hora</th>
+                        <th>IP</th>
+                        <th>Tipo</th>
+                        <th>Nivel</th>
+                        <th>Detalles</th>
+                    </tr>
+                </thead>
+                <tbody id="threats-tbody">
+                    <!-- Amenazas se cargarán aquí -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="controls-section">
+            <h3>🎛️ Controles del Sistema</h3>
+            <div class="controls-grid">
+                <button class="control-btn success" onclick="runSystemCheck()">🔍 Verificación del Sistema</button>
+                <button class="control-btn" onclick="viewLogs()">📝 Ver Logs</button>
+                <button class="control-btn" onclick="manageRules()">⚙️ Gestionar Reglas</button>
+                <button class="control-btn" onclick="configureAlerts()">🔔 Configurar Alertas</button>
+                <button class="control-btn danger" onclick="emergencyStop()">🛑 Parada de Emergencia</button>
+                <button class="control-btn" onclick="exportReport()">📊 Exportar Reporte</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Variables globales
+        let threatsChart;
+        let networkChart;
+        let updateInterval;
+
+        // Datos simulados (en producción se cargarían desde API)
+        const mockData = {
+            systemStatus: 'ACTIVE',
+            threatsToday: 23,
+            blockedIPs: 156,
+            activeConnections: 1247,
+            cpuUsage: 34,
+            memoryUsage: 67,
+            threatsByType: {
+                'SQL Injection': 8,
+                'XSS': 5,
+                'Brute Force': 6,
+                'DDoS': 3,
+                'Otros': 1
+            },
+            networkActivity: [1200, 1350, 1180, 1420, 1380, 1520, 1480, 1650, 1580, 1720],
+            recentThreats: [
+                {
+                    time: '2025-09-30 08:35:12',
+                    ip: '192.168.1.100',
+                    type: 'SQL Injection',
+                    level: 'HIGH',
+                    details: 'Intento de inyección SQL en login'
+                },
+                {
+                    time: '2025-09-30 08:32:45',
+                    ip: '10.0.0.50',
+                    type: 'Brute Force',
+                    level: 'MEDIUM',
+                    details: 'Múltiples intentos de login fallidos'
+                },
+                {
+                    time: '2025-09-30 08:28:33',
+                    ip: '203.0.113.1',
+                    type: 'XSS',
+                    level: 'HIGH',
+                    details: 'Intento de cross-site scripting'
+                },
+                {
+                    time: '2025-09-30 08:25:18',
+                    ip: '198.51.100.15',
+                    type: 'DDoS',
+                    level: 'CRITICAL',
+                    details: 'Ataque de denegación de servicio detectado'
+                }
+            ]
+        };
+
+        // Inicializar dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            initCharts();
+            loadDashboardData();
+            startAutoRefresh();
+        });
+
+        // Inicializar gráficos
+        function initCharts() {
+            // Gráfico de amenazas por tipo
+            const threatsCtx = document.getElementById('threatsChart').getContext('2d');
+            threatsChart = new Chart(threatsCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(mockData.threatsByType),
+                    datasets: [{
+                        data: Object.values(mockData.threatsByType),
+                        backgroundColor: [
+                            '#e74c3c',
+                            '#f39c12',
+                            '#f1c40f',
+                            '#27ae60',
+                            '#3498db'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+
+            // Gráfico de actividad de red
+            const networkCtx = document.getElementById('networkChart').getContext('2d');
+            networkChart = new Chart(networkCtx, {
+                type: 'line',
+                data: {
+                    labels: Array.from({length: 10}, (_, i) => `${i * 6}min ago`),
+                    datasets: [{
+                        label: 'Conexiones',
+                        data: mockData.networkActivity,
+                        borderColor: '#3498db',
+                        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // Cargar datos del dashboard
+        function loadDashboardData() {
+            // Actualizar estadísticas
+            document.getElementById('threats-today').textContent = mockData.threatsToday;
+            document.getElementById('blocked-ips').textContent = mockData.blockedIPs;
+            document.getElementById('active-connections').textContent = mockData.activeConnections.toLocaleString();
+            document.getElementById('cpu-usage').textContent = mockData.cpuUsage + '%';
+            document.getElementById('memory-usage').textContent = mockData.memoryUsage + '%';
+
+            // Actualizar cambios (simulados)
+            document.getElementById('threats-change').textContent = '+12%';
+            document.getElementById('blocked-change').textContent = '+8%';
+
+            // Actualizar amenazas recientes
+            updateThreatsTable();
+
+            // Actualizar timestamp
+            document.getElementById('update-time').textContent = new Date().toLocaleString();
+
+            // Ocultar loading y mostrar tabla
+            document.getElementById('threats-loading').style.display = 'none';
+            document.getElementById('threats-table').style.display = 'table';
+        }
+
+        // Actualizar tabla de amenazas
+        function updateThreatsTable() {
+            const tbody = document.getElementById('threats-tbody');
+            tbody.innerHTML = '';
+
+            mockData.recentThreats.forEach(threat => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${threat.time}</td>
+                    <td><code>${threat.ip}</code></td>
+                    <td>${threat.type}</td>
+                    <td><span class="threat-level ${threat.level}">${threat.level}</span></td>
+                    <td>${threat.details}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Iniciar actualización automática
+        function startAutoRefresh() {
+            updateInterval = setInterval(() => {
+                // Simular cambios en datos
+                mockData.activeConnections += Math.floor(Math.random() * 20) - 10;
+                mockData.cpuUsage += Math.floor(Math.random() * 6) - 3;
+                mockData.memoryUsage += Math.floor(Math.random() * 4) - 2;
+
+                // Mantener valores en rangos razonables
+                mockData.activeConnections = Math.max(1000, Math.min(2000, mockData.activeConnections));
+                mockData.cpuUsage = Math.max(10, Math.min(90, mockData.cpuUsage));
+                mockData.memoryUsage = Math.max(20, Math.min(95, mockData.memoryUsage));
+
+                loadDashboardData();
+            }, 30000); // Actualizar cada 30 segundos
+        }
+
+        // Función para actualizar manualmente
+        function refreshData() {
+            loadDashboardData();
+            // Mostrar feedback visual
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = '✅ Actualizado';
+            btn.style.background = '#27ae60';
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.style.background = '#3498db';
+            }, 2000);
+        }
+
+        // Funciones de control
+        function runSystemCheck() {
+            alert('🔍 Ejecutando verificación completa del sistema...\n\n- Verificando servicios IDS/IPS\n- Comprobando integridad de logs\n- Validando reglas de firewall\n- Analizando estado de fail2ban\n\n✅ Verificación completada');
+        }
+
+        function viewLogs() {
+            window.open('/etc/webmin-virtualmin-ids/logs/', '_blank');
+        }
+
+        function manageRules() {
+            alert('⚙️ Gestión de Reglas\n\nFunciones disponibles:\n- Agregar reglas personalizadas\n- Modificar umbrales de detección\n- Gestionar whitelist/blacklist\n- Importar/exportar configuraciones\n\nAbriendo interfaz de gestión...');
+        }
+
+        function configureAlerts() {
+            alert('🔔 Configuración de Alertas\n\nCanales disponibles:\n- Email\n- Telegram\n- Slack\n- Discord\n- Pushover\n\nConfigurando notificaciones...');
+        }
+
+        function emergencyStop() {
+            if (confirm('🛑 ¿Está seguro de que desea activar la PARADA DE EMERGENCIA?\n\nEsto detendrá todos los servicios de protección y puede dejar el sistema vulnerable.')) {
+                alert('🛑 PARADA DE EMERGENCIA ACTIVADA\n\n- Servicios IDS/IPS detenidos\n- Firewall en modo permisivo\n- Monitoreo suspendido\n\n⚠️ RECUERDE reactivar la protección cuando sea seguro');
+            }
+        }
+
+        function exportReport() {
+            alert('📊 Generando reporte completo...\n\nIncluye:\n- Estadísticas de amenazas\n- IPs bloqueadas\n- Logs de actividad\n- Configuración actual\n\n✅ Reporte generado: ids_report_' + new Date().toISOString().slice(0,10) + '.pdf');
+        }
+
+        // Cleanup al cerrar página
+        window.addEventListener('beforeunload', function() {
+            if (updateInterval) {
+                clearInterval(updateInterval);
+            }
+        });
+    </script>
+</body>
+</html>

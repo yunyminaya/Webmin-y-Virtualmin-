@@ -1,0 +1,12 @@
+n8n_port=5678
+n8n_domain=
+n8n_database_type=sqlite
+n8n_enable_ssl=1
+n8n_ssl_email=
+n8n_admin_user=admin
+n8n_admin_password=
+n8n_data_dir=/var/lib/n8n
+n8n_config_dir=/etc/n8n
+n8n_backup_dir=/var/backups/n8n
+n8n_log_level=info
+n8n_max_instances=10

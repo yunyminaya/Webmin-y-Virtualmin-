@@ -53,8 +53,21 @@ migrate_from_plesk() {
 }
 
 # Función principal
-case "${1:-help}" in
-    "cpanel") migrate_from_cpanel ;;
-    "plesk") migrate_from_plesk ;;
-    *) echo "Uso: $0 [cpanel|plesk|directadmin|webmin]" ;;
+MIGRATION_TYPE="${1:-help}"
+case "$MIGRATION_TYPE" in
+    "cpanel"|"plesk"|"directadmin"|"webmin")
+        # Validar que el tipo de migración sea seguro (solo letras minúsculas)
+        if [[ "$MIGRATION_TYPE" =~ ^[a-z]+$ ]]; then
+            case "$MIGRATION_TYPE" in
+                "cpanel") migrate_from_cpanel ;;
+                "plesk") migrate_from_plesk ;;
+            esac
+        else
+            echo "❌ Error: Tipo de migración inválido"
+            exit 1
+        fi
+        ;;
+    "help"|*)
+        echo "Uso: $0 [cpanel|plesk|directadmin|webmin]"
+        ;;
 esac

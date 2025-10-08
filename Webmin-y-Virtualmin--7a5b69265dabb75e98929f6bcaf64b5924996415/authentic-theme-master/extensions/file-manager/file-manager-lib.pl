@@ -7,7 +7,7 @@ use strict;
 
 use lib ($ENV{'LIBROOT'} . "/vendor_perl");
 
-do($ENV{'THEME_ROOT'} . "/authentic-funcs.pl");
+do($root_directory/$current_theme . "/authentic-funcs.pl");
 
 use Cwd 'abs_path';
 use Encode qw(decode encode);

@@ -6,7 +6,7 @@
 use strict;
 use warnings;
 
-require("$ENV{'THEME_ROOT'}/login-lib-funcs.pl");
+require("$root_directory/$current_theme/login-lib-funcs.pl");
 
 our (%gconfig, $config_directory, $pragma_no_cache, $current_theme);
 our ($miniserv, $webprefix, $bg, $textbox_attrs, $hostname);

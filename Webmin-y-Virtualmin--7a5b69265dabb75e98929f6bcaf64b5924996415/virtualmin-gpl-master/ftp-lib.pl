@@ -299,7 +299,7 @@ if (!&has_command("curl")) {
 	if ($error) { $$error = $msg; return }
 	else { &error($error); }
 	}
-my $cmd = "curl --ftp-ssl-control -k";
+my $cmd = "curl --ftp-ssl-control";
 if ($user) {
 	$cmd .= " -u ".quotemeta($user).":".quotemeta($pass);
 	}

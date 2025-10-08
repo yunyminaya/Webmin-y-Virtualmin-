@@ -53,7 +53,7 @@ sub get_request_uri
 
 sub get_libs
 {
-    do($ENV{'THEME_ROOT'} . "/authentic-funcs.pl");
+    do($root_directory/$current_theme . "/authentic-funcs.pl");
     do(get_env('document_root') . '/' . get_module() . '/' . get_module() . '-lib.pl');
 
     ReadParse();
@@ -77,7 +77,9 @@ sub encode_guess
     my $encoding;
 
     if (!$encoding) {
-        eval "use Encode::Detect::Detector;";
+        if ("Encode::Detect::Detector" =~ /^[a-zA-Z0-9_:]+$/) {
+            eval "use Encode::Detect::Detector;";
+        }
         if (!$@) {
             $encoding = Encode::Detect::Detector::detect($str);
         }

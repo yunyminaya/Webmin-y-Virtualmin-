@@ -71,16 +71,22 @@ install_base_dependencies() {
         apt-get install -y --no-install-recommends \
             wget curl unzip software-properties-common ca-certificates \
             gnupg2 apt-transport-https lsb-release jq net-tools \
-            htop iotop sysstat nload iftop
+            htop iotop sysstat nload iftop sqlite3 python3 python3-pip \
+            mailutils ssmtp curl jq bc rrdtool librrd-dev
     elif command -v yum &> /dev/null; then
         yum update -y
         yum install -y wget curl unzip epel-release jq net-tools \
-            htop iotop sysstat nload iftop
+            htop iotop sysstat nload iftop sqlite python3 python3-pip \
+            mailx sendmail curl jq bc rrdtool rrdtool-devel
     elif command -v dnf &> /dev/null; then
         dnf update -y
         dnf install -y wget curl unzip jq net-tools \
-            htop iotop sysstat nload iftop
+            htop iotop sysstat nload iftop sqlite python3 python3-pip \
+            mailx sendmail curl jq bc rrdtool rrdtool-devel
     fi
+
+    # Instalar dependencias Python para monitoreo avanzado
+    pip3 install --quiet requests numpy pandas scikit-learn matplotlib
 
     log_success "Dependencias básicas instaladas"
 }

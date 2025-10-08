@@ -28,7 +28,7 @@ sub xhr
         if ($subtype eq "theme") {
             # List theme hotkeys
             if ($action eq "list-hotkeys") {
-                do("$ENV{'THEME_ROOT'}/tconfig-lib.pl");
+                do("$root_directory/$current_theme/tconfig-lib.pl");
                 my @hotkeys_labels =
                   ($theme_text{'settings_right_hotkey_options'}, $theme_text{'settings_right_hotkey_custom_options'});
                 my $settings_data       = theme_settings_data();
@@ -151,7 +151,7 @@ sub xhr
 
         # Returns requested navigation
         if ($action eq 'get') {
-            require("$ENV{'THEME_ROOT'}/navigation-lib.pl");
+            require("$root_directory/$current_theme/navigation-lib.pl");
             my ($tab, $page) = nav_detector();
             if ($subtype eq 'cloudmin') {
                 $data{'menu'} = nav_cloudmin_menu($page);
@@ -168,7 +168,7 @@ sub xhr
     # Check if action is allowed
     if ($type eq 'can') {
         if ($action eq 'view_dom') {
-            require("$ENV{'THEME_ROOT'}/navigation-lib.pl");
+            require("$root_directory/$current_theme/navigation-lib.pl");
             $data{$action} = nav_virtualmin_domain_available($in{'dom'}, 'id');
         }
     }

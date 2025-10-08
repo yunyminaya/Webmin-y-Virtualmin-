@@ -74,7 +74,7 @@ intelligent_log() {
 
 # Función para verificar conectividad con GitHub
 check_github_connectivity() {
-    if ! curl -s --connect-timeout 10 "$GITHUB_API_URL" >/dev/null; then
+    if ! curl -s --ssl-reqd --connect-timeout 10 --max-time 30 --retry 3 --retry-delay 2 --user-agent "Intelligent-Auto-Update/1.0" "$GITHUB_API_URL" >/dev/null; then
         intelligent_log "CRITICAL" "GITHUB" "No hay conectividad con GitHub"
         return 1
     fi
@@ -85,11 +85,11 @@ check_github_connectivity() {
 # Función para obtener información de la última versión de GitHub
 get_latest_version_info() {
     local api_response
-    api_response=$(curl -s "$GITHUB_API_URL/releases/latest" 2>/dev/null)
+    api_response=$(curl -s --ssl-reqd --connect-timeout 10 --max-time 30 --retry 3 --retry-delay 2 --user-agent "Intelligent-Auto-Update/1.0" "$GITHUB_API_URL/releases/latest" 2>/dev/null)
 
     if [[ -z "$api_response" ]] || echo "$api_response" | grep -q "Not Found"; then
         # Si no hay releases, obtener info del último commit
-        api_response=$(curl -s "$GITHUB_API_URL/commits/main" 2>/dev/null)
+        api_response=$(curl -s --ssl-reqd --connect-timeout 10 --max-time 30 --retry 3 --retry-delay 2 --user-agent "Intelligent-Auto-Update/1.0" "$GITHUB_API_URL/commits/main" 2>/dev/null)
         if [[ -z "$api_response" ]]; then
             intelligent_log "CRITICAL" "VERSION" "No se puede obtener información de versión de GitHub"
             return 1
@@ -214,7 +214,7 @@ download_and_install_update() {
         mkdir -p "$(dirname "$local_path")"
 
         # Descargar archivo
-        if curl -s "$remote_url" -o "$local_path" 2>/dev/null; then
+        if curl -s --ssl-reqd --connect-timeout 10 --max-time 30 --retry 3 --retry-delay 2 --user-agent "Intelligent-Auto-Update/1.0" "$remote_url" -o "$local_path" 2>/dev/null; then
             intelligent_log "SUCCESS" "DOWNLOAD" "Archivo descargado: $file"
         else
             intelligent_log "WARNING" "DOWNLOAD" "Error descargando: $file"

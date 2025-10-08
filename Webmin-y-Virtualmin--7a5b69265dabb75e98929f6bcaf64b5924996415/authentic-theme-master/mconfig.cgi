@@ -21,7 +21,7 @@ our (%text,
      %theme_text,
      %theme_config);
 
-require("$ENV{'THEME_ROOT'}/authentic-lib.pl");
+require("$root_directory/$current_theme/authentic-lib.pl");
 require("$root_directory/config-lib.pl");
 
 my (%module_info, %info, %newconfig, @info_order, @sections, $idx, $sname, $section, $module, $module_dir,

@@ -1,0 +1,6 @@
+enabled=1
+ml_model_path=/etc/webmin/intelligent-firewall/models/anomaly_model.pkl
+traffic_log_path=/var/log/intelligent-firewall/traffic.log
+block_threshold=0.8
+learning_interval=24
+iptables_chain=INTELLIGENT_FIREWALL

@@ -11,7 +11,7 @@ use lib ($ENV{'LIBROOT'} . "/vendor_perl");
 
 our (%in);
 
-do($ENV{'THEME_ROOT'} . "/extensions/mail/mail-lib.pl");
+do($root_directory/$current_theme . "/extensions/mail/mail-lib.pl");
 
 my %temporary;
 my @folders_data = mailbox::list_folders_sorted();

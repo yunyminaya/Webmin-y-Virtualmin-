@@ -7,7 +7,7 @@
 #
 use strict;
 
-require($ENV{'THEME_ROOT'} . "/stats-lib.pl");
+require($root_directory/$current_theme . "/stats-lib.pl");
 our ($config_directory, $current_theme, $root_directory, $var_directory,
      $base_remote_user, %stats_text);
 
@@ -24,9 +24,15 @@ my @modnames = ("Digest::SHA", "Digest::MD5", "IO::Select",
                 "Time::HiRes", "Net::WebSocket::Server");
 
 foreach my $modname (@modnames) {
-    eval "use ${modname};";
-    if ($@) {
-        push(@errors, $@, $modname);
+    if ($modname =~ /^[a-zA-Z0-9_:]+$/) {
+        eval "use ${modname};";
+        if ($@) {
+            push(@errors, $@, $modname);
+            push(@errors, stats_text('index_mods_missing', $modname));
+            last;
+        }
+    } else {
+        push(@errors, "Invalid module name", $modname);
         push(@errors, stats_text('index_mods_missing', $modname));
         last;
     }

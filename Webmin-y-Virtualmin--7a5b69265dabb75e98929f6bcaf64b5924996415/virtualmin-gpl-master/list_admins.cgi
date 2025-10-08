@@ -2,11 +2,15 @@
 # Show all extra admins for a virtual server
 
 require './virtual-server-lib.pl';
+require './rbac-lib.pl';
+require './audit-lib.pl';
 &ReadParse();
 $d = &get_domain($in{'dom'});
 $d || &error($text{'edit_egone'});
 &can_edit_domain($d) || &error($text{'edit_ecannot'});
 &can_edit_admins($d) || &error($text{'admins_ecannot'});
+&check_permission('virtualmin', 'read') || &error($text{'rbac_denied'});
+&log_action($remote_user, 'view', 'admins', "Viewed admins for domain $in{'dom'}");
 
 &ui_print_header(&domain_in($d), $text{'admins_title'}, "");
 

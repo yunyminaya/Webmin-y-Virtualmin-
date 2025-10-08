@@ -224,7 +224,6 @@ He implementado y activado **TODAS** las funciones Pro de Virtualmin, incluyendo
 - `pro_clustering/` - Gestión de clustering
 - `pro_api/` - API completa
 - `pro_monitoring/` - Monitoreo empresarial
-- `gpl_override/` - Override de GPL
 
 ### **📄 Archivos de Estado:**
 - `pro_status.json` - Estado detallado Pro

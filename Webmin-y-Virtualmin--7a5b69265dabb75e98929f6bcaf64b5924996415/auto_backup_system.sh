@@ -14,6 +14,40 @@ LOG_FILE="$SCRIPT_DIR/backup.log"
 CONFIG_FILE="$SCRIPT_DIR/backup_config.conf"
 CRON_FILE="$SCRIPT_DIR/enterprise_backup.cron"
 
+# Funciones de validación de seguridad
+validate_action() {
+    local action=$1
+    case "$action" in
+        setup|daily|weekly|monthly|cleanup|verify|status)
+            return 0
+            ;;
+        *)
+            log_error "Acción no válida: $action"
+            return 1
+            ;;
+    esac
+}
+
+validate_file_path() {
+    local path=$1
+    # Verificar que sea path absoluto y no contenga .. o caracteres peligrosos
+    if [[ ! "$path" =~ ^/[^/]*$|^(/[a-zA-Z0-9._-]+)+$ ]] || [[ "$path" == *..* ]] || [[ "$path" == *[\;\|\&\`\$]* ]]; then
+        log_error "Path no válido o peligroso: $path"
+        return 1
+    fi
+    return 0
+}
+
+validate_db_name() {
+    local db_name=$1
+    # Solo permitir alfanuméricos, guiones bajos y guiones
+    if [[ ! "$db_name" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+        log_error "Nombre de base de datos no válido: $db_name"
+        return 1
+    fi
+    return 0
+}
+
 # Funciones de logging
 log_info() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] $*" | tee -a "$LOG_FILE"
@@ -160,6 +194,14 @@ backup_files() {
     local source_dir=$2
     local dest_file=$3
 
+    # Validar paths
+    if ! validate_file_path "$source_dir"; then
+        return 1
+    fi
+    if ! validate_file_path "$dest_file"; then
+        return 1
+    fi
+
     log_backup "Iniciando backup de archivos: $source_dir -> $dest_file"
 
     # Crear archivo tar con compresión
@@ -184,10 +226,17 @@ backup_database() {
     local db_name=$1
     local dest_file=$2
 
+    # Validar nombre de DB
+    if ! validate_db_name "$db_name"; then
+        return 1
+    fi
+
     log_backup "Iniciando backup de base de datos: $db_name"
 
     if command -v mysqldump &> /dev/null; then
-        if mysqldump --single-transaction --routines --triggers "$db_name" > "$dest_file" 2>/dev/null; then
+        # Sanitizar db_name para prevenir inyección
+        local safe_db_name=$(printf '%q' "$db_name")
+        if mysqldump --single-transaction --routines --triggers "$safe_db_name" > "$dest_file" 2>/dev/null; then
             log_success "Backup de base de datos completado: $db_name"
             return 0
         else
@@ -306,7 +355,7 @@ setup_cron_jobs() {
 0 5 * * * root $SCRIPT_DIR/auto_backup_system.sh cleanup
 EOF
 
-    chmod 644 "$CRON_FILE"
+    chmod 600 "$CRON_FILE"
 
     # Recargar cron
     if command -v systemctl &> /dev/null; then
@@ -354,6 +403,12 @@ verify_backups() {
 # Función principal
 main() {
     local action=${1:-"setup"}
+
+    # Validar acción
+    if ! validate_action "$action"; then
+        echo "Uso: $0 {setup|daily|weekly|monthly|cleanup|verify|status}"
+        exit 1
+    fi
 
     echo "=========================================="
     echo "  SISTEMA DE BACKUPS AUTOMÁTICOS"
