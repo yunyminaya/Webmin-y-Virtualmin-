@@ -1,8 +1,19 @@
 # 🚀 CHANGELOG - NUEVAS FUNCIONES PRO IMPLEMENTADAS
 
-## 📅 Fecha de actualización: 2025-01-18
+## 📅 Fecha de actualización: 2025-10-15
 
 ### 🎉 **FUNCIONES PRO COMPLETAMENTE IMPLEMENTADAS**
+
+#### 🚇 **0. SISTEMA DE TÚNEL AUTOMÁTICO 24/7 (NUEVO)**
+- ✅ Detección automática de IPs privadas vs públicas
+- ✅ Túneles SSH reverse automáticos cuando es necesario
+- ✅ **Modo Autónomo**: Funciona con localtunnel, serveo y ngrok sin configuración
+- ✅ Monitoreo 24/7 con detección de fallos < 10 segundos
+- ✅ Sistema de respaldo avanzado con rotación automática de conexiones
+- ✅ Dashboard web en tiempo real y API JSON
+- ✅ Alertas configurables por email, webhook y notificaciones del sistema
+- ✅ Recuperación automática de servicios y configuraciones críticas
+- **Archivos:** `auto_tunnel_system.sh`, `install_auto_tunnel_system.sh`, `AUTO_TUNNEL_SYSTEM_GUIDE.md`
 
 #### 💼 **1. CUENTAS DE REVENDEDOR ILIMITADAS**
 - ✅ Sistema completo de gestión de revendedores
