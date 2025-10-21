@@ -1,0 +1,1535 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Seguridad - Virtualmin Enterprise</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --light-color: #ecf0f1;
+            --dark-color: #34495e;
+            --sidebar-width: 250px;
+            --header-height: 60px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fa;
+            color: var(--dark-color);
+            line-height: 1.6;
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--primary-color);
+            color: white;
+            position: fixed;
+            height: 100%;
+            overflow-y: auto;
+            z-index: 1000;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-header h3 {
+            margin: 0;
+            font-size: 18px;
+        }
+
+        .sidebar-menu {
+            padding: 0;
+            list-style: none;
+        }
+
+        .sidebar-menu li {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-menu a {
+            display: block;
+            padding: 15px 20px;
+            color: white;
+            text-decoration: none;
+            transition: background-color 0.3s ease;
+        }
+
+        .sidebar-menu a:hover,
+        .sidebar-menu a.active {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-menu i {
+            width: 20px;
+            margin-right: 10px;
+            text-align: center;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: 20px;
+        }
+
+        /* Header */
+        .header {
+            background-color: white;
+            padding: 15px 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            color: var(--primary-color);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-primary {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+
+        .btn-success {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background-color: #229954;
+        }
+
+        .btn-warning {
+            background-color: var(--warning-color);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background-color: #e67e22;
+        }
+
+        .btn-danger {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+
+        /* Cards */
+        .card {
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 15px 20px;
+            background-color: var(--light-color);
+            border-bottom: 1px solid #ddd;
+            font-weight: bold;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        /* Grid */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .grid-2 {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .grid-3 {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        /* Status Indicators */
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+
+        .status-active {
+            background-color: var(--success-color);
+        }
+
+        .status-warning {
+            background-color: var(--warning-color);
+        }
+
+        .status-inactive {
+            background-color: var(--danger-color);
+        }
+
+        /* Progress Bar */
+        .progress {
+            height: 20px;
+            background-color: var(--light-color);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background-color: var(--secondary-color);
+            transition: width 0.3s ease;
+        }
+
+        /* Tables */
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        .table th,
+        .table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .table th {
+            background-color: var(--light-color);
+            font-weight: bold;
+        }
+
+        .table tr:hover {
+            background-color: #f9f9f9;
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        /* Toggle Switch */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: var(--success-color);
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: border-color 0.3s ease;
+        }
+
+        .tab.active {
+            border-bottom-color: var(--secondary-color);
+            color: var(--secondary-color);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Alerts */
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+
+        .alert-danger {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 5px;
+            width: 80%;
+            max-width: 500px;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .modal-close {
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .grid-2,
+            .grid-3 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Mobile Menu Toggle */
+        .mobile-menu-toggle {
+            display: none;
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 1001;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 10px;
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            .mobile-menu-toggle {
+                display: block;
+            }
+
+            .main-content {
+                margin-top: 60px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h3><i class="fas fa-shield-alt"></i> Seguridad</h3>
+            </div>
+            <ul class="sidebar-menu">
+                <li><a href="#" class="active" data-tab="overview"><i class="fas fa-tachometer-alt"></i> Resumen</a></li>
+                <li><a href="#" data-tab="waf"><i class="fas fa-firewall"></i> WAF</a></li>
+                <li><a href="#" data-tab="ids-ips"><i class="fas fa-shield-alt"></i> IDS/IPS</a></li>
+                <li><a href="#" data-tab="mfa"><i class="fas fa-mobile-alt"></i> Autenticación MFA</a></li>
+                <li><a href="#" data-tab="firewall"><i class="fas fa-network-wired"></i> Firewall</a></li>
+                <li><a href="#" data-tab="ssl"><i class="fas fa-lock"></i> Certificados SSL</a></li>
+                <li><a href="#" data-tab="logs"><i class="fas fa-file-alt"></i> Logs</a></li>
+                <li><a href="#" data-tab="alerts"><i class="fas fa-bell"></i> Alertas</a></li>
+                <li><a href="#" data-tab="settings"><i class="fas fa-cog"></i> Configuración</a></li>
+            </ul>
+        </div>
+
+        <!-- Mobile Menu Toggle -->
+        <button class="mobile-menu-toggle" id="mobile-menu-toggle">
+            <i class="fas fa-bars"></i>
+        </button>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Header -->
+            <div class="header">
+                <h1>Dashboard de Seguridad</h1>
+                <div class="header-actions">
+                    <button class="btn btn-primary" id="refresh-btn">
+                        <i class="fas fa-sync-alt"></i> Actualizar
+                    </button>
+                    <button class="btn btn-success" id="scan-btn">
+                        <i class="fas fa-search"></i> Escanear
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tab Content -->
+            <div id="overview" class="tab-content active">
+                <div class="grid grid-3">
+                    <div class="card">
+                        <div class="card-header">Estado de Seguridad</div>
+                        <div class="card-body">
+                            <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                                <span class="status-indicator status-active"></span>
+                                <span style="font-size: 18px; font-weight: bold;">Protegido</span>
+                            </div>
+                            <p>Todos los sistemas de seguridad están activos y funcionando correctamente.</p>
+                            <div class="progress">
+                                <div class="progress-bar" style="width: 95%;"></div>
+                            </div>
+                            <p style="font-size: 12px;">95% de protección activa</p>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">Amenazas Bloqueadas</div>
+                        <div class="card-body">
+                            <div style="font-size: 36px; font-weight: bold; text-align: center; margin-bottom: 15px;">1,247</div>
+                            <p style="text-align: center;">En las últimas 24 horas</p>
+                            <div style="display: flex; justify-content: space-between; margin-top: 15px;">
+                                <div style="text-align: center;">
+                                    <div style="font-size: 18px; font-weight: bold;">847</div>
+                                    <div style="font-size: 12px;">WAF</div>
+                                </div>
+                                <div style="text-align: center;">
+                                    <div style="font-size: 18px; font-weight: bold;">320</div>
+                                    <div style="font-size: 12px;">IDS/IPS</div>
+                                </div>
+                                <div style="text-align: center;">
+                                    <div style="font-size: 18px; font-weight: bold;">80</div>
+                                    <div style="font-size: 12px;">Firewall</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">Vulnerabilidades</div>
+                        <div class="card-body">
+                            <div style="font-size: 36px; font-weight: bold; text-align: center; margin-bottom: 15px;">3</div>
+                            <p style="text-align: center;">Vulnerabilidades detectadas</p>
+                            <div class="alert alert-warning">
+                                <strong>Advertencia:</strong> Se han detectado 3 vulnerabilidades de criticidad media que requieren atención.
+                            </div>
+                            <button class="btn btn-warning" style="width: 100%;">Ver Detalles</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">Actividad Reciente</div>
+                        <div class="card-body">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Tiempo</th>
+                                        <th>Tipo</th>
+                                        <th>Origen</th>
+                                        <th>Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>10:45</td>
+                                        <td>WAF</td>
+                                        <td>192.168.1.100</td>
+                                        <td>Bloqueado</td>
+                                    </tr>
+                                    <tr>
+                                        <td>10:32</td>
+                                        <td>IDS</td>
+                                        <td>10.0.0.15</td>
+                                        <td>Alerta</td>
+                                    </tr>
+                                    <tr>
+                                        <td>10:15</td>
+                                        <td>Firewall</td>
+                                        <td>203.0.113.45</td>
+                                        <td>Bloqueado</td>
+                                    </tr>
+                                    <tr>
+                                        <td>09:58</td>
+                                        <td>MFA</td>
+                                        <td>admin</td>
+                                        <td>Inicio de sesión</td>
+                                    </tr>
+                                    <tr>
+                                        <td>09:42</td>
+                                        <td>WAF</td>
+                                        <td>198.51.100.22</td>
+                                        <td>Bloqueado</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">Estado de Componentes</div>
+                        <div class="card-body">
+                            <div style="margin-bottom: 15px;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                    <span>WAF (ModSecurity)</span>
+                                    <span><span class="status-indicator status-active"></span> Activo</span>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar" style="width: 100%;"></div>
+                                </div>
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                    <span>IDS/IPS (Fail2Ban)</span>
+                                    <span><span class="status-indicator status-active"></span> Activo</span>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar" style="width: 100%;"></div>
+                                </div>
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                    <span>MFA (Google Authenticator)</span>
+                                    <span><span class="status-indicator status-active"></span> Activo</span>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar" style="width: 100%;"></div>
+                                </div>
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                    <span>Firewall (iptables)</span>
+                                    <span><span class="status-indicator status-active"></span> Activo</span>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar" style="width: 100%;"></div>
+                                </div>
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                    <span>SSL/TLS</span>
+                                    <span><span class="status-indicator status-warning"></span> Expirando</span>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar" style="width: 75%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="waf" class="tab-content">
+                <div class="card">
+                    <div class="card-header">Configuración de WAF</div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label class="form-label">Estado de WAF</label>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="waf-status" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Modo de Operación</label>
+                            <select class="form-select" id="waf-mode">
+                                <option value="detection">Detección</option>
+                                <option value="prevention" selected>Prevención</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Nivel de Paranoia</label>
+                            <select class="form-select" id="waf-paranoia">
+                                <option value="1">1 (Bajo)</option>
+                                <option value="2" selected>2 (Medio)</option>
+                                <option value="3">3 (Alto)</option>
+                                <option value="4">4 (Muy Alto)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Reglas Personalizadas</label>
+                            <textarea class="form-control" id="waf-rules" rows="5" placeholder="Ingrese reglas personalizadas de WAF"></textarea>
+                        </div>
+                        <button class="btn btn-primary" id="save-waf-config">Guardar Configuración</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">Estadísticas de WAF</div>
+                    <div class="card-body">
+                        <div class="grid grid-3">
+                            <div style="text-align: center;">
+                                <div style="font-size: 24px; font-weight: bold;">847</div>
+                                <div>Solicitudes Bloqueadas</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="font-size: 24px; font-weight: bold;">23</div>
+                                <div>Reglas Activadas</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="font-size: 24px; font-weight: bold;">99.8%</div>
+                                <div>Tasa de Detección</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">Reglas de WAF</div>
+                    <div class="card-body">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nombre</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>1000001</td>
+                                    <td>Detección de Inyección SQL</td>
+                                    <td><span class="status-indicator status-active"></span> Activo</td>
+                                    <td>
+                                        <button class="btn btn-warning" style="padding: 5px 10px; font-size: 12px;">Editar</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>1000002</td>
+                                    <td>Detección de XSS</td>
+                                    <td><span class="status-indicator status-active"></span> Activo</td>
+                                    <td>
+                                        <button class="btn btn-warning" style="padding: 5px 10px; font-size: 12px;">Editar</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>1000003</td>
+                                    <td>Detección de RCE</td>
+                                    <td><span class="status-indicator status-active"></span> Activo</td>
+                                    <td>
+                                        <button class="btn btn-warning" style="padding: 5px 10px; font-size: 12px;">Editar</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>1000004</td>
+                                    <td>Protección contra LFI</td>
+                                    <td><span class="status-indicator status-active"></span> Activo</td>
+                                    <td>
+                                        <button class="btn btn-warning" style="padding: 5px 10px; font-size: 12px;">Editar</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>1000005</td>
+                                    <td>Protección contra RFI</td>
+                                    <td><span class="status-indicator status-active"></span> Activo</td>
+                                    <td>
+                                        <button class="btn btn-warning" style="padding: 5px 10px; font-size: 12px;">Editar</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="ids-ips" class="tab-content">
+                <div class="card">
+                    <div class="card-header">Configuración de IDS/IPS</div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label class="form-label">Estado de IDS/IPS</label>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="ids-status" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Tiempo de Baneo (segundos)</label>
+                            <input type="number" class="form-control" id="ban-time" value="3600">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Intentos Máximos</label>
+                            <input type="number" class="form-control" id="max-attempts" value="3">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Ventana de Tiempo (segundos)</label>
+                            <input type="number" class="form-control" id="find-time" value="600">
+                        </div>
+                        <button class="btn btn-primary" id="save-ids-config">Guardar Configuración</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">Cárceles Activas</div>
+                    <div class="card-body">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>IPs Baneadas</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>webmin-auth</td>
+                                    <td>15</td>
+                                    <td><span class="status-indicator status-active"></span> Activo</td>
+                                    <td>
+                                        <button class="btn btn-warning" style="padding: 5px 10px; font-size: 12px;">Ver</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>ssh-auth</td>
+                                    <td>8</td>
+                                    <td><span class="status-indicator status-active"></span> Activo</td>
+                                    <td>
+                                        <button class="btn btn-warning" style="padding: 5px 10px; font-size: 12px;">Ver</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>apache-auth</td>
+                                    <td>12</td>
+                                    <td><span class="status-indicator status-active"></span> Activo</td>
+                                    <td>
+                                        <button class="btn btn-warning" style="padding: 5px 10px; font-size: 12px;">Ver</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">IPs Baneadas</div>
+                    <div class="card-body">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>IP</th>
+                                    <th>Cárcel</th>
+                                    <th>Tiempo Restante</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>192.168.1.100</td>
+                                    <td>webmin-auth</td>
+                                    <td>1h 23m</td>
+                                    <td>
+                                        <button class="btn btn-danger" style="padding: 5px 10px; font-size: 12px;">Desbanear</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>10.0.0.15</td>
+                                    <td>ssh-auth</td>
+                                    <td>2h 45m</td>
+                                    <td>
+                                        <button class="btn btn-danger" style="padding: 5px 10px; font-size: 12px;">Desbanear</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>203.0.113.45</td>
+                                    <td>apache-auth</td>
+                                    <td>45m</td>
+                                    <td>
+                                        <button class="btn btn-danger" style="padding: 5px 10px; font-size: 12px;">Desbanear</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="mfa" class="tab-content">
+                <div class="card">
+                    <div class="card-header">Configuración de MFA</div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label class="form-label">Estado de MFA</label>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="mfa-status" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Método de MFA</label>
+                            <select class="form-select" id="mfa-method">
+                                <option value="google-authenticator" selected>Google Authenticator</option>
+                                <option value="duo">Duo</option>
+                                <option value="email">Email</option>
+                                <option value="sms">SMS</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Exigir MFA para</label>
+                            <div style="margin-bottom: 10px;">
+                                <label>
+                                    <input type="checkbox" id="mfa-webmin" checked> Webmin
+                                </label>
+                            </div>
+                            <div style="margin-bottom: 10px;">
+                                <label>
+                                    <input type="checkbox" id="mfa-ssh" checked> SSH
+                                </label>
+                            </div>
+                            <div style="margin-bottom: 10px;">
+                                <label>
+                                    <input type="checkbox" id="mfa-sudo"> Sudo
+                                </label>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" id="save-mfa-config">Guardar Configuración</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">Usuarios con MFA</div>
+                    <div class="card-body">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Usuario</th>
+                                    <th>Método</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>admin</td>
+                                    <td>Google Authenticator</td>
+                                    <td><span class="status-indicator status-active"></span> Activo</td>
+                                    <td>
+                                        <button class="btn btn-warning" style="padding: 5px 10px; font-size: 12px;">Resetear</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>user1</td>
+                                    <td>Google Authenticator</td>
+                                    <td><span class="status-indicator status-active"></span> Activo</td>
+                                    <td>
+                                        <button class="btn btn-warning" style="padding: 5px 10px; font-size: 12px;">Resetear</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>user2</td>
+                                    <td>Duo</td>
+                                    <td><span class="status-indicator status-active"></span> Activo</td>
+                                    <td>
+                                        <button class="btn btn-warning" style="padding: 5px 10px; font-size: 12px;">Resetear</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">Configurar MFA para Usuario</div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label class="form-label">Seleccionar Usuario</label>
+                            <select class="form-select" id="mfa-user">
+                                <option value="">Seleccionar usuario...</option>
+                                <option value="admin">admin</option>
+                                <option value="user1">user1</option>
+                                <option value="user2">user2</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-success" id="setup-mfa-user">Configurar MFA</button>
+                        <div id="mfa-qr-code" style="margin-top: 20px; text-align: center; display: none;">
+                            <p>Escanee este código QR con su aplicación de autenticación:</p>
+                            <div style="width: 200px; height: 200px; background-color: #f0f0f0; margin: 0 auto; display: flex; align-items: center; justify-content: center;">
+                                <i class="fas fa-qrcode" style="font-size: 100px; color: #ccc;"></i>
+                            </div>
+                            <p style="margin-top: 10px;">O ingrese este código manualmente:</p>
+                            <div style="font-family: monospace; font-size: 18px; font-weight: bold; background-color: #f0f0f0; padding: 10px; border-radius: 4px; display: inline-block;">
+                                ABC123DEF456
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="firewall" class="tab-content">
+                <div class="card">
+                    <div class="card-header">Configuración de Firewall</div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label class="form-label">Política Predeterminada</label>
+                            <select class="form-select" id="firewall-policy">
+                                <option value="accept" selected>Aceptar</option>
+                                <option value="drop">Descartar</option>
+                                <option value="reject">Rechazar</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Reglas de Firewall</label>
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Acción</th>
+                                        <th>Protocolo</th>
+                                        <th>Puerto</th>
+                                        <th>Origen</th>
+                                        <th>Destino</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Aceptar</td>
+                                        <td>TCP</td>
+                                        <td>22</td>
+                                        <td>0.0.0.0/0</td>
+                                        <td>0.0.0.0/0</td>
+                                        <td><span class="status-indicator status-active"></span> Activo</td>
+                                        <td>
+                                            <button class="btn btn-warning" style="padding: 5px 10px; font-size: 12px;">Editar</button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Aceptar</td>
+                                        <td>TCP</td>
+                                        <td>80</td>
+                                        <td>0.0.0.0/0</td>
+                                        <td>0.0.0.0/0</td>
+                                        <td><span class="status-indicator status-active"></span> Activo</td>
+                                        <td>
+                                            <button class="btn btn-warning" style="padding: 5px 10px; font-size: 12px;">Editar</button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Aceptar</td>
+                                        <td>TCP</td>
+                                        <td>443</td>
+                                        <td>0.0.0.0/0</td>
+                                        <td>0.0.0.0/0</td>
+                                        <td><span class="status-indicator status-active"></span> Activo</td>
+                                        <td>
+                                            <button class="btn btn-warning" style="padding: 5px 10px; font-size: 12px;">Editar</button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Aceptar</td>
+                                        <td>TCP</td>
+                                        <td>10000</td>
+                                        <td>0.0.0.0/0</td>
+                                        <td>0.0.0.0/0</td>
+                                        <td><span class="status-indicator status-active"></span> Activo</td>
+                                        <td>
+                                            <button class="btn btn-warning" style="padding: 5px 10px; font-size: 12px;">Editar</button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <button class="btn btn-primary" id="add-firewall-rule">Añadir Regla</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">Estadísticas de Firewall</div>
+                    <div class="card-body">
+                        <div class="grid grid-3">
+                            <div style="text-align: center;">
+                                <div style="font-size: 24px; font-weight: bold;">80</div>
+                                <div>Conexiones Permitidas</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="font-size: 24px; font-weight: bold;">15</div>
+                                <div>Conexiones Bloqueadas</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="font-size: 24px; font-weight: bold;">4</div>
+                                <div>Reglas Activas</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="ssl" class="tab-content">
+                <div class="card">
+                    <div class="card-header">Certificados SSL</div>
+                    <div class="card-body">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Dominio</th>
+                                    <th>Emisor</th>
+                                    <th>Fecha de Expiración</th>
+                                    <th>Días Restantes</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>virtualmin-enterprise.com</td>
+                                    <td>Let's Encrypt</td>
+                                    <td>2023-12-15</td>
+                                    <td>30</td>
+                                    <td><span class="status-indicator status-warning"></span> Expirando</td>
+                                    <td>
+                                        <button class="btn btn-primary" style="padding: 5px 10px; font-size: 12px;">Renovar</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>www.virtualmin-enterprise.com</td>
+                                    <td>Let's Encrypt</td>
+                                    <td>2023-12-15</td>
+                                    <td>30</td>
+                                    <td><span class="status-indicator status-warning"></span> Expirando</td>
+                                    <td>
+                                        <button class="btn btn-primary" style="padding: 5px 10px; font-size: 12px;">Renovar</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>mail.virtualmin-enterprise.com</td>
+                                    <td>Let's Encrypt</td>
+                                    <td>2024-02-28</td>
+                                    <td>105</td>
+                                    <td><span class="status-indicator status-active"></span> Válido</td>
+                                    <td>
+                                        <button class="btn btn-warning" style="padding: 5px 10px; font-size: 12px;">Ver</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">Configuración SSL</div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label class="form-label">Auto-renovación de Certificados</label>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="ssl-auto-renew" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Días antes de la expiración para renovar</label>
+                            <input type="number" class="form-control" id="ssl-renew-days" value="30">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Proveedor de Certificados</label>
+                            <select class="form-select" id="ssl-provider">
+                                <option value="letsencrypt" selected>Let's Encrypt</option>
+                                <option value="comodo">Comodo</option>
+                                <option value="godaddy">GoDaddy</option>
+                                <option value="custom">Personalizado</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary" id="save-ssl-config">Guardar Configuración</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="logs" class="tab-content">
+                <div class="card">
+                    <div class="card-header">Logs de Seguridad</div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label class="form-label">Tipo de Log</label>
+                            <select class="form-select" id="log-type">
+                                <option value="waf">WAF</option>
+                                <option value="ids-ips">IDS/IPS</option>
+                                <option value="firewall">Firewall</option>
+                                <option value="mfa">MFA</option>
+                                <option value="ssl">SSL</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Nivel de Log</label>
+                            <select class="form-select" id="log-level">
+                                <option value="error">Error</option>
+                                <option value="warning">Advertencia</option>
+                                <option value="info" selected>Información</option>
+                                <option value="debug">Depuración</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Líneas a Mostrar</label>
+                            <select class="form-select" id="log-lines">
+                                <option value="50">50</option>
+                                <option value="100" selected>100</option>
+                                <option value="200">200</option>
+                                <option value="500">500</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary" id="refresh-logs">Actualizar Logs</button>
+                        <div style="margin-top: 20px;">
+                            <div style="background-color: #f8f9fa; border: 1px solid #ddd; border-radius: 5px; padding: 15px; font-family: monospace; white-space: pre-wrap; max-height: 400px; overflow-y: auto;">
+[2023-11-15 10:45:23] [WAF] [INFO] [client 192.168.1.100] ModSecurity: Access denied with code 403 (phase 2). Matched phrase "SELECT * FROM users" at REQUEST_BODY. [file "/etc/modsecurity/activated_rules/modsecurity_crs_41_sql_injection_attacks.conf"] [line "123"] [id "981172"] [rev "2"] [msg "SQL Injection Attack Detected"] [data "Matched Data: SELECT * FROM users found within REQUEST_BODY: username=admin&password=' OR '1'='1"] [hostname "virtualmin-enterprise.com"] [uri "/session_login.cgi"] [unique_id "Vabcdef123456789"]
+[2023-11-15 10:45:23] [WAF] [INFO] [client 192.168.1.100] ModSecurity: Warning. Matched phrase "script" at REQUEST_HEADERS:User-Agent. [file "/etc/modsecurity/activated_rules/modsecurity_crs_41_xss_attacks.conf"] [line "456"] [id "981176"] [rev "2"] [msg "XSS Attack Detected"] [data "Matched Data: script found within REQUEST_HEADERS:User-Agent: Mozilla/5.0 (compatible; script/1.0)"] [hostname "virtualmin-enterprise.com"] [uri "/"] [unique_id "Vabcdef123456790"]
+[2023-11-15 10:45:24] [IDS/IPS] [INFO] Ban 192.168.1.100 (webmin-auth) - 2023-11-15 10:45:24
+[2023-11-15 10:45:24] [IDS/IPS] [INFO] Found 192.168.1.100 in /var/log/virtualmin/miniserv.log. Ban for 3600 seconds
+[2023-11-15 10:45:24] [IDS/IPS] [INFO] Ban 192.168.1.100 (webmin-auth) - 2023-11-15 10:45:24
+[2023-11-15 10:45:24] [IDS/IPS] [INFO] Found 192.168.1.100 in /var/log/virtualmin/miniserv.log. Ban for 3600 seconds
+[2023-11-15 10:45:24] [IDS/IPS] [INFO] Ban 192.168.1.100 (webmin-auth) - 2023-11-15 10:45:24
+[2023-11-15 10:45:24] [IDS/IPS] [INFO] Found 192.168.1.100 in /var/log/virtualmin/miniserv.log. Ban for 3600 seconds
+[2023-11-15 10:45:24] [IDS/IPS] [INFO] Ban 192.168.1.100 (webmin-auth) - 2023-11-15 10:45:24
+[2023-11-15 10:45:24] [IDS/IPS] [INFO] Found 192.168.1.100 in /var/log/virtualmin/miniserv.log. Ban for 3600 seconds
+[2023-11-15 10:45:24] [IDS/IPS] [INFO] Ban 192.168.1.100 (webmin-auth) - 2023-11-15 10:45:24
+[2023-11-15 10:45:24] [IDS/IPS] [INFO] Found 192.168.1.100 in /var/log/virtualmin/miniserv.log. Ban for 3600 seconds
+[2023-11-15 10:45:24] [IDS/IPS] [INFO] Ban 192.168.1.100 (webmin-auth) - 2023-11-15 10:45:24
+[2023-11-15 10:45:24] [IDS/IPS] [INFO] Found 192.168.1.100 in /var/log/virtualmin/miniserv.log. Ban for 3600 seconds
+[2023-11-15 10:45:24] [IDS/IPS] [INFO] Ban 192.168.1.100 (webmin-auth) - 2023-11-15 10:45:24
+[2023-11-15 10:45:24] [IDS/IPS] [INFO] Found 192.168.1.100 in /var/log/virtualmin/miniserv.log. Ban for 3600 seconds
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="alerts" class="tab-content">
+                <div class="card">
+                    <div class="card-header">Alertas de Seguridad</div>
+                    <div class="card-body">
+                        <div class="alert alert-danger">
+                            <strong>Crítico:</strong> Se ha detectado un intento de inyección SQL desde la IP 192.168.1.100.
+                        </div>
+                        <div class="alert alert-warning">
+                            <strong>Advertencia:</strong> El certificado SSL para virtualmin-enterprise.com expirará en 30 días.
+                        </div>
+                        <div class="alert alert-warning">
+                            <strong>Advertencia:</strong> Se ha detectado un aumento inusual en el tráfico de red.
+                        </div>
+                        <div class="alert alert-success">
+                            <strong>Informativo:</strong> El sistema de seguridad se ha actualizado correctamente.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">Configuración de Alertas</div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label class="form-label">Alertas por Email</label>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="email-alerts" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Email de Destino</label>
+                            <input type="email" class="form-control" id="alert-email" value="admin@virtualmin-enterprise.com">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Nivel de Alerta</label>
+                            <select class="form-select" id="alert-level">
+                                <option value="critical">Crítico</option>
+                                <option value="warning">Advertencia</option>
+                                <option value="info" selected>Información</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Alertas por Slack</label>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="slack-alerts">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Webhook de Slack</label>
+                            <input type="text" class="form-control" id="slack-webhook" placeholder="https://hooks.slack.com/services/...">
+                        </div>
+                        <button class="btn btn-primary" id="save-alert-config">Guardar Configuración</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="settings" class="tab-content">
+                <div class="card">
+                    <div class="card-header">Configuración General</div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label class="form-label">Modo de Operación</label>
+                            <select class="form-select" id="operation-mode">
+                                <option value="monitoring" selected>Monitoreo</option>
+                                <option value="active">Activo</option>
+                                <option value="learning">Aprendizaje</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Nivel de Sensibilidad</label>
+                            <select class="form-select" id="sensitivity-level">
+                                <option value="low">Bajo</option>
+                                <option value="medium" selected>Medio</option>
+                                <option value="high">Alto</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Intervalo de Escaneo (minutos)</label>
+                            <input type="number" class="form-control" id="scan-interval" value="60">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Retención de Logs (días)</label>
+                            <input type="number" class="form-control" id="log-retention" value="30">
+                        </div>
+                        <button class="btn btn-primary" id="save-general-config">Guardar Configuración</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">Configuración de Copias de Seguridad</div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label class="form-label">Copias de Seguridad de Configuración</label>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="backup-config" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Frecuencia de Copia de Seguridad</label>
+                            <select class="form-select" id="backup-frequency">
+                                <option value="daily" selected>Diaria</option>
+                                <option value="weekly">Semanal</option>
+                                <option value="monthly">Mensual</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Ubicación de Copia de Seguridad</label>
+                            <input type="text" class="form-control" id="backup-location" value="/opt/virtualmin/security/backups">
+                        </div>
+                        <button class="btn btn-primary" id="save-backup-config">Guardar Configuración</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 id="modal-title">Modal Title</h4>
+                <span class="modal-close" id="modal-close">&times;</span>
+            </div>
+            <div class="modal-body" id="modal-body">
+                Modal content goes here.
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="modal-save">Guardar</button>
+                <button class="btn btn-secondary" id="modal-cancel">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tab functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const tabs = document.querySelectorAll('.sidebar-menu a');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Remove active class from all tabs and tab contents
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tabContents.forEach(tc => tc.classList.remove('active'));
+                    
+                    // Add active class to clicked tab and corresponding tab content
+                    this.classList.add('active');
+                    const tabId = this.getAttribute('data-tab');
+                    document.getElementById(tabId).classList.add('active');
+                });
+            });
+            
+            // Mobile menu toggle
+            const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
+            const sidebar = document.getElementById('sidebar');
+            
+            mobileMenuToggle.addEventListener('click', function() {
+                sidebar.classList.toggle('active');
+            });
+            
+            // Modal functionality
+            const modal = document.getElementById('modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalBody = document.getElementById('modal-body');
+            const modalClose = document.getElementById('modal-close');
+            const modalSave = document.getElementById('modal-save');
+            const modalCancel = document.getElementById('modal-cancel');
+            
+            function openModal(title, content) {
+                modalTitle.textContent = title;
+                modalBody.innerHTML = content;
+                modal.style.display = 'block';
+            }
+            
+            function closeModal() {
+                modal.style.display = 'none';
+            }
+            
+            modalClose.addEventListener('click', closeModal);
+            modalCancel.addEventListener('click', closeModal);
+            
+            window.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    closeModal();
+                }
+            });
+            
+            // Button functionality
+            document.getElementById('refresh-btn').addEventListener('click', function() {
+                // Implement refresh functionality
+                alert('Dashboard actualizado');
+            });
+            
+            document.getElementById('scan-btn').addEventListener('click', function() {
+                // Implement scan functionality
+                alert('Escaneo de seguridad iniciado');
+            });
+            
+            // Save configuration buttons
+            document.getElementById('save-waf-config').addEventListener('click', function() {
+                // Implement save WAF configuration
+                alert('Configuración de WAF guardada');
+            });
+            
+            document.getElementById('save-ids-config').addEventListener('click', function() {
+                // Implement save IDS/IPS configuration
+                alert('Configuración de IDS/IPS guardada');
+            });
+            
+            document.getElementById('save-mfa-config').addEventListener('click', function() {
+                // Implement save MFA configuration
+                alert('Configuración de MFA guardada');
+            });
+            
+            document.getElementById('save-ssl-config').addEventListener('click', function() {
+                // Implement save SSL configuration
+                alert('Configuración de SSL guardada');
+            });
+            
+            document.getElementById('save-alert-config').addEventListener('click', function() {
+                // Implement save alert configuration
+                alert('Configuración de alertas guardada');
+            });
+            
+            document.getElementById('save-general-config').addEventListener('click', function() {
+                // Implement save general configuration
+                alert('Configuración general guardada');
+            });
+            
+            document.getElementById('save-backup-config').addEventListener('click', function() {
+                // Implement save backup configuration
+                alert('Configuración de copias de seguridad guardada');
+            });
+            
+            // Add firewall rule button
+            document.getElementById('add-firewall-rule').addEventListener('click', function() {
+                const content = `
+                    <div class="form-group">
+                        <label class="form-label">Acción</label>
+                        <select class="form-select">
+                            <option value="accept">Aceptar</option>
+                            <option value="drop">Descartar</option>
+                            <option value="reject">Rechazar</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Protocolo</label>
+                        <select class="form-select">
+                            <option value="tcp">TCP</option>
+                            <option value="udp">UDP</option>
+                            <option value="icmp">ICMP</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Puerto</label>
+                        <input type="number" class="form-control" placeholder="Ingrese el puerto">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Origen</label>
+                        <input type="text" class="form-control" placeholder="Ingrese la dirección de origen">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Destino</label>
+                        <input type="text" class="form-control" placeholder="Ingrese la dirección de destino">
+                    </div>
+                `;
+                openModal('Añadir Regla de Firewall', content);
+            });
+            
+            // Setup MFA user button
+            document.getElementById('setup-mfa-user').addEventListener('click', function() {
+                const userSelect = document.getElementById('mfa-user');
+                const selectedUser = userSelect.value;
+                
+                if (selectedUser) {
+                    // Show QR code
+                    document.getElementById('mfa-qr-code').style.display = 'block';
+                    
+                    // In a real implementation, you would generate a QR code here
+                    // For now, we'll just show a placeholder
+                } else {
+                    alert('Por favor, seleccione un usuario');
+                }
+            });
+            
+            // Refresh logs button
+            document.getElementById('refresh-logs').addEventListener('click', function() {
+                // Implement refresh logs functionality
+                alert('Logs actualizados');
+            });
+            
+            // Modal save button
+            modalSave.addEventListener('click', function() {
+                // Implement modal save functionality based on context
+                alert('Configuración guardada');
+                closeModal();
+            });
+        });
+    </script>
+</body>
+</html>

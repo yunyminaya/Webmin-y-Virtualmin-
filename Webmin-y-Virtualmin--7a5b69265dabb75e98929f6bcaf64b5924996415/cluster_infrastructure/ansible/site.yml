@@ -1,0 +1,368 @@
+---
+# Playbook principal para el despliegue de Virtualmin Enterprise
+# Este playbook orquesta la configuración completa del sistema con todas sus funcionalidades
+
+- name: Deploy Virtualmin Enterprise - Infrastructure Setup
+  hosts: all
+  become: true
+  gather_facts: true
+  vars_files:
+    - group_vars/all.yml
+  
+  pre_tasks:
+    - name: Display deployment information
+      debug:
+        msg:
+          - "============================================"
+          - "  Virtualmin Enterprise Deployment"
+          - "  Environment: {{ environment }}"
+          - "  Region: {{ region }}"
+          - "  Project: {{ project_name }}"
+          - "============================================"
+    
+    - name: Update package cache
+      package:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+    
+    - name: Update package cache
+      yum:
+        name: '*'
+        state: latest
+        update_cache: yes
+      when: ansible_os_family == "RedHat"
+    
+    - name: Install required packages
+      package:
+        name:
+          - curl
+          - wget
+          - unzip
+          - git
+          - python3
+          - python3-pip
+          - software-properties-common
+          - apt-transport-https
+          - ca-certificates
+          - gnupg
+          - lsb-release
+        state: present
+      when: ansible_os_family == "Debian"
+    
+    - name: Install required packages
+      package:
+        name:
+          - curl
+          - wget
+          - unzip
+          - git
+          - python3
+          - python3-pip
+        state: present
+      when: ansible_os_family == "RedHat"
+    
+    - name: Create directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0755'
+      loop:
+        - /opt/virtualmin-enterprise
+        - /opt/virtualmin-enterprise/scripts
+        - /opt/virtualmin-enterprise/configs
+        - /opt/virtualmin-enterprise/logs
+        - /opt/virtualmin-enterprise/backups
+        - /var/log/virtualmin-enterprise
+
+- name: Deploy Virtualmin Enterprise - Web Servers
+  hosts: web_servers
+  become: true
+  vars_files:
+    - group_vars/all.yml
+  roles:
+    - role: virtualmin_install
+      tags: [virtualmin, web]
+    
+    - role: ssl_configuration
+      tags: [ssl, security]
+    
+    - role: web_security_hardening
+      tags: [security, hardening]
+    
+    - role: performance_optimization
+      tags: [performance, web]
+
+- name: Deploy Virtualmin Enterprise - Database Servers
+  hosts: database_servers
+  become: true
+  vars_files:
+    - group_vars/all.yml
+  roles:
+    - role: database_install
+      tags: [database, mysql]
+    
+    - role: database_security
+      tags: [database, security]
+    
+    - role: database_backup
+      tags: [database, backup]
+      when: enable_backup | default(false)
+
+- name: Deploy Virtualmin Enterprise - Monitoring Servers
+  hosts: monitoring_servers
+  become: true
+  vars_files:
+    - group_vars/all.yml
+  roles:
+    - role: prometheus_install
+      tags: [monitoring, prometheus]
+    
+    - role: grafana_install
+      tags: [monitoring, grafana]
+    
+    - role: alertmanager_install
+      tags: [monitoring, alerting]
+      when: enable_monitoring | default(true)
+
+- name: Deploy Virtualmin Enterprise - Security Systems
+  hosts: all
+  become: true
+  vars_files:
+    - group_vars/all.yml
+  roles:
+    - role: firewall_configuration
+      tags: [security, firewall]
+    
+    - role: ids_ips_install
+      tags: [security, ids]
+    
+    - role: siem_agent
+      tags: [security, siem]
+    
+    - role: zero_trust_config
+      tags: [security, zerotrust]
+      when: enable_security_hardening | default(true)
+
+- name: Deploy Virtualmin Enterprise - Auto Recovery and Scaling
+  hosts: all
+  become: true
+  vars_files:
+    - group_vars/all.yml
+  roles:
+    - role: auto_recovery_setup
+      tags: [automation, recovery]
+    
+    - role: auto_scaling_setup
+      tags: [automation, scaling]
+    
+    - role: health_monitoring
+      tags: [monitoring, health]
+
+- name: Deploy Virtualmin Enterprise - Backup Systems
+  hosts: all
+  become: true
+  vars_files:
+    - group_vars/all.yml
+  roles:
+    - role: backup_system
+      tags: [backup, storage]
+      when: enable_backup | default(false)
+    
+    - role: disaster_recovery
+      tags: [backup, dr]
+      when: enable_backup | default(false)
+
+- name: Deploy Virtualmin Enterprise - Optimization Systems
+  hosts: all
+  become: true
+  vars_files:
+    - group_vars/all.yml
+  roles:
+    - role: ai_optimization
+      tags: [optimization, ai]
+    
+    - role: cost_monitoring
+      tags: [optimization, cost]
+    
+    - role: resource_optimization
+      tags: [optimization, resources]
+
+- name: Deploy Virtualmin Enterprise - Documentation and Support
+  hosts: all
+  become: true
+  vars_files:
+    - group_vars/all.yml
+  roles:
+    - role: documentation_setup
+      tags: [documentation, support]
+    
+    - role: diagnostic_tools
+      tags: [support, diagnostics]
+
+- name: Finalize Virtualmin Enterprise Deployment
+  hosts: all
+  become: true
+  vars_files:
+    - group_vars/all.yml
+  
+  tasks:
+    - name: Create deployment status file
+      copy:
+        content: |
+          {
+            "deployment": {
+              "status": "completed",
+              "timestamp": "{{ ansible_date_time.iso8601 }}",
+              "version": "3.0.0",
+              "environment": "{{ environment }}",
+              "region": "{{ region }}",
+              "project": "{{ project_name }}",
+              "components": {
+                "virtualmin": "installed",
+                "web_security": "configured",
+                "monitoring": "{{ 'enabled' if enable_monitoring | default(true) else 'disabled' }}",
+                "backup": "{{ 'enabled' if enable_backup | default(false) else 'disabled' }}",
+                "auto_recovery": "configured",
+                "auto_scaling": "configured"
+              }
+            }
+          }
+        dest: /opt/virtualmin-enterprise/deployment_status.json
+        mode: '0644'
+    
+    - name: Create health check script
+      copy:
+        content: |
+          #!/bin/bash
+          # Health check script for Virtualmin Enterprise
+          
+          set -e
+          
+          # Colors
+          RED='\033[0;31m'
+          GREEN='\033[0;32m'
+          YELLOW='\033[1;33m'
+          NC='\033[0m' # No Color
+          
+          # Function to check service status
+          check_service() {
+              local service=$1
+              if systemctl is-active --quiet "$service"; then
+                  echo -e "${GREEN}✓ $service is running${NC}"
+                  return 0
+              else
+                  echo -e "${RED}✗ $service is not running${NC}"
+                  return 1
+              fi
+          }
+          
+          # Function to check port
+          check_port() {
+              local port=$1
+              local service=$2
+              if netstat -tuln | grep -q ":$port "; then
+                  echo -e "${GREEN}✓ $service (port $port) is listening${NC}"
+                  return 0
+              else
+                  echo -e "${RED}✗ $service (port $port) is not listening${NC}"
+                  return 1
+              fi
+          }
+          
+          echo -e "${YELLOW}Virtualmin Enterprise Health Check${NC}"
+          echo "============================================"
+          
+          # Check critical services
+          services=("virtualmin" "webmin" "nginx" "mysql")
+          for service in "${services[@]}"; do
+              check_service "$service"
+          done
+          
+          echo ""
+          echo "Port Checks:"
+          # Check critical ports
+          check_port 80 "HTTP"
+          check_port 443 "HTTPS"
+          check_port 10000 "Webmin/Virtualmin"
+          
+          echo ""
+          echo "Resource Usage:"
+          # Check disk usage
+          echo "Disk Usage:"
+          df -h | grep -E "(/$|/opt|/var)"
+          
+          echo ""
+          echo "Memory Usage:"
+          free -h
+          
+          echo ""
+          echo "CPU Usage:"
+          top -bn1 | grep "Cpu(s)" | awk '{print $2}' | awk -F'%' '{print "CPU: " $1 "% used"}'
+          
+          echo ""
+          echo "Deployment Status:"
+          if [ -f /opt/virtualmin-enterprise/deployment_status.json ]; then
+              python3 -c "
+          import json
+          with open('/opt/virtualmin-enterprise/deployment_status.json', 'r') as f:
+              data = json.load(f)
+          print(f\"Status: {data['deployment']['status']}\")
+          print(f\"Timestamp: {data['deployment']['timestamp']}\")
+          print(f\"Version: {data['deployment']['version']}\")
+          print(f\"Environment: {data['deployment']['environment']}\")
+          "
+          else
+              echo -e "${RED}✗ Deployment status file not found${NC}"
+          fi
+          
+          echo ""
+          echo "============================================"
+        dest: /opt/virtualmin-enterprise/scripts/health_check.sh
+        mode: '0755'
+    
+    - name: Create cron job for health checks
+      cron:
+        name: "Virtualmin Enterprise Health Check"
+        minute: "*/15"
+        job: "/opt/virtualmin-enterprise/scripts/health_check.sh >> /var/log/virtualmin-enterprise/health_check.log 2>&1"
+        state: present
+    
+    - name: Create system service for health monitoring
+      copy:
+        content: |
+          [Unit]
+          Description=Virtualmin Enterprise Health Monitor
+          After=network.target
+
+          [Service]
+          Type=oneshot
+          ExecStart=/opt/virtualmin-enterprise/scripts/health_check.sh
+          User=root
+
+          [Install]
+          WantedBy=multi-user.target
+        dest: /etc/systemd/system/virtualmin-health-monitor.service
+        mode: '0644'
+    
+    - name: Enable and start health monitor service
+      systemd:
+        name: virtualmin-health-monitor
+        daemon_reload: yes
+        enabled: yes
+        state: started
+    
+    - name: Display deployment completion message
+      debug:
+        msg:
+          - "============================================"
+          - "  Virtualmin Enterprise Deployment Complete!"
+          - "  Environment: {{ environment }}"
+          - "  Version: 3.0.0"
+          - "  Timestamp: {{ ansible_date_time.iso8601 }}"
+          - "============================================"
+          - "  Access Information:"
+          - "  - Webmin/Virtualmin: https://{{ ansible_default_ipv4.address }}:10000"
+          - "  - Grafana: https://{{ ansible_default_ipv4.address }}:3000"
+          - "  - Health Check: /opt/virtualmin-enterprise/scripts/health_check.sh"
+          - "============================================"

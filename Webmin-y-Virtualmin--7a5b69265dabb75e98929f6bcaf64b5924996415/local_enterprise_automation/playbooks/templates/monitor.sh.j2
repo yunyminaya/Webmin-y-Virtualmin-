@@ -1,0 +1,376 @@
+#!/bin/bash
+
+# Script de monitoreo básico para Virtualmin Enterprise
+# Este script verifica el estado de los servicios y recursos del sistema
+
+LOG_FILE="{{ log_file }}"
+ALERT_THRESHOLD_CPU=80
+ALERT_THRESHOLD_MEMORY=80
+ALERT_THRESHOLD_DISK=80
+ALERT_THRESHOLD_LOAD=2.0
+
+# Función para registrar mensajes
+log_message() {
+    local message=$1
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $message" >> "$LOG_FILE"
+}
+
+# Función para enviar alerta
+send_alert() {
+    local subject=$1
+    local message=$2
+    
+    # Enviar alerta al log
+    log_message "ALERTA: $subject - $message"
+    
+    # Aquí se puede agregar código para enviar alertas por email, Telegram, etc.
+    # Por ejemplo, para enviar por email:
+    # echo "$message" | mail -s "$subject" admin@example.com
+    
+    # O para enviar por Telegram (necesita configurar bot):
+    # curl -s -X POST "https://api.telegram.org/bot<TOKEN>/sendMessage" -d "chat_id=<CHAT_ID>&text=$message"
+}
+
+# Función para verificar servicios
+check_services() {
+    log_message "Verificando estado de los servicios"
+    
+    # Lista de servicios a verificar
+    local services=("nginx" "apache2" "mysql" "postgresql" "redis-server" "memcached" "prometheus" "grafana-server" "docker")
+    
+    # Para RHEL/CentOS, usar nombres de servicio diferentes
+    if [ -f /etc/redhat-release ]; then
+        services=("nginx" "httpd" "mariadb" "postgresql" "redis" "memcached" "prometheus" "grafana-server" "docker")
+    fi
+    
+    local failed_services=()
+    
+    # Verificar cada servicio
+    for service in "${services[@]}"; do
+        if systemctl is-active --quiet "$service"; then
+            log_message "✓ $service está activo"
+        else
+            log_message "✗ $service está inactivo"
+            failed_services+=("$service")
+            
+            # Intentar reiniciar el servicio
+            log_message "Intentando reiniciar $service"
+            systemctl restart "$service" >> "$LOG_FILE" 2>&1
+            
+            # Verificar si el reinicio fue exitoso
+            if systemctl is-active --quiet "$service"; then
+                log_message "✓ $service reiniciado exitosamente"
+            else
+                log_message "✗ $service sigue inactivo después del reinicio"
+                send_alert "Servicio inactivo" "El servicio $service está inactivo y no se pudo reiniciar"
+            fi
+        fi
+    done
+    
+    # Verificar acceso a Webmin
+    if curl -s -k https://localhost:10000/ > /dev/null; then
+        log_message "✓ Webmin es accesible"
+    else
+        log_message "✗ Webmin no es accesible"
+        send_alert "Webmin no accesible" "Webmin no es accesible en https://$(hostname -I | awk '{print $1}'):10000"
+        
+        # Intentar reiniciar Webmin
+        systemctl restart webmin >> "$LOG_FILE" 2>&1
+    fi
+    
+    # Verificar acceso a Virtualmin
+    if curl -s -k https://localhost:10000/virtualmin/ > /dev/null; then
+        log_message "✓ Virtualmin es accesible"
+    else
+        log_message "✗ Virtualmin no es accesible"
+        send_alert "Virtualmin no accesible" "Virtualmin no es accesible en https://$(hostname -I | awk '{print $1}'):10000/virtualmin/"
+    fi
+}
+
+# Función para verificar uso de CPU
+check_cpu_usage() {
+    log_message "Verificando uso de CPU"
+    
+    # Obtener uso de CPU (promedio de los últimos 5 minutos)
+    local cpu_usage=$(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | cut -d'%' -f1)
+    
+    # Eliminar caracteres adicionales y convertir a número
+    cpu_usage=${cpu_usage//,/.}
+    
+    # Verificar si supera el umbral
+    if (( $(echo "$cpu_usage > $ALERT_THRESHOLD_CPU" | bc -l) )); then
+        log_message "⚠ Uso de CPU alto: $cpu_usage%"
+        send_alert "Uso de CPU alto" "El uso de CPU es del $cpu_usage%, superando el umbral de $ALERT_THRESHOLD_CPU%"
+        
+        # Obtener los procesos que más consumen CPU
+        log_message "Procesos con mayor consumo de CPU:"
+        ps aux --sort=-%cpu | head -10 >> "$LOG_FILE"
+    else
+        log_message "✓ Uso de CPU normal: $cpu_usage%"
+    fi
+}
+
+# Función para verificar uso de memoria
+check_memory_usage() {
+    log_message "Verificando uso de memoria"
+    
+    # Obtener uso de memoria
+    local memory_usage=$(free | grep Mem | awk '{printf "%.2f", $3/$2 * 100.0}')
+    
+    # Verificar si supera el umbral
+    if (( $(echo "$memory_usage > $ALERT_THRESHOLD_MEMORY" | bc -l) )); then
+        log_message "⚠ Uso de memoria alto: $memory_usage%"
+        send_alert "Uso de memoria alto" "El uso de memoria es del $memory_usage%, superando el umbral de $ALERT_THRESHOLD_MEMORY%"
+        
+        # Obtener los procesos que más consumen memoria
+        log_message "Procesos con mayor consumo de memoria:"
+        ps aux --sort=-%mem | head -10 >> "$LOG_FILE"
+    else
+        log_message "✓ Uso de memoria normal: $memory_usage%"
+    fi
+}
+
+# Función para verificar espacio en disco
+check_disk_usage() {
+    log_message "Verificando espacio en disco"
+    
+    # Verificar espacio en disco en particiones importantes
+    df -h | grep -E "^/dev/" | while read filesystem size used avail use_percent mount; do
+        # Eliminar el carácter % del uso
+        use_percent=${use_percent%\%}
+        
+        # Verificar si supera el umbral
+        if [ "$use_percent" -gt "$ALERT_THRESHOLD_DISK" ]; then
+            log_message "⚠ Espacio en disco bajo en $mount: $use_percent% usado"
+            send_alert "Espacio en disco bajo" "Espacio en disco bajo en $mount: $use_percent% usado ($avail disponible de $size)"
+        else
+            log_message "✓ Espacio en disco normal en $mount: $use_percent% usado"
+        fi
+    done
+}
+
+# Función para verificar carga del sistema
+check_system_load() {
+    log_message "Verificando carga del sistema"
+    
+    # Obtener carga del sistema (últimos 1, 5 y 15 minutos)
+    local load_avg=$(uptime | awk -F'load average:' '{print $2}')
+    
+    # Obtener número de CPUs
+    local cpu_count=$(nproc)
+    
+    # Extraer carga de 1 minuto
+    local load_1min=$(echo $load_avg | awk '{print $1}' | tr -d ',')
+    
+    # Calcular carga por CPU
+    local load_per_cpu=$(echo "scale=2; $load_1min / $cpu_count" | bc)
+    
+    # Verificar si supera el umbral
+    if (( $(echo "$load_per_cpu > $ALERT_THRESHOLD_LOAD" | bc -l) )); then
+        log_message "⚠ Carga del sistema alta: $load_avg ($load_per_cpu por CPU)"
+        send_alert "Carga del sistema alta" "Carga del sistema alta: $load_avg ($load_per_cpu por CPU)"
+    else
+        log_message "✓ Carga del sistema normal: $load_avg ($load_per_cpu por CPU)"
+    fi
+}
+
+# Función para verificar conexiones de red
+check_network_connections() {
+    log_message "Verificando conexiones de red"
+    
+    # Contar conexiones establecidas
+    local established_connections=$(netstat -an | grep ESTABLISHED | wc -l)
+    
+    # Contar conexiones en estado TIME_WAIT
+    local time_wait_connections=$(netstat -an | grep TIME_WAIT | wc -l)
+    
+    log_message "Conexiones establecidas: $established_connections"
+    log_message "Conexiones en TIME_WAIT: $time_wait_connections"
+    
+    # Verificar si hay demasiadas conexiones en TIME_WAIT (podría indicar problemas)
+    if [ "$time_wait_connections" -gt 1000 ]; then
+        log_message "⚠ Alto número de conexiones en TIME_WAIT: $time_wait_connections"
+        send_alert "Alto número de conexiones en TIME_WAIT" "Hay $time_wait_connections conexiones en estado TIME_WAIT"
+    fi
+}
+
+# Función para verificar procesos zombies
+check_zombie_processes() {
+    log_message "Verificando procesos zombies"
+    
+    # Contar procesos zombies
+    local zombie_processes=$(ps aux | awk '$8 ~ /^Z/ { print $2 }' | wc -l)
+    
+    if [ "$zombie_processes" -gt 0 ]; then
+        log_message "⚠ Se detectaron $zombie_processes procesos zombies"
+        send_alert "Procesos zombies detectados" "Se detectaron $zombie_processes procesos zombies"
+        
+        # Listar procesos zombies
+        log_message "Lista de procesos zombies:"
+        ps aux | awk '$8 ~ /^Z/ { print $0 }' >> "$LOG_FILE"
+    else
+        log_message "✓ No se detectaron procesos zombies"
+    fi
+}
+
+# Función para verificar estado de SSL
+check_ssl_status() {
+    log_message "Verificando estado de certificados SSL"
+    
+    # Obtener lista de dominios virtuales
+    local domains=$(ls /etc/webmin/virtualmin/domains 2>/dev/null)
+    
+    if [ -z "$domains" ]; then
+        log_message "No se encontraron dominios virtuales para verificar SSL"
+        return
+    fi
+    
+    # Verificar cada dominio
+    for domain in $domains; do
+        # Verificar si existe certificado
+        if [ -f "/etc/letsencrypt/live/$domain/fullchain.pem" ]; then
+            # Obtener fecha de expiración
+            local expiry_date=$(openssl x509 -in "/etc/letsencrypt/live/$domain/fullchain.pem" -noout -enddate | cut -d= -f2)
+            local expiry_timestamp=$(date -d "$expiry_date" +%s)
+            local current_timestamp=$(date +%s)
+            local days_until_expiry=$(( (expiry_timestamp - current_timestamp) / 86400 ))
+            
+            # Verificar si el certificado expira pronto (menos de 30 días)
+            if [ "$days_until_expiry" -lt 30 ]; then
+                log_message "⚠ El certificado SSL para $domain expira en $days_until_expiry días"
+                send_alert "Certificado SSL por expirar" "El certificado SSL para $domain expira en $days_until_expiry días"
+            else
+                log_message "✓ El certificado SSL para $domain es válido por $days_until_expiry días más"
+            fi
+        else
+            log_message "⚠ No se encontró certificado SSL para $domain"
+        fi
+    done
+}
+
+# Función para verificar estado de bases de datos
+check_database_status() {
+    log_message "Verificando estado de bases de datos"
+    
+    # Verificar MySQL/MariaDB
+    if systemctl is-active --quiet mysql || systemctl is-active --quiet mariadb; then
+        # Verificar si MySQL/MariaDB responde
+        if mysqladmin ping -h localhost --silent 2>/dev/null; then
+            log_message "✓ MySQL/MariaDB está funcionando correctamente"
+        else
+            log_message "✗ MySQL/MariaDB no responde"
+            send_alert "MySQL/MariaDB no responde" "MySQL/MariaDB está activo pero no responde a ping"
+        fi
+        
+        # Verificar número de conexiones
+        local mysql_connections=$(mysql -e "SHOW STATUS LIKE 'Threads_connected';" 2>/dev/null | tail -1 | awk '{print $2}')
+        log_message "Conexiones MySQL/MariaDB: $mysql_connections"
+        
+        # Verificar si hay demasiadas conexiones (umbral de 100)
+        if [ "$mysql_connections" -gt 100 ]; then
+            log_message "⚠ Alto número de conexiones MySQL/MariaDB: $mysql_connections"
+            send_alert "Alto número de conexiones MySQL/MariaDB" "Hay $mysql_connections conexiones activas en MySQL/MariaDB"
+        fi
+    else
+        log_message "✗ MySQL/MariaDB no está activo"
+    fi
+    
+    # Verificar PostgreSQL
+    if systemctl is-active --quiet postgresql; then
+        # Verificar si PostgreSQL responde
+        if sudo -u postgres -s pg_isready -q 2>/dev/null; then
+            log_message "✓ PostgreSQL está funcionando correctamente"
+        else
+            log_message "✗ PostgreSQL no responde"
+            send_alert "PostgreSQL no responde" "PostgreSQL está activo pero no responde a ping"
+        fi
+        
+        # Verificar número de conexiones
+        local pg_connections=$(sudo -u postgres -s psql -t -c "SELECT count(*) FROM pg_stat_activity;" 2>/dev/null | tr -d ' ')
+        log_message "Conexiones PostgreSQL: $pg_connections"
+        
+        # Verificar si hay demasiadas conexiones (umbral de 100)
+        if [ "$pg_connections" -gt 100 ]; then
+            log_message "⚠ Alto número de conexiones PostgreSQL: $pg_connections"
+            send_alert "Alto número de conexiones PostgreSQL" "Hay $pg_connections conexiones activas en PostgreSQL"
+        fi
+    else
+        log_message "✗ PostgreSQL no está activo"
+    fi
+}
+
+# Función para generar informe de monitoreo
+generate_monitor_report() {
+    local report_dir="{{ backup_dir }}"
+    local report_file="$report_dir/monitor_report_$(date +%Y%m%d_%H%M%S).txt"
+    
+    cat > "$report_file" << EOF
+Informe de Monitoreo de Virtualmin Enterprise
+============================================
+Fecha: $(date)
+Servidor: $(hostname)
+IP: $(hostname -I | awk '{print $1}')
+SO: $(uname -a)
+
+Estado de Servicios:
+EOF
+    
+    # Añadir estado de los servicios
+    local services=("nginx" "apache2" "mysql" "postgresql" "redis-server" "memcached" "prometheus" "grafana-server" "docker")
+    
+    if [ -f /etc/redhat-release ]; then
+        services=("nginx" "httpd" "mariadb" "postgresql" "redis" "memcached" "prometheus" "grafana-server" "docker")
+    fi
+    
+    for service in "${services[@]}"; do
+        if systemctl is-active --quiet "$service"; then
+            echo "- $service: Activo" >> "$report_file"
+        else
+            echo "- $service: Inactivo" >> "$report_file"
+        fi
+    done
+    
+    echo "" >> "$report_file"
+    echo "Recursos del Sistema:" >> "$report_file"
+    echo "- Uso de CPU: $(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | cut -d'%' -f1)%" >> "$report_file"
+    echo "- Uso de Memoria: $(free | grep Mem | awk '{printf "%.2f", $3/$2 * 100.0}')%" >> "$report_file"
+    echo "- Carga del Sistema: $(uptime | awk -F'load average:' '{print $2}')" >> "$report_file"
+    
+    echo "" >> "$report_file"
+    echo "Logs de monitoreo:" >> "$report_file"
+    echo "Ver archivo: $LOG_FILE" >> "$report_file"
+    
+    log_message "Informe de monitoreo generado: $report_file"
+}
+
+# Función principal
+main() {
+    log_message "=== Iniciando monitoreo del sistema ==="
+    
+    # Verificar servicios
+    check_services
+    
+    # Verificar recursos del sistema
+    check_cpu_usage
+    check_memory_usage
+    check_disk_usage
+    check_system_load
+    
+    # Verificar red y procesos
+    check_network_connections
+    check_zombie_processes
+    
+    # Verificar SSL
+    check_ssl_status
+    
+    # Verificar bases de datos
+    check_database_status
+    
+    # Generar informe
+    generate_monitor_report
+    
+    log_message "=== Monitoreo completado ==="
+}
+
+# Ejecutar función principal
+main "$@"

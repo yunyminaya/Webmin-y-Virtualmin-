@@ -1,0 +1,463 @@
+name: Deploy Virtualmin Enterprise
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 2 * * *'  # Ejecutar pruebas de carga diariamente
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Entorno de despliegue'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
+      deploy_infrastructure:
+        description: 'Desplegar infraestructura con Terraform'
+        required: false
+        default: true
+        type: boolean
+      run_load_tests:
+        description: 'Ejecutar pruebas de carga'
+        required: false
+        default: true
+        type: boolean
+
+env:
+  PYTHON_VERSION: '3.9'
+  NODE_VERSION: '16'
+  TERRAFORM_VERSION: '1.3.0'
+  ANSIBLE_VERSION: '5.0.0'
+
+jobs:
+  lint:
+    name: Lint Code
+    runs-on: ubuntu-latest
+    outputs:
+      should-deploy: ${{ steps.changes.outputs.should-deploy }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Check for file changes
+      uses: dorny/paths-filter@v2
+      id: changes
+      with:
+        filters: |
+          deploy:
+            - 'scripts/orchestrate_virtualmin_enterprise.sh'
+            - 'cluster_infrastructure/**'
+            - 'configs/**'
+            - '.github/workflows/deploy-enterprise.yml'
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install flake8 yamllint
+
+    - name: Lint Python files
+      run: |
+        flake8 scripts/ --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 scripts/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+    - name: Lint YAML files
+      run: |
+        yamllint -c .yamllint.yml .
+
+    - name: Lint Shell scripts
+      run: |
+        find scripts/ -name "*.sh" -exec shellcheck {} +
+
+    - name: Validate Terraform configuration
+      if: steps.changes.outputs.deploy == 'true'
+      run: |
+        cd cluster_infrastructure/terraform
+        terraform fmt -check
+        terraform validate
+        terraform init -backend=false
+
+    - name: Validate Ansible configuration
+      if: steps.changes.outputs.deploy == 'true'
+      run: |
+        cd cluster_infrastructure/ansible
+        ansible-playbook --syntax-check cluster.yml
+        ansible-lint
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: lint
+    if: needs.lint.outputs.should-deploy == 'true'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+    - name: Run Gitleaks
+      uses: gitleaks/gitleaks-action@v2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: lint
+    if: needs.lint.outputs.should-deploy == 'true'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-cov pytest-mock
+
+    - name: Run unit tests
+      run: |
+        pytest tests/unit/ --cov=scripts --cov-report=xml --cov-report=html
+
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+
+  build:
+    name: Build Artifacts
+    runs-on: ubuntu-latest
+    needs: [lint, security-scan, unit-tests]
+    if: needs.lint.outputs.should-deploy == 'true'
+    outputs:
+      build-id: ${{ steps.build-info.outputs.build-id }}
+      image-tag: ${{ steps.build-info.outputs.image-tag }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Generate build info
+      id: build-info
+      run: |
+        echo "build-id=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+        echo "image-tag=$(date +%Y%m%d-%H%M%S)-${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+
+    - name: Build and push Docker images
+      run: |
+        docker buildx build --push \
+          --platform linux/amd64,linux/arm64 \
+          --tag virtualmin/virtualmin-enterprise:${{ steps.build-info.outputs.image-tag }} \
+          --tag virtualmin/virtualmin-enterprise:latest \
+          .
+
+    - name: Build documentation
+      run: |
+        mkdir -p dist/docs
+        cp -r docs/* dist/docs/
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: build-artifacts-${{ steps.build-info.outputs.build-id }}
+        path: dist/
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/develop' || github.event.inputs.environment == 'staging'
+    environment: staging
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install boto3 ansible jinja2 pyyaml
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+
+    - name: Download build artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: build-artifacts-${{ needs.build.outputs.build-id }}
+        path: dist/
+
+    - name: Deploy infrastructure
+      if: github.event.inputs.deploy_infrastructure == 'true' || github.event.inputs.deploy_infrastructure == ''
+      run: |
+        cd cluster_infrastructure/terraform
+        terraform init
+        terraform workspace select staging || terraform workspace new staging
+        terraform apply -auto-approve -var-file=staging.tfvars
+
+    - name: Deploy application
+      run: |
+        cd cluster_infrastructure/ansible
+        ansible-playbook -i staging.ini cluster.yml
+
+    - name: Run health checks
+      run: |
+        # Esperar a que los servicios estén disponibles
+        sleep 60
+        
+        # Verificar que Virtualmin esté respondiendo
+        curl -f https://staging.virtualmin-enterprise.com:10000/ || exit 1
+
+    - name: Run smoke tests
+      run: |
+        python3 tests/functional/test_virtualmin_staging.py
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build, deploy-staging]
+    if: github.ref == 'refs/heads/main' || github.event.inputs.environment == 'production'
+    environment: production
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install boto3 ansible jinja2 pyyaml
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+
+    - name: Download build artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: build-artifacts-${{ needs.build.outputs.build-id }}
+        path: dist/
+
+    - name: Create backup before deployment
+      run: |
+        cd scripts
+        python3 backup_production.py --backup-dir backups/$(date +%Y%m%d_%H%M%S)
+
+    - name: Deploy infrastructure
+      if: github.event.inputs.deploy_infrastructure == 'true' || github.event.inputs.deploy_infrastructure == ''
+      run: |
+        cd cluster_infrastructure/terraform
+        terraform init
+        terraform workspace select production || terraform workspace new production
+        terraform apply -auto-approve -var-file=production.tfvars
+
+    - name: Deploy application
+      run: |
+        cd cluster_infrastructure/ansible
+        ansible-playbook -i production.ini cluster.yml
+
+    - name: Run health checks
+      run: |
+        # Esperar a que los servicios estén disponibles
+        sleep 120
+        
+        # Verificar que Virtualmin esté respondiendo
+        curl -f https://virtualmin-enterprise.com:10000/ || exit 1
+
+    - name: Run smoke tests
+      run: |
+        python3 tests/functional/test_virtualmin_production.py
+
+  load-tests:
+    name: Load Tests
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    if: (github.ref == 'refs/heads/develop' || github.event_name == 'schedule') && (github.event.inputs.run_load_tests == 'true' || github.event.inputs.run_load_tests == '')
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install locust jmeter
+
+    - name: Run load tests with Locust
+      run: |
+        cd tests/load
+        locust -f locustfile.py --headless -u 100 -r 10 -t 300s --host=https://staging.virtualmin-enterprise.com --csv load_test_results
+
+    - name: Run stress tests with JMeter
+      run: |
+        cd tests/load
+        jmeter -n -t stress_test.jmx -l stress_test_results.jtl -e -o stress_test_report
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      with:
+        name: load-test-results-${{ needs.build.outputs.build-id }}
+        path: tests/load/
+
+    - name: Comment PR with test results
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          const path = './tests/load/load_test_results_stats.csv';
+          
+          if (fs.existsSync(path)) {
+            const stats = fs.readFileSync(path, 'utf8');
+            const lines = stats.split('\n');
+            const headers = lines[0].split(',');
+            const data = lines[1].split(',');
+            
+            const avgResponseTime = data[headers.indexOf('Average Response Time')];
+            const requestsPerSec = data[headers.indexOf('Requests/sec')];
+            const errorRate = data[headers.indexOf('Error %')];
+            
+            const comment = `
+            ## Load Test Results
+            
+            - **Average Response Time**: ${avgResponseTime} ms
+            - **Requests/sec**: ${requestsPerSec}
+            - **Error Rate**: ${errorRate}%
+            
+            See the [full test results](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) for more details.
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+          }
+
+  security-tests:
+    name: Security Tests
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    if: github.ref == 'refs/heads/develop'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install requests beautifulsoup4 selenium
+
+    - name: Run security scans
+      run: |
+        cd tests/security
+        python3 scan_vulnerabilities.py --url https://staging.virtualmin-enterprise.com
+
+    - name: Run OWASP ZAP Baseline Scan
+      uses: zaproxy/action-baseline@v0.7.0
+      with:
+        target: 'https://staging.virtualmin-enterprise.com'
+
+    - name: Upload security scan results
+      uses: actions/upload-artifact@v3
+      with:
+        name: security-scan-results-${{ needs.build.outputs.build-id }}
+        path: tests/security/
+
+  notify:
+    name: Notify Results
+    runs-on: ubuntu-latest
+    needs: [deploy-staging, deploy-production, load-tests]
+    if: always()
+    steps:
+    - name: Notify Slack on success
+      if: needs.deploy-staging.result == 'success' || needs.deploy-production.result == 'success'
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        channel: '#deployments'
+        text: 'Deployment to ${{ needs.deploy-staging.result == ''success'' && ''staging'' || ''production'' }} completed successfully! 🎉'
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+    - name: Notify Slack on failure
+      if: needs.deploy-staging.result == 'failure' || needs.deploy-production.result == 'failure'
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        channel: '#deployments'
+        text: 'Deployment to ${{ needs.deploy-staging.result == ''failure'' && ''staging'' || ''production'' }} failed! ❌'
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+    - name: Notify on load test completion
+      if: needs.load-tests.result == 'success'
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        channel: '#performance'
+        text: 'Load tests completed successfully! 📊'
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

@@ -1,304 +1,162 @@
-# 📚 Índice de Documentación - Webmin y Virtualmin Pro
+# Índice de Documentación - Virtualmin Enterprise
 
-[![Documentation](https://img.shields.io/badge/Documentation-Complete-green.svg)](https://github.com/yunyminaya/Webmin-y-Virtualmin-)
-[![Last Updated](https://img.shields.io/badge/Last%20Updated-2025--09--26-blue.svg)](https://github.com/yunyminaya/Webmin-y-Virtualmin-/commits/main)
+Bienvenido a la documentación completa de Virtualmin Enterprise, el sistema integral para la gestión de servidores web empresariales.
 
-> **Índice completo de toda la documentación disponible en el repositorio**
+## 📚 Tabla de Contenidos
 
-## 📋 Tabla de Contenidos
+### 🚀 Guías de Inicio Rápido
+- [README Completo del Sistema](README_ENTERPRISE_COMPLETE.md) - Descripción general del sistema
+- [Guía de Instalación Unificada](instalacion_unificada.sh) - Script de instalación completa
+- [Guía de Configuración Inicial](docs/initial_setup.md) - Configuración básica del sistema
 
-### [🚀 Inicio y Instalación](#instalación)
-### [🛡️ Seguridad y Protección](#seguridad)
-### [⚙️ Configuración y Administración](#configuración)
-### [📊 Monitoreo y Analytics](#monitoreo)
-### [🔧 Desarrollo y API](#desarrollo)
-### [📖 Guías Especializadas](#guías-especializadas)
-### [🆘 Solución de Problemas](#solución-de-problemas)
-### [📝 Referencias y APIs](#referencias)
+### 🏗️ Infraestructura y Orquestación
+- [Guía de Infraestructura de Centro de Datos Empresarial](ENTERPRISE_DATACENTER_GUIDE.md) - Implementación en entornos empresariales
+- [Documentación de Infraestructura de Clúster](cluster_infrastructure/README.md) - Gestión de clústeres
+- [Guía de Orquestación con Ansible y Terraform](docs/orchestration_guide.md) - Infraestructura como código
 
----
+### 🔒 Seguridad
+- [Guía de Sistema de Protección con IA](AI_PROTECTION_GUIDE.md) - Sistema de protección inteligente
+- [Guía de Firewall Inteligente](INTELLIGENT_FIREWALL_README.md) - Firewall con aprendizaje automático
+- [Guía del Sistema SIEM](SIEM_SYSTEM_GUIDE.md) - Sistema de información y gestión de eventos
+- [Guía del Sistema de Confianza Cero](ZERO_TRUST_GUIDE.md) - Modelo de seguridad Zero Trust
+- [Guía del Sistema SSL Avanzado](SISTEMA_SSL_AVANZADO_README.md) - Gestión avanzada de certificados SSL
+- [Guía del Sistema de IDS/IPS](IDS_IPS_WEBMIN_VIRTUALMIN_GUIDE.md) - Detección y prevención de intrusiones
 
-## 🚀 Instalación
+### 📊 Monitorización y Optimización
+- [Guía de Monitorización Avanzada](ADVANCED_MONITORING_README.md) - Sistema de monitorización avanzado
+- [Guía del Sistema de Optimización con IA](ai_optimization_system/README.md) - Optimización con inteligencia artificial
+- [Guía del Sistema de Copias de Seguridad Inteligente](INTELLIGENT_BACKUP_SYSTEM_DOCUMENTATION.md) - Copias de seguridad inteligentes
+- [Guía del Sistema de Reportes de Estado](docs/status_reports_guide.md) - Generación de reportes automáticos
 
-### Documentos Principales
-- **[README.md](README.md)** - Documentación principal del proyecto
-- **[GUIA_INSTALACION_UNIFICADA.md](GUIA_INSTALACION_UNIFICADA.md)** - Guía completa de instalación
-- **[INSTRUCCIONES_RAPIDAS.md](INSTRUCCIONES_RAPIDAS.md)** - Instalación rápida paso a paso
+### ☁️ Multi-Nube y Contenedores
+- [Guía de Integración Multi-Nube](multi_cloud_integration/README.md) - Gestión de múltiples proveedores de nube
+- [Guía de Orquestación de Contenedores](CONTAINER_ORCHESTRATION_SYSTEM_DOCUMENTATION.md) - Gestión de contenedores
+- [Guía de Orquestación con Kubernetes](kubernetes_orchestration.sh) - Orquestación con Kubernetes
+- [Guía de Orquestación con Docker](docker_container_orchestration.sh) - Orquestación con Docker
 
-### Instaladores Especializados
-- **[README_COMPLETO_PRO.md](README_COMPLETO_PRO.md)** - Instalación completa Pro
-- **[README_ENTERPRISE_ULTIMATE.md](README_ENTERPRISE_ULTIMATE.md)** - Instalación Enterprise
-- **[README_AUTONOMOUS_SYSTEM.md](README_AUTONOMOUS_SYSTEM.md)** - Sistema autónomo
+### 🌐 Red y Conectividad
+- [Guía del Sistema de Túneles Automáticos](AUTO_TUNNEL_SYSTEM_GUIDE.md) - Sistema de túneles automáticos
+- [Guía de Red Avanzada](docs/advanced_networking.md) - Configuración de red avanzada
+- [Guía de Escalado Automático](docs/auto_scaling.md) - Sistema de escalado automático
 
-### Scripts de Instalación
-- `instalacion_unificada.sh` - Instalador principal
-- `install_pro_complete.sh` - Instalador Pro completo
-- `install_ultra_simple.sh` - Instalación ultra simple
-- `enterprise_master_installer.sh` - Instalador Enterprise
+### 🛠️ Desarrollo y Pruebas
+- [Guía de Pruebas Automatizadas](docs/testing_guide.md) - Estrategia de pruebas
+- [Guía de Pruebas de Carga y Resistencia](docs/load_stress_testing.md) - Pruebas de rendimiento
+- [Guía de Pipeline CI/CD](docs/cicd_pipeline.md) - Integración y entrega continua
+- [Guía de Integración y Despliegue](docs/integration_deployment.md) - Proceso de integración
 
----
+### 📈 Inteligencia de Negocios
+- [Guía del Sistema BI](bi_system/bi_architecture.md) - Sistema de inteligencia de negocios
+- [Guía de Instalación Completa del Sistema BI](bi_system/install_complete_bi_system.sh) - Instalación del sistema BI
 
-## 🛡️ Seguridad
+### 🔄 Recuperación ante Desastres
+- [Guía del Sistema de Recuperación ante Desastres](disaster_recovery_system/README_DR_SYSTEM.md) - Plan de recuperación
+- [Guía de Ejemplo de Uso del Sistema DR](disaster_recovery_system/example_usage.sh) - Ejemplos de configuración
 
-### Protección contra Ataques IA
-- **[AI_PROTECTION_GUIDE.md](AI_PROTECTION_GUIDE.md)** - Guía completa de protección IA
-- `ai_defense_system.sh` - Sistema de defensa IA
-- `ddos_shield_extreme.sh` - Escudo DDoS extremo
-- `install_ai_protection.sh` - Instalador de protección IA
+### 🎨 Temas e Interfaz
+- [Guía del Tema Authentic](authentic-theme-master/README.md) - Tema para Webmin/Virtualmin
+- [Guía de Virtualización con Virtualmin](virtualmin_container_integration.sh) - Integración de contenedores
 
-### Túneles y Redes
-- **[AUTO_TUNNEL_SYSTEM_GUIDE.md](AUTO_TUNNEL_SYSTEM_GUIDE.md)** - Sistema de túnel automático 24/7 ⭐
-- `auto_tunnel_system.sh` - Sistema principal de túnel automático
-- `install_auto_tunnel_system.sh` - Instalador del sistema de túnel
-- `tunnel_monitor_dashboard.html` - Dashboard de monitoreo de túnel
-- `tunnel_status.cgi` - API de estado del túnel
+### 📋 Procedimientos y Mantenimiento
+- [Procedimientos de Mantenimiento](MAINTENANCE_PROCEDURES.md) - Tareas de mantenimiento programadas
+- [Guía de Funciones Pro Completas](FUNCIONES_PRO_COMPLETAS.md) - Funcionalidades avanzadas
+- [Guía de Migración Pro](pro_migration/migrate_server_pro.sh) - Migración a versión enterprise
 
-### Seguridad del Sistema
-- **[SISTEMA_PROTECCION_COMPLETA_100.md](SISTEMA_PROTECCION_COMPLETA_100.md)** - Protección completa 100%
-- **[README_DEFENSE.md](README_DEFENSE.md)** - Sistema de defensa
-- `auto_defense.sh` - Defensa automática
-- `hardening_servidor_100.sh` - Hardening completo del servidor
+### 🔄 Scripts y Automatización
+- [Script de Orquestación Virtualmin Enterprise](scripts/orchestrate_virtualmin_enterprise.sh) - Orquestación avanzada
+- [Script de Pruebas de Carga](scripts/run_load_stress_tests.sh) - Pruebas de carga automatizadas
+- [Script de Generación de Reportes](scripts/generate_status_reports.py) - Reportes automáticos
+- [Script de Actualización GitHub](scripts/update_github_complete.sh) - Actualización y subida a GitHub
 
-### Seguridad Web y SSL
-- `ssl_manager_pro.sh` - Gestor SSL Pro
-- `proteccion_web_avanzada.sh` - Protección web avanzada
-- `seguridad_integridad_100.sh` - Seguridad de integridad
+### 📑 Historial de Cambios
+- [Changelog Completo del Sistema](CHANGELOG_ENTERPRISE_COMPLETE.md) - Historial de cambios
+- [Changelog de Protección con IA](CHANGELOG_AI_PROTECTION.md) - Cambios en sistema de protección
+- [Changelog de Nuevas Funcionalidades](CHANGELOG_NUEVAS_FUNCIONES.md) - Cambios en funcionalidades
 
----
+## 🏷️ Etiquetas de Documentación
 
-## ⚙️ Configuración y Administración
+### Por Nivel de Experiencia
+- 🟢 **Principiante**: Para usuarios nuevos en Virtualmin Enterprise
+- 🟡 **Intermedio**: Para usuarios con experiencia básica
+- 🔴 **Avanzado**: Para usuarios expertos y administradores de sistemas
 
-### Configuración del Sistema
-- **[INTEGRACION_PANELES.md](INTEGRACION_PANELES.md)** - Integración de paneles
-- **[SISTEMA_COMPLETO_AUTOSUFICIENTE.md](SISTEMA_COMPLETO_AUTOSUFICIENTE.md)** - Sistema autosuficiente
-- **[SISTEMA_INTELIGENTE_GUIA_COMPLETA.md](SISTEMA_INTELIGENTE_GUIA_COMPLETA.md)** - Guía sistema inteligente
+### Por Componente
+- 🏗️ **Infraestructura**: Configuración de infraestructura y orquestación
+- 🔒 **Seguridad**: Configuración de seguridad y protección
+- 📊 **Monitorización**: Configuración de monitorización y optimización
+- ☁️ **Nube**: Configuración de servicios en la nube
+- 🛠️ **Desarrollo**: Guías de desarrollo y pruebas
+- 📋 **Operaciones**: Procedimientos operativos y mantenimiento
 
-### Gestión de Revendedores
-- `manage_resellers.sh` - Gestión de revendedores
-- `pro_features_advanced.sh` - Características Pro avanzadas
+### Por Tipo de Contenido
+- 📖 **Guía**: Instrucciones paso a paso
+- 🔧 **Script**: Scripts de automatización
+- 📋 **Referencia**: Documentación técnica de referencia
+- 🎯 **Tutorial**: Tutoriales prácticos
+- 📊 **Ejemplo**: Ejemplos de configuración
 
-### Backups y Recuperación
-- `backup_multicloud.sh` - Backup multicloud
-- `enterprise_backup_pro.sh` - Backup Enterprise Pro
-- `cloud_backup_enterprise.sh` - Backup cloud Enterprise
+## 🔍 Búsqueda Rápida
 
-### Actualizaciones
-- **[SISTEMA_ACTUALIZACION_SEGURA.md](SISTEMA_ACTUALIZACION_SEGURA.md)** - Actualización segura
-- `intelligent_auto_update.sh` - Actualización automática inteligente
-- `update_system_secure.sh` - Actualización segura del sistema
+### Tareas Comunes
+- **Instalación**: [Guía de Instalación Unificada](instalacion_unificada.sh)
+- **Configuración de seguridad**: [Guía de Seguridad](AI_PROTECTION_GUIDE.md)
+- **Monitorización**: [Guía de Monitorización](ADVANCED_MONITORING_README.md)
+- **Copias de seguridad**: [Guía de Copias de Seguridad](INTELLIGENT_BACKUP_SYSTEM_DOCUMENTATION.md)
+- **Actualización**: [Script de Actualización](scripts/update_github_complete.sh)
 
----
+### Resolución de Problemas
+- **Problemas comunes**: [Procedimientos de Mantenimiento](MAINTENANCE_PROCEDURES.md)
+- **Solución de problemas de seguridad**: [Guía de Seguridad](AI_PROTECTION_GUIDE.md)
+- **Problemas de rendimiento**: [Guía de Optimización](ai_optimization_system/README.md)
 
-## 📊 Monitoreo y Analytics
+### Configuraciones Específicas
+- **Multi-nube**: [Guía Multi-Nube](multi_cloud_integration/README.md)
+- **Contenedores**: [Guía de Contenedores](CONTAINER_ORCHESTRATION_SYSTEM_DOCUMENTATION.md)
+- **Recuperación ante desastres**: [Guía DR](disaster_recovery_system/README_DR_SYSTEM.md)
 
-### Dashboards y Monitoreo
-- `intelligent_dashboard.sh` - Dashboard inteligente
-- `pro_dashboard.sh` - Dashboard Pro
-- `dashboard_autonomous.sh` - Dashboard autónomo
-- `defense_dashboard.html` - Dashboard de defensa
+## 📝 Convenciones de Documentación
 
-### Analytics y Reportes
-- `analytics_pro.sh` - Analytics Pro
-- `file_analysis_report.html` - Reporte de análisis de archivos
-- `monitor_sistema.sh` - Monitoreo del sistema
-
-### Rendimiento
-- `performance_turbo_max.sh` - Rendimiento turbo máximo
-- `enterprise_ultra_scale.sh` - Escalado ultra Enterprise
-
----
-
-## 🔧 Desarrollo y API
-
-### API Pro
-- `pro_api/api_manager_pro.sh` - Gestor API Pro
-- `pro_api/api_config.conf` - Configuración API
-
-### Desarrollo
-- **[CMS_FRAMEWORKS_GUIDE.md](CMS_FRAMEWORKS_GUIDE.md)** - Guía instalación CMS y Frameworks ⭐
-- **[ENTERPRISE_DATACENTER_GUIDE.md](ENTERPRISE_DATACENTER_GUIDE.md)** - Guía sistema empresarial para datacenters ⭐
-- `install_cms_frameworks.sh` - Instalador CMS y Frameworks
-- `install_php_multi_version.sh` - Instalador PHP multi-versión
-- `enterprise_monitoring_setup.sh` - Configuración empresarial completa ⭐
-- `dev_tools_pro.sh` - Herramientas de desarrollo Pro
-- `generar_docker.sh` - Generador Docker
-
-### Clustering y Migración
-- `pro_clustering/cluster_manager_pro.sh` - Gestor de clustering Pro
-- `pro_migration/migrate_server_pro.sh` - Migración de servidor Pro
-
-### Configuraciones Pro
-- `pro_config/` - Directorio de configuraciones Pro
-  - `analytics_reporting.conf` - Configuración analytics
-  - `commercial_features.conf` - Características comerciales
-  - `development_tools.conf` - Herramientas desarrollo
-  - `enterprise_backup.conf` - Backup Enterprise
-  - `reseller_accounts.conf` - Cuentas revendedor
-
----
-
-## 📖 Guías Especializadas
-
-### Funciones Pro
-- **[FUNCIONES_PRO_COMPLETAS.md](FUNCIONES_PRO_COMPLETAS.md)** - Funciones Pro completas
-- **[NUEVAS_FUNCIONES_DOCUMENTACION.md](NUEVAS_FUNCIONES_DOCUMENTACION.md)** - Nuevas funciones
-- **[SERVICIOS_PREMIUM_INCLUIDOS.md](SERVICIOS_PREMIUM_INCLUIDOS.md)** - Servicios premium
-
-### Sistemas Especializados
-- **[RESUMEN_SISTEMA_SEGURO.md](RESUMEN_SISTEMA_SEGURO.md)** - Resumen sistema seguro
-- **[SISTEMA_COMPLETO_AUTOSUFICIENTE.md](SISTEMA_COMPLETO_AUTOSUFICIENTE.md)** - Sistema autosuficiente
-
-### Docker y Kubernetes
-- `kubernetes_setup.sh` - Configuración Kubernetes
-- `generar_docker.sh` - Generador Docker
-
----
-
-## 🆘 Solución de Problemas
-
-### Reparación y Mantenimiento
-- **[PRUEBA_AUTO_REPARADOR_VPS.md](PRUEBA_AUTO_REPARADOR_VPS.md)** - Prueba auto reparador
-- **[COMANDO_INSTALACION_AUTO_REPARADOR.md](COMANDO_INSTALACION_AUTO_REPARADOR.md)** - Instalación auto reparador
-- `auto_repair.sh` - Reparación automática
-- `auto_repair_critical.sh` - Reparación crítica
-- `repair_apache_auto.sh` - Reparación Apache automática
-
-### Testing y Validación
-- `prueba_exhaustiva_sistema.sh` - Prueba exhaustiva
-- `test_auto_repair_now.sh` - Test reparación automática
-- `test_security_system.sh` - Test sistema seguridad
-- `test_smart_system.sh` - Test sistema inteligente
-- `test_vps_direct.sh` - Test VPS directo
-
-### Verificación
-- `final_verification.sh` - Verificación final
-- `validar_dependencias.sh` - Validación dependencias
-- `verificar_funciones_pro.sh` - Verificación funciones Pro
-
----
-
-## 📝 Referencias y APIs
-
-### Logs y Reportes
-- **[REPORTE_FINAL_PROYECTO_COMPLETADO.md](REPORTE_FINAL_PROYECTO_COMPLETADO.md)** - Reporte final proyecto
-- **[COMMIT_SUMMARY.md](COMMIT_SUMMARY.md)** - Resumen commits
-- **[CHANGELOG.md](CHANGELOG.md)** - Registro cambios
-- **[CHANGELOG_NUEVAS_FUNCIONES.md](CHANGELOG_NUEVAS_FUNCIONES.md)** - Changelog nuevas funciones
-- **[CHANGELOG_AI_PROTECTION.md](CHANGELOG_AI_PROTECTION.md)** - Registro cambios protección IA ⭐
-
-### Configuraciones
-- `configs/apache/httpd.conf` - Configuración Apache
-- `configs/mysql/my.cnf` - Configuración MySQL
-
-### Scripts Utilitarios
-- `cleanup_safe.sh` - Limpieza segura
-- `analyze_duplicates.sh` - Análisis duplicados
-- `configure_official_repo.sh` - Configuración repositorio oficial
-
----
-
-## 🗂️ Estructura del Repositorio
-
-```
-📦 Webmin-y-Virtualmin/
-├── 📄 README.md                          # Documentación principal
-├── 📄 AI_PROTECTION_GUIDE.md             # Guía protección IA ⭐
-├── 📄 AUTO_TUNNEL_SYSTEM_GUIDE.md        # Guía túnel automático ⭐
-├── 📄 CMS_FRAMEWORKS_GUIDE.md            # Guía CMS y Frameworks ⭐
-├── 📄 ENTERPRISE_DATACENTER_GUIDE.md      # Guía sistema empresarial ⭐
-├── 📄 DOCUMENTATION_INDEX.md             # Este archivo
-├── 📄 GUIA_INSTALACION_UNIFICADA.md      # Guía instalación
-├── 📄 INTEGRACION_PANELES.md             # Integración paneles
-├── 📄 INSTRUCCIONES_RAPIDAS.md           # Instrucciones rápidas
-├── 📄 FUNCIONES_PRO_COMPLETAS.md         # Funciones Pro
-├── 📄 SERVICIOS_PREMIUM_INCLUIDOS.md     # Servicios premium
-├── 📄 SISTEMA_PROTECCION_COMPLETA_100.md # Protección completa
-├── 📄 RESUMEN_SISTEMA_SEGURO.md          # Resumen sistema seguro
-├── 📄 SISTEMA_COMPLETO_AUTOSUFICIENTE.md # Sistema autosuficiente
-├── 📄 SISTEMA_INTELIGENTE_GUIA_COMPLETA.md # Guía sistema inteligente
-├── 📄 SISTEMA_ACTUALIZACION_SEGURA.md    # Actualización segura
-├── 📄 PRUEBA_AUTO_REPARADOR_VPS.md       # Prueba auto reparador
-├── 📄 COMANDO_INSTALACION_AUTO_REPARADOR.md # Instalación auto reparador
-├── 📄 REPORTE_FINAL_PROYECTO_COMPLETADO.md # Reporte final
-├── 📄 COMMIT_SUMMARY.md                  # Resumen commits
-├── 📄 CHANGELOG.md                       # Registro cambios
-├── 📄 CHANGELOG_NUEVAS_FUNCIONES.md      # Changelog funciones
-├── 📄 NUEVAS_FUNCIONES_DOCUMENTACION.md  # Nuevas funciones
-├── 📄 README_COMPLETO_PRO.md             # README Pro completo
-├── 📄 README_ENTERPRISE_ULTIMATE.md      # README Enterprise
-├── 📄 README_AUTONOMOUS_SYSTEM.md        # README sistema autónomo
-├── 📄 README_DEFENSE.md                  # README defensa
-├── 📄 README_MEJORADO.md                 # README mejorado
-├── 🚇 auto_tunnel_system.sh              # Sistema túnel automático ⭐
-├── 🔧 install_auto_tunnel_system.sh      # Instalador túnel ⭐
-├── 🌐 tunnel_monitor_dashboard.html      # Dashboard túnel ⭐
-├── 🔧 tunnel_status.cgi                  # API estado túnel ⭐
-├── 📄 auto-tunnel.service                # Servicio systemd túnel
-├── 🔧 install_php_multi_version.sh       # Instalador PHP multi-versión ⭐
-├── 🔧 install_cms_frameworks.sh          # Instalador CMS y Frameworks ⭐
-├── 🔧 enterprise_monitoring_setup.sh     # Configuración empresarial completa ⭐
-├── 🔧 Scripts principales...             # Scripts de instalación
-├── 📁 configs/                           # Configuraciones
-├── 📁 scripts/                           # Scripts especializados
-├── 📁 pro_api/                           # API Pro
-├── 📁 pro_config/                        # Configuraciones Pro
-├── 📁 pro_clustering/                    # Clustering Pro
-├── 📁 pro_migration/                     # Migración Pro
-├── 📁 pro_monitoring/                    # Monitoreo Pro
-├── 📁 test_results/                      # Resultados tests
-├── 📁 themes/                            # Temas
-├── 📁 virtualmin-gpl-master/             # Código Virtualmin
-├── 📁 authentic-theme-master/            # Tema Authentic
-└── 📁 web-content/                       # Contenido web
+### Formato de Código
+```bash
+# Comandos de shell
+sudo systemctl start virtualmin
 ```
 
----
+```python
+# Código Python
+def example_function():
+    return "Hello, World!"
+```
 
-## 🎯 Guía de Uso
+### Notas y Advertencias
+> **Nota**: Información importante que debe tenerse en cuenta
+> 
+> **Advertencia**: Información crucial que requiere atención especial
+> 
+> **Peligro**: Acciones que pueden causar pérdida de datos o problemas de seguridad
 
-### Para Nuevos Usuarios
-1. **Inicio**: Lee el [README.md](README.md)
-2. **Instalación**: Sigue la [GUIA_INSTALACION_UNIFICADA.md](GUIA_INSTALACION_UNIFICADA.md)
-3. **Configuración**: Consulta [INTEGRACION_PANELES.md](INTEGRACION_PANELES.md)
-4. **Seguridad**: Revisa [AI_PROTECTION_GUIDE.md](AI_PROTECTION_GUIDE.md)
-5. **Túneles**: Configura [AUTO_TUNNEL_SYSTEM_GUIDE.md](AUTO_TUNNEL_SYSTEM_GUIDE.md) para acceso remoto
+### Enlaces Externos
+- [Sitio web oficial de Virtualmin](https://www.virtualmin.com/)
+- [Documentación oficial de Virtualmin](https://www.virtualmin.com/documentation)
 
-### Para Usuarios Avanzados
-1. **Referencia API**: Explora `pro_api/`
-2. **Configuraciones**: Directorio `pro_config/`
-3. **Scripts**: Directorio `scripts/`
-4. **Código fuente**: `virtualmin-gpl-master/`
+## 🤝 Contribuir a la Documentación
 
-### Para Desarrolladores
-1. **Arquitectura**: [SISTEMA_COMPLETO_AUTOSUFICIENTE.md](SISTEMA_COMPLETO_AUTOSUFICIENTE.md)
-2. **API**: `pro_api/api_manager_pro.sh`
-3. **Testing**: Scripts en `test_results/`
-4. **Contribuir**: Ver sección en README.md
+La documentación es un proyecto en evolución. Si encuentra errores, información faltante o quiere mejorar la calidad de la documentación:
 
----
+1. **Reportar problemas**: Cree un issue en GitHub describiendo el problema
+2. **Mejorar documentación**: Haga un fork del repositorio, mejore la documentación y envíe un pull request
+3. **Sugerir mejoras**: Envíe sus sugerencias para mejorar la estructura y contenido
 
-## 📞 Soporte y Comunidad
+## 📞 Soporte
 
-### Canales de Soporte
-- **📧 Email**: soporte@tu-dominio.com
-- **🐛 GitHub Issues**: [Reportar problemas](https://github.com/yunyminaya/Webmin-y-Virtualmin-/issues)
-- **💬 Discussions**: [Comunidad](https://github.com/yunyminaya/Webmin-y-Virtualmin-/discussions)
-- **📖 Wiki**: [Documentación extendida](https://github.com/yunyminaya/Webmin-y-Virtualmin-/wiki)
+Si necesita ayuda adicional:
 
-### Recursos Adicionales
-- **🌐 Sitio Web**: https://tu-dominio.com
-- **📺 Tutoriales**: [Canal de YouTube](https://youtube.com/tu-canal)
-- **📚 Blog**: https://tu-dominio.com/blog
-- **👥 Foro**: https://forum.tu-dominio.com
+- **Foros de la comunidad**: [Foros de Virtualmin](https://www.virtualmin.com/forums)
+- **Documentación oficial**: [Documentación de Virtualmin](https://www.virtualmin.com/documentation)
+- **Soporte empresarial**: [Soporte de Virtualmin](https://www.virtualmin.com/support)
 
 ---
 
-<div align="center">
+**Virtualmin Enterprise** - La solución integral para la gestión de servidores web empresariales.
 
-**📚 Documentación completa y organizada para Webmin y Virtualmin Pro 📚**
-
-[🚀 Inicio](README.md) • [🛡️ Protección IA](AI_PROTECTION_GUIDE.md) • [🚇 Túnel Automático](AUTO_TUNNEL_SYSTEM_GUIDE.md) • [⚙️ Configuración](INTEGRACION_PANELES.md) • [🐛 Soporte](https://github.com/yunyminaya/Webmin-y-Virtualmin-/issues)
-
-*Última actualización: Septiembre 2025*
-
-</div>
+*Última actualización: 15 de octubre de 2023*
