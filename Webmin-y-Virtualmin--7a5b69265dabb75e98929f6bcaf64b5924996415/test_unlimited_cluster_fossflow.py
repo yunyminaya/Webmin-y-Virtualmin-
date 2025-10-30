@@ -45,7 +45,7 @@ class TestUnlimitedClusterFossflow(unittest.TestCase):
     
     def test_add_server_basic(self):
         """Prueba básica de agregar servidor"""
-        logger.info("🧪 Probando agregar servidor básico...")
+        logger.info("Probando agregar servidor básico...")
         
         result = self.cluster_manager.add_server(
             "test-web-1",
@@ -65,11 +65,11 @@ class TestUnlimitedClusterFossflow(unittest.TestCase):
         self.assertEqual(server["region"], "us-east-1")
         self.assertEqual(server["status"], "active")
         
-        logger.info("✅ Prueba de agregar servidor básico exitosa")
+        logger.info("Prueba de agregar servidor básico exitosa")
     
     def test_add_multiple_servers(self):
         """Prueba agregar múltiples servidores"""
-        logger.info("🧪 Probando agregar múltiples servidores...")
+        logger.info("Probando agregar múltiples servidores...")
         
         servers_data = [
             ("web1", "Web Server 1", "web", "192.168.1.10"),
@@ -85,11 +85,11 @@ class TestUnlimitedClusterFossflow(unittest.TestCase):
         # Verificar que todos se agregaron
         self.assertEqual(len(self.cluster_manager.servers), 4)
         
-        logger.info("✅ Prueba de múltiples servidores exitosa")
+        logger.info("Prueba de múltiples servidores exitosa")
     
     def test_add_duplicate_server(self):
         """Prueba agregar servidor duplicado"""
-        logger.info("🧪 Probando agregar servidor duplicado...")
+        logger.info("Probando agregar servidor duplicado...")
         
         # Agregar primer servidor
         result1 = self.cluster_manager.add_server("dup1", "Server 1", "web", "192.168.1.100")
@@ -102,11 +102,11 @@ class TestUnlimitedClusterFossflow(unittest.TestCase):
         # Verificar que solo existe uno
         self.assertEqual(len(self.cluster_manager.servers), 1)
         
-        logger.info("✅ Prueba de servidor duplicado exitosa")
+        logger.info("Prueba de servidor duplicado exitosa")
     
     def test_remove_server(self):
         """Prueba eliminar servidor"""
-        logger.info("🧪 Probando eliminar servidor...")
+        logger.info("Probando eliminar servidor...")
         
         # Agregar servidor
         self.cluster_manager.add_server("remove-test", "Remove Test", "web", "192.168.1.100")
@@ -121,11 +121,11 @@ class TestUnlimitedClusterFossflow(unittest.TestCase):
         result2 = self.cluster_manager.remove_server("nonexistent")
         self.assertFalse(result2)
         
-        logger.info("✅ Prueba de eliminar servidor exitosa")
+        logger.info("Prueba de eliminar servidor exitosa")
     
     def test_connect_servers(self):
         """Prueba conectar servidores"""
-        logger.info("🧪 Probando conectar servidores...")
+        logger.info("Probando conectar servidores...")
         
         # Agregar servidores
         self.cluster_manager.add_server("web1", "Web 1", "web", "192.168.1.10")
@@ -143,11 +143,11 @@ class TestUnlimitedClusterFossflow(unittest.TestCase):
         self.assertEqual(connection["type"], "database")
         self.assertEqual(connection["status"], "active")
         
-        logger.info("✅ Prueba de conectar servidores exitosa")
+        logger.info("Prueba de conectar servidores exitosa")
     
     def test_connect_duplicate_servers(self):
         """Prueba conectar servidores duplicados"""
-        logger.info("🧪 Probando conectar servidores duplicados...")
+        logger.info("Probando conectar servidores duplicados...")
         
         # Agregar servidores
         self.cluster_manager.add_server("web1", "Web 1", "web", "192.168.1.10")
@@ -164,11 +164,11 @@ class TestUnlimitedClusterFossflow(unittest.TestCase):
         # Verificar que solo existe una conexión
         self.assertEqual(len(self.cluster_manager.connections), 1)
         
-        logger.info("✅ Prueba de conexión duplicada exitosa")
+        logger.info("Prueba de conexión duplicada exitosa")
     
     def test_disconnect_servers(self):
         """Prueba desconectar servidores"""
-        logger.info("🧪 Probando desconectar servidores...")
+        logger.info("Probando desconectar servidores...")
         
         # Agregar y conectar servidores
         self.cluster_manager.add_server("web1", "Web 1", "web", "192.168.1.10")
@@ -185,11 +185,11 @@ class TestUnlimitedClusterFossflow(unittest.TestCase):
         # Verificar que se eliminó la conexión
         self.assertEqual(len(self.cluster_manager.connections), 0)
         
-        logger.info("✅ Prueba de desconectar servidores exitosa")
+        logger.info("Prueba de desconectar servidores exitosa")
     
     def test_create_cluster(self):
         """Prueba crear cluster"""
-        logger.info("🧪 Probando crear cluster...")
+        logger.info("Probando crear cluster...")
         
         # Agregar servidores
         servers = ["web1", "web2", "db1", "cache1"]
@@ -218,11 +218,11 @@ class TestUnlimitedClusterFossflow(unittest.TestCase):
         # Debería haber conexiones entre todos los servidores (4 choose 2 = 6)
         self.assertGreaterEqual(len(self.cluster_manager.connections), 4)
         
-        logger.info("✅ Prueba de crear cluster exitosa")
+        logger.info("Prueba de crear cluster exitosa")
     
     def test_generate_fossflow_data(self):
         """Prueba generar datos FossFlow"""
-        logger.info("🧪 Probando generar datos FossFlow...")
+        logger.info("Probando generar datos FossFlow...")
         
         # Agregar servidores y conexiones
         self.cluster_manager.add_server("web1", "Web 1", "web", "192.168.1.10")
@@ -255,11 +255,11 @@ class TestUnlimitedClusterFossflow(unittest.TestCase):
         self.assertEqual(metadata["total_servers"], 2)
         self.assertEqual(metadata["total_connections"], 1)
         
-        logger.info("✅ Prueba de generar datos FossFlow exitosa")
+        logger.info("Prueba de generar datos FossFlow exitosa")
     
     def test_generate_interactive_dashboard(self):
         """Prueba generar dashboard interactivo"""
-        logger.info("🧪 Probando generar dashboard interactivo...")
+        logger.info("Probando generar dashboard interactivo...")
         
         # Agregar servidores
         self.cluster_manager.add_server("web1", "Web 1", "web", "192.168.1.10")
@@ -283,7 +283,7 @@ class TestUnlimitedClusterFossflow(unittest.TestCase):
                 self.assertIn("web1", content)
                 self.assertIn("db1", content)
             
-            logger.info("✅ Prueba de generar dashboard interactivo exitosa")
+            logger.info("Prueba de generar dashboard interactivo exitosa")
             
         finally:
             # Limpiar archivo temporal
@@ -292,7 +292,7 @@ class TestUnlimitedClusterFossflow(unittest.TestCase):
     
     def test_get_cluster_stats(self):
         """Prueba obtener estadísticas del cluster"""
-        logger.info("🧪 Probando obtener estadísticas del cluster...")
+        logger.info("Probando obtener estadísticas del cluster...")
         
         # Agregar servidores de diferentes tipos
         servers = [
@@ -332,11 +332,11 @@ class TestUnlimitedClusterFossflow(unittest.TestCase):
         self.assertGreater(stats["average_memory"], 0)
         self.assertGreater(stats["average_disk"], 0)
         
-        logger.info("✅ Prueba de obtener estadísticas del cluster exitosa")
+        logger.info("Prueba de obtener estadísticas del cluster exitosa")
     
     def test_export_import_config(self):
         """Prueba exportar e importar configuración"""
-        logger.info("🧪 Probando exportar e importar configuración...")
+        logger.info("Probando exportar e importar configuración...")
         
         # Agregar servidores y conexiones
         self.cluster_manager.add_server("web1", "Web 1", "web", "192.168.1.10")
@@ -376,7 +376,7 @@ class TestUnlimitedClusterFossflow(unittest.TestCase):
             self.assertEqual(len(self.cluster_manager.connections), 1)
             self.assertEqual(len(self.cluster_manager.clusters), 1)
             
-            logger.info("✅ Prueba de exportar e importar configuración exitosa")
+            logger.info("Prueba de exportar e importar configuración exitosa")
             
         finally:
             # Limpiar archivo temporal
@@ -385,7 +385,7 @@ class TestUnlimitedClusterFossflow(unittest.TestCase):
     
     def test_real_time_updates(self):
         """Prueba actualizaciones en tiempo real"""
-        logger.info("🧪 Probando actualizaciones en tiempo real...")
+        logger.info("Probando actualizaciones en tiempo real...")
         
         # Agregar servidor
         self.cluster_manager.add_server("test-rt", "Test RT", "web", "192.168.1.100")
@@ -401,11 +401,11 @@ class TestUnlimitedClusterFossflow(unittest.TestCase):
         self.assertGreater(server["metrics"]["cpu"], 0)
         self.assertGreater(server["metrics"]["memory"], 0)
         
-        logger.info("✅ Prueba de actualizaciones en tiempo real exitosa")
+        logger.info("Prueba de actualizaciones en tiempo real exitosa")
     
     def test_server_types_validation(self):
         """Prueba validación de tipos de servidores"""
-        logger.info("🧪 Probando validación de tipos de servidores...")
+        logger.info("Probando validación de tipos de servidores...")
         
         # Tipos válidos
         valid_types = ["web", "database", "dns", "cache", "load_balancer", 
@@ -426,11 +426,11 @@ class TestUnlimitedClusterFossflow(unittest.TestCase):
         result = self.cluster_manager.add_server("invalid", "Invalid", "invalid_type", "192.168.1.100")
         self.assertFalse(result)
         
-        logger.info("✅ Prueba de validación de tipos de servidores exitosa")
+        logger.info("Prueba de validación de tipos de servidores exitosa")
     
     def test_comprehensive_workflow(self):
         """Prueba de flujo de trabajo completo"""
-        logger.info("🧪 Probando flujo de trabajo completo...")
+        logger.info("Probando flujo de trabajo completo...")
         
         # 1. Agregar múltiples servidores
         servers = [
@@ -507,7 +507,7 @@ class TestUnlimitedClusterFossflow(unittest.TestCase):
                 self.assertEqual(len(exported_data["connections"]), 13)
                 self.assertEqual(len(exported_data["clusters"]), 3)
             
-            logger.info("✅ Prueba de flujo de trabajo completo exitosa")
+            logger.info("Prueba de flujo de trabajo completo exitosa")
             
         finally:
             if os.path.exists(export_file):
@@ -516,7 +516,7 @@ class TestUnlimitedClusterFossflow(unittest.TestCase):
 
 def run_performance_test():
     """Ejecuta pruebas de rendimiento"""
-    logger.info("🚀 Ejecutando pruebas de rendimiento...")
+    logger.info("Ejecutando pruebas de rendimiento...")
     
     cluster_manager = UnlimitedClusterManager()
     
@@ -533,7 +533,7 @@ def run_performance_test():
             logger.warning(f"No se pudo agregar el servidor {server_id}")
     
     add_time = time.time() - start_time
-    logger.info(f"✅ Agregar 100 servidores: {add_time:.2f} segundos")
+    logger.info(f"Agregar 100 servidores: {add_time:.2f} segundos")
     
     # Medir tiempo para conectar servidores
     start_time = time.time()
@@ -547,7 +547,7 @@ def run_performance_test():
             logger.warning(f"No se pudo conectar {from_server} -> {to_server}")
     
     connect_time = time.time() - start_time
-    logger.info(f"✅ Conectar 50 pares de servidores: {connect_time:.2f} segundos")
+    logger.info(f"Conectar 50 pares de servidores: {connect_time:.2f} segundos")
     
     # Medir tiempo para generar datos FossFlow
     start_time = time.time()
@@ -555,7 +555,7 @@ def run_performance_test():
     fossflow_data = cluster_manager.generate_fossflow_data()
     
     generate_time = time.time() - start_time
-    logger.info(f"✅ Generar datos FossFlow (100 servidores): {generate_time:.2f} segundos")
+    logger.info(f"Generar datos FossFlow (100 servidores): {generate_time:.2f} segundos")
     
     # Medir tiempo para generar dashboard
     with tempfile.NamedTemporaryFile(mode='w', suffix='.html', delete=False) as f:
@@ -567,7 +567,7 @@ def run_performance_test():
         result = cluster_manager.generate_interactive_dashboard(dashboard_file)
         
         dashboard_time = time.time() - start_time
-        logger.info(f"✅ Generar dashboard (100 servidores): {dashboard_time:.2f} segundos")
+        logger.info(f"Generar dashboard (100 servidores): {dashboard_time:.2f} segundos")
         
     finally:
         if os.path.exists(dashboard_file):
@@ -575,38 +575,38 @@ def run_performance_test():
     
     # Estadísticas finales
     stats = cluster_manager.get_cluster_stats()
-    logger.info(f"📊 Estadísticas finales: {stats['total_servers']} servidores, {stats['total_connections']} conexiones")
+    logger.info(f"Estadísticas finales: {stats['total_servers']} servidores, {stats['total_connections']} conexiones")
     
-    logger.info("🎯 Pruebas de rendimiento completadas")
+    logger.info("Pruebas de rendimiento completadas")
 
 
 def main():
     """Función principal de pruebas"""
-    print("🚀 Iniciando Pruebas Completas del Sistema de Clustering Ilimitado con FossFlow")
+    print("Iniciando Pruebas Completas del Sistema de Clustering Ilimitado con FossFlow")
     print("=" * 80)
     
     # Crear suite de pruebas
     suite = unittest.TestLoader().loadTestsFromTestCase(TestUnlimitedClusterFossflow)
     
     # Ejecutar pruebas unitarias
-    print("🧪 Ejecutando pruebas unitarias...")
+    print("Ejecutando pruebas unitarias...")
     runner = unittest.TextTestRunner(verbosity=2)
     result = runner.run(suite)
     
     # Resumen de pruebas unitarias
-    print(f"\n📋 Resumen de Pruebas Unitarias:")
+    print(f"\nResumen de Pruebas Unitarias:")
     print(f"   Tests ejecutados: {result.testsRun}")
     print(f"   Tests exitosos: {result.testsRun - len(result.failures) - len(result.errors)}")
     print(f"   Tests fallidos: {len(result.failures)}")
     print(f"   Tests con errores: {len(result.errors)}")
     
     if result.failures:
-        print("\n❌ Tests fallidos:")
+        print("\nTests fallidos:")
         for test, traceback in result.failures:
             print(f"   - {test}: {traceback}")
     
     if result.errors:
-        print("\n💥 Tests con errores:")
+        print("\nTests con errores:")
         for test, traceback in result.errors:
             print(f"   - {test}: {traceback}")
     
@@ -617,19 +617,19 @@ def main():
     
     # Verificación final del sistema
     print("\n" + "=" * 80)
-    print("🔍 Verificación Final del Sistema")
+    print("Verificación Final del Sistema")
     
     try:
         # Crear instancia para verificación
         manager = UnlimitedClusterManager()
         
         # Verificar tipos de servidores soportados
-        print(f"✅ Tipos de servidores soportados: {len(manager.server_types)}")
+        print(f"Tipos de servidores soportados: {len(manager.server_types)}")
         for server_type, config in manager.server_types.items():
             print(f"   - {server_type}: {config['icon']} {config['color']}")
         
         # Verificar funcionalidades básicas
-        print("✅ Funcionalidades verificadas:")
+        print("Funcionalidades verificadas:")
         print("   - Gestión de servidores ilimitados")
         print("   - Conexiones visuales entre servidores")
         print("   - Creación y gestión de clusters")
@@ -639,13 +639,13 @@ def main():
         print("   - Actualizaciones en tiempo real")
         print("   - Estadísticas del cluster")
         
-        print("\n🎉 Sistema de Clustering Ilimitado con FossFlow VERIFICADO")
-        print("🌟 Todas las funcionalidades principales están operativas")
+        print("\nSistema de Clustering Ilimitado con FossFlow VERIFICADO")
+        print("Todas las funcionalidades principales están operativas")
         
         return result.wasSuccessful()
         
     except Exception as e:
-        print(f"\n💥 Error en verificación final: {e}")
+        print(f"\nError en verificación final: {e}")
         return False
 
 
