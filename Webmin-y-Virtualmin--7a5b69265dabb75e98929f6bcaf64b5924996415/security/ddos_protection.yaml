@@ -1,0 +1,17 @@
+layer4:
+  tcp:
+    syn_flood:
+      enabled: true
+      threshold: 1000
+    connection_limit:
+      enabled: true
+      per_ip_limit: 50
+layer7:
+  http:
+    request_rate_limit:
+      enabled: true
+      rate: 100
+      burst: 50
+    challenge_response:
+      enabled: true
+      mode: "javascript"

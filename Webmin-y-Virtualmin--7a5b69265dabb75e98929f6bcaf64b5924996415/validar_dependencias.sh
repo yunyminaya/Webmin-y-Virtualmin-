@@ -144,14 +144,14 @@ check_system_resources() {
     if [[ -r /proc/meminfo ]]; then
         local mem_kb
         mem_kb=$(awk '/MemTotal/ {print $2}' /proc/meminfo)
-        local mem_gb=$((mem_kb / 1024 / 1024))
+        local mem_gb=$(bc -l <<< "scale=2; $mem_kb / (1024 * 1024)")  # Convertir KB a GB con precisión
 
-        if [[ $mem_gb -lt $MIN_MEMORY_GB ]]; then
+        if (( $(echo "$mem_gb < $MIN_MEMORY_GB" | bc -l) )); then
             log_error "Memoria RAM insuficiente: ${mem_gb}GB"
             log_info "Mínimo requerido: ${MIN_MEMORY_GB}GB RAM"
             log_info "Recomendado: 4GB+ RAM"
             exit $ERROR_MEMORY_INSUFFICIENT
-        elif [[ $mem_gb -lt 4 ]]; then
+        elif (( $(echo "$mem_gb < 4" | bc -l) )); then
             log_warning "Memoria RAM limitada: ${mem_gb}GB (recomendado: 4GB+)"
         else
             log_success "Memoria RAM: ${mem_gb}GB"
@@ -211,7 +211,7 @@ check_package_manager() {
 check_critical_dependencies() {
     log_step "Verificando dependencias críticas..."
 
-    local critical_deps=("curl" "wget" "tar" "gzip" "bash")
+    local critical_deps=("curl" "wget" "tar" "gzip" "bash" "bc")
     local missing_deps=()
 
     for dep in "${critical_deps[@]}"; do
