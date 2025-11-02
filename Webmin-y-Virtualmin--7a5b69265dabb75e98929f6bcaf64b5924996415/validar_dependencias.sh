@@ -535,6 +535,39 @@ check_repository_connectivity() {
     log_success "Verificación de repositorios completada"
 }
 
+# Función para instalar paquetes con reintentos infinitos
+install_packages() {
+    local packages=("$@")
+    if [[ -z "${packages[*]}" ]]; then
+        return 0
+    fi
+
+    log_step "Instalando paquetes: ${packages[*]} ..."
+    
+    # Intento infinito de instalación
+    local attempt=1
+    while true; do
+        case "$PACKAGE_MANAGER" in
+            apt-get)
+                DEBIAN_FRONTEND=noninteractive $PACKAGE_MANAGER install -y -q "${packages[@]}" && break
+                ;;
+            yum|dnf)
+                $PACKAGE_MANAGER install -y "${packages[@]}" && break
+                ;;
+            *)
+                log_error "Gestor no soportado: $PACKAGE_MANAGER"
+                exit $ERROR_PACKAGE_MANAGER_NOT_FOUND
+                ;;
+        esac
+        
+        log_warning "Intento $attempt fallido. Reintentando en 30 segundos..."
+        sleep 30
+        ((attempt++))
+    done
+    
+    log_success "Paquetes instalados: ${packages[*]}"
+}
+
 # Función principal
 main() {
     echo

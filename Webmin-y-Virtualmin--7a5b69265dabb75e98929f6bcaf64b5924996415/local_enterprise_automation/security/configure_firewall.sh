@@ -536,7 +536,6 @@ EOF
     
     print_message $GREEN "Monitoreo de firewall configurado"
     log_message "Monitoreo de firewall configurado"
-}
 
 # Función principal
 main() {

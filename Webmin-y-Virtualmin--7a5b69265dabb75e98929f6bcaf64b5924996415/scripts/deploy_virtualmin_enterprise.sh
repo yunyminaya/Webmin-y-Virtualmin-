@@ -164,7 +164,6 @@ for key, value in config.items():
         print(f'{key.upper()}={value}')
 ")
 EOF
-)
     
     success "Configuración cargada"
 }

@@ -467,4 +467,235 @@ run_chkrootkit_scan() {
     
     if [ $? -eq 0 ]; then
         echo "Análisis con chkrootkit completado: $report_file"
-        log_message "Aná
+        log_message "Análisis con chkrootkit completado: $report_file"
+        log_message "Análisis con chkrootkit completado: $report_file"
+    else
+        echo "Error al ejecutar análisis con chkrootkit"
+        log_message "Error al ejecutar análisis con chkrootkit"
+        return 1
+    fi
+    
+    # Mantener solo los últimos 7 días de informes
+    find "$REPORT_DIR" -name "chkrootkit_*.log" -mtime +7 -delete
+    EOF
+    
+    # Configurar permisos
+    chmod +x "/etc/cron.daily/chkrootkit"
+    
+    log_message "chkrootkit configurado"
+    print_message $GREEN "chkrootkit configurado"
+}
+
+# Función para configurar rkhunter
+configure_rkhunter() {
+    log_message "Configurando rkhunter"
+    
+    # Crear directorio de informes
+    mkdir -p "$REPORTS_DIR/rkhunter"
+    
+    # Configurar rkhunter
+    cat > "/etc/rkhunter.conf.local" << 'EOF'
+# Configuración personalizada de rkhunter para Virtualmin Enterprise
+
+# Configurar directorio de informes
+REPORTDIR=/opt/virtualmin-enterprise/reports/security/rkhunter
+
+# Configurar archivo de log
+LOGFILE=/var/log/rkhunter.log
+
+# Habilitar actualización automática de base de datos
+UPDATE_MIRRORS=1
+MIRRORS_MODE=0
+
+# Configurar directorios a excluir
+EXCLUDE_USER_DIRS=/dev/shm,/proc,/sys,/usr/share/doc,/usr/share/man,/usr/share/info,/var/tmp,/tmp
+
+# Configurar archivos a excluir
+EXCLUDE_USER_FILES=/etc/ld.so.cache,/etc/mtab,/etc/fstab,/etc/blkid.tab
+
+# Configurar comandos a excluir
+EXCLUDE_SCM_CMDS=git,svn,cvs,hg,bzr
+
+# Configurar scripts a excluir
+EXCLUDE_SCRIPTS=python,perl,php,ruby,bash,sh
+
+# Configurar aplicaciones web
+ALLOW_SSH_ROOT_USER=no
+ALLOW_SSH_PROT_V1=0
+ALLOW_SSH_PROT_V2=1
+ENABLE_TESTS=all
+
+# Configurar alertas por email
+MAIL-ON-WARNING=1
+MAIL-ON-WARNING=admin@example.com
+EOF
+    
+    # Actualizar base de datos de rkhunter
+    rkhunter --update >> "$LOG_FILE" 2>&1
+    
+    # Crear script de ejecución semanal
+    cat > "/etc/cron.weekly/rkhunter" << 'EOF'
+#!/bin/bash
+
+# Script de ejecución semanal de rkhunter
+
+REPORT_DIR="/opt/virtualmin-enterprise/reports/security/rkhunter"
+DATE=$(date +%Y%m%d_%H%M%S)
+REPORT_FILE="$REPORT_DIR/rkhunter_$DATE.log"
+
+# Actualizar base de datos
+rkhunter --update --report-warnings-only --cronjob > /dev/null 2>&1
+
+# Ejecutar rkhunter
+rkhunter --check --report-warnings-only --cronjob > "$REPORT_FILE" 2>&1
+
+# Mantener solo los últimos 30 días de informes
+find "$REPORT_DIR" -name "rkhunter_*.log" -mtime +30 -delete
+EOF
+    
+    # Configurar permisos
+    chmod +x "/etc/cron.weekly/rkhunter"
+    
+    log_message "rkhunter configurado"
+    print_message $GREEN "rkhunter configurado"
+}
+
+# Función para crear script de gestión de hardening
+create_management_script() {
+    log_message "Creando script de gestión de hardening"
+    
+    cat > "$INSTALL_DIR/scripts/manage_hardening.sh" << 'EOF'
+#!/bin/bash
+
+# Script de gestión de hardening de seguridad para Virtualmin Enterprise
+
+CONFIG_DIR="/opt/virtualmin-enterprise/config/hardening"
+REPORTS_DIR="/opt/virtualmin-enterprise/reports/security"
+LOG_FILE="/var/log/virtualmin-enterprise-hardening.log"
+
+# Función para registrar mensajes
+log_message() {
+    local message=$1
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $message" >> "$LOG_FILE"
+}
+
+# Función para ejecutar auditoría con Lynis
+run_lynis_audit() {
+    local scan_type=${1:-system}
+    local report_file="$REPORTS_DIR/lynis/lynis_$(date +%Y%m%d_%H%M%S).html"
+    
+    echo "Ejecutando auditoría con Lynis (tipo: $scan_type)..."
+    
+    case $scan_type in
+        "system")
+            lynis audit system --profile server --report-file "$report_file" >> "$LOG_FILE" 2>&1
+            ;;
+        "docker")
+            lynis audit docker --report-file "$report_file" >> "$LOG_FILE" 2>&1
+            ;;
+        "custom")
+            lynis audit system --profile server --include-dir /etc/webmin --include-dir /etc/virtualmin --report-file "$report_file" >> "$LOG_FILE" 2>&1
+            ;;
+        *)
+            lynis audit system --profile server --report-file "$report_file" >> "$LOG_FILE" 2>&1
+            ;;
+    esac
+    
+    if [ $? -eq 0 ]; then
+        echo "Auditoría con Lynis completada: $report_file"
+        log_message "Auditoría con Lynis completada: $report_file"
+    else
+        echo "Error al ejecutar auditoría con Lynis"
+        log_message "Error al ejecutar auditoría con Lynis"
+        return 1
+    fi
+    
+    # Mostrar resumen de resultados
+    echo "Resumen de auditoría:"
+    grep -E "Warnings|Suggestions" "$report_file" | head -10
+}
+
+# Función para ejecutar análisis con OpenVAS
+run_openvas_scan() {
+    local target=${1:-localhost}
+    local scan_name=${2:-"Virtualmin Security Scan $(date +%Y%m%d_%H%M%S)"}
+    
+    echo "Ejecutando análisis con OpenVAS (objetivo: $target)..."
+    
+    # Obtener ID de usuario de GVM
+    local gvm_user_id=$(sudo -u gvm gvm-manage-cmd --gmp-username=admin --gmp-password=admin users get | grep -o '"id":"[^"]*' | cut -d'"' -f4)
+    
+    if [ -z "$gvm_user_id" ]; then
+        echo "Error: No se pudo obtener ID de usuario de GVM"
+        return 1
+    fi
+    
+    # Crear tarea de análisis
+    local scan_task_id=$(sudo -u gvm gvm-manage-cmd --gmp-username=admin --gmp-password=admin tasks create --name "$scan_name" --target "$target" --config "Full and fast" >> "$LOG_FILE" 2>&1 | grep -o '"id":"[^"]*' | cut -d'"' -f4)
+    
+    if [ -z "$scan_task_id" ]; then
+        echo "Error: No se pudo crear tarea de análisis en OpenVAS"
+        return 1
+    fi
+    
+    # Iniciar tarea de análisis
+    sudo -u gvm gvm-manage-cmd --gmp-username=admin --gmp-password=admin tasks start --task-id "$scan_task_id" >> "$LOG_FILE" 2>&1
+    
+    echo "Análisis con OpenVAS iniciado (ID: $scan_task_id)"
+    log_message "Análisis con OpenVAS iniciado (ID: $scan_task_id)"
+    
+    # Mostrar estado del análisis
+    echo "Para verificar el estado del análisis, ejecute:"
+    echo "sudo -u gvm gvm-manage-cmd --gmp-username=admin --gmp-password=admin tasks get --task-id $scan_task_id"
+}
+
+# Función para ejecutar análisis con chkrootkit
+run_chkrootkit_scan() {
+    local report_file="$REPORTS_DIR/chkrootkit/chkrootkit_$(date +%Y%m%d_%H%M%S).log"
+    
+    echo "Ejecutando análisis con chkrootkit..."
+    
+    # Crear directorio de informes si no existe
+    mkdir -p "$REPORTS_DIR/chkrootkit"
+    
+    # Ejecutar chkrootkit
+    chkrootkit -q -r / > "$report_file" 2>&1
+    
+    if [ $? -eq 0 ]; then
+        echo "Análisis con chkrootkit completado: $report_file"
+        log_message "Análisis con chkrootkit completado: $report_file"
+    else
+        echo "Error al ejecutar análisis con chkrootkit"
+        log_message "Error al ejecutar análisis con chkrootkit"
+        return 1
+    fi
+    
+    # Mantener solo los últimos 7 días de informes
+    find "$REPORT_DIR" -name "chkrootkit_*.log" -mtime +7 -delete
+}
+
+# Función principal
+main() {
+    print_message $GREEN "Iniciando instalación y configuración de hardening automático..."
+    log_message "Iniciando instalación y configuración de hardening automático"
+    
+    check_root
+    install_dependencies
+    install_openvas
+    configure_lynis
+    configure_chkrootkit
+    configure_rkhunter
+    create_management_script
+    
+    print_message $GREEN "Instalación y configuración de hardening automático completada"
+    log_message "Instalación y configuración de hardening automático completada"
+    
+    print_message $BLUE "Scripts de gestión de hardening:"
+    print_message $BLUE "- Gestión: $INSTALL_DIR/scripts/manage_hardening.sh"
+    print_message $BLUE "- Auditoría Lynis: lynis audit system --profile server"
+    print_message $BLUE "- Auditoría OpenVAS: sudo -u gvm gvm-manage-cmd --gmp-username=admin --gmp-password=admin tasks"
+    print_message $YELLOW "Para ejecutar auditorías, use: $INSTALL_DIR/scripts/manage_hardening.sh"
+}
+
+# Ejecutar función principal
+main "$@"

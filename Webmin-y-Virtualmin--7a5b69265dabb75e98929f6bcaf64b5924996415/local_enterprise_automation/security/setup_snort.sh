@@ -703,7 +703,6 @@ EOF
     
     log_message "Script de gestión de Snort creado"
     print_message $GREEN "Script de gestión de Snort creado"
-}
 
 # Función principal
 main() {

@@ -244,7 +244,7 @@ install_owasp_crs() {
     sed -i 's/# SecAction "id:900000, phase:1, nolog, pass, t:none, setvar:tx.critical_anomaly_score=5"/SecAction "id:900000, phase:1, nolog, pass, t:none, setvar:tx.critical_anomaly_score=5"/' "$OWASP_CRS_DIR/crs-setup.conf"
     sed -i 's/# SecAction "id:900001, phase:1, nolog, pass, t:none, setvar:tx.error_anomaly_score=4"/SecAction "id:900001, phase:1, nolog, pass, t:none, setvar:tx.error_anomaly_score=4"/' "$OWASP_CRS_DIR/crs-setup.conf"
     sed -i 's/# SecAction "id:900002, phase:1, nolog, pass, t:none, setvar:tx.warning_anomaly_score=3"/SecAction "id:900002, phase:1, nolog, pass, t:none, setvar:tx.warning_anomaly_score=3"/' "$OWASP_CRS_DIR/crs-setup.conf"
-    sed -i 's/# SecAction "id:900003, phase:1, nolog, pass, t:none, setvar:tx.notice_anomaly_score=2"/SecAction "id:900003, phase:1, nolog, pass, t:none, setvar:tx.notice_anomaly_score=2"/' "$OWASP_CRS_DIR/crs-setup.conf")
+    sed -i 's/# SecAction "id:900003, phase:1, nolog, pass, t:none, setvar:tx.notice_anomaly_score=2"/SecAction "id:900003, phase:1, nolog, pass, t:none, setvar:tx.notice_anomaly_score=2"/' "$OWASP_CRS_DIR/crs-setup.conf"
     
     # Limpiar archivos temporales
     rm -rf "v$OWASP_CRS_VERSION.tar.gz" "coreruleset-$OWASP_CRS_VERSION"
