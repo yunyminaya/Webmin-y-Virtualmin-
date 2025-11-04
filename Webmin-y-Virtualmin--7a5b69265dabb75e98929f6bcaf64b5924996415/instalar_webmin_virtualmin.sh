@@ -33,23 +33,23 @@ check_os() {
 check_system_requirements() {
     # Verificar memoria RAM (mínimo 2GB, recomendado 4GB)
     local mem_kb=$(grep MemTotal /proc/meminfo | awk '{print $2}')
-    local mem_gb=$(echo "scale=2; $mem_kb / 1024 / 1024" | bc)
-    
-    if (( $(echo "$mem_gb < 2" | bc -l) )); then
+    local mem_gb=$((mem_kb / 1024 / 1024))
+
+    if [ "$mem_gb" -lt 2 ]; then
         echo -e "${RED}Error: Memoria RAM insuficiente (${mem_gb}GB). Mínimo requerido: 2GB${NC}"
         exit 1
-    elif (( $(echo "$mem_gb < 4" | bc -l) )); then
+    elif [ "$mem_gb" -lt 4 ]; then
         echo -e "${YELLOW}Advertencia: Memoria RAM limitada (${mem_gb}GB). Se recomiendan 4GB o más${NC}"
     fi
-    
+
     # Verificar espacio en disco (mínimo 20GB, recomendado 50GB)
     local disk_kb=$(df -k / | tail -1 | awk '{print $4}')
-    local disk_gb=$(echo "scale=2; $disk_kb / 1024 / 1024" | bc)
-    
-    if (( $(echo "$disk_gb < 20" | bc -l) )); then
+    local disk_gb=$((disk_kb / 1024 / 1024))
+
+    if [ "$disk_gb" -lt 20 ]; then
         echo -e "${RED}Error: Espacio en disco insuficiente (${disk_gb}GB). Mínimo requerido: 20GB${NC}"
         exit 1
-    elif (( $(echo "$disk_gb < 50" | bc -l) )); then
+    elif [ "$disk_gb" -lt 50 ]; then
         echo -e "${YELLOW}Advertencia: Espacio en disco limitado (${disk_gb}GB). Se recomiendan 50GB o más${NC}"
     fi
 }
@@ -64,7 +64,11 @@ install_dependencies() {
             apt-get install -y curl software-properties-common apt-transport-https
             ;;
         centos|rhel|fedora)
-            yum install -y curl epel-release
+            if command -v dnf >/dev/null; then
+                dnf install -y curl epel-release
+            else
+                yum install -y curl epel-release
+            fi
             ;;
         *)
             echo -e "${RED}Error: Sistema operativo no soportado: $OS${NC}"
@@ -86,7 +90,11 @@ install_webmin() {
             ;;
         centos|rhel|fedora)
             curl -o /etc/yum.repos.d/webmin.repo https://download.webmin.com/download/yum/webmin.repo
-            yum install -y webmin
+            if command -v dnf >/dev/null; then
+                dnf install -y webmin
+            else
+                yum install -y webmin
+            fi
             ;;
     esac
 }
@@ -100,7 +108,7 @@ install_virtualmin() {
 # Función para configurar seguridad
 configure_security() {
     echo -e "${GREEN}Configurando seguridad...${NC}"
-    
+
     # Habilitar firewall
     if command -v ufw >/dev/null; then
         ufw allow 10000/tcp
@@ -109,15 +117,15 @@ configure_security() {
         firewall-cmd --permanent --add-port=10000/tcp
         firewall-cmd --reload
     fi
-    
-    # Configurar certificado SSL
-    /usr/share/webmin/install-module.pl /usr/share/webmin/authentic-theme/authentic-theme.wbm
-    /usr/share/webmin/install-module.pl /usr/share/webmin/miniserv.pem
-    
+
     # Configurar autenticación de dos factores
     if [ -f /etc/webmin/miniserv.conf ]; then
         echo "twofactor=1" >> /etc/webmin/miniserv.conf
-        systemctl restart webmin
+        if command -v systemctl >/dev/null; then
+            systemctl restart webmin
+        else
+            service webmin restart
+        fi
     fi
 }
 
