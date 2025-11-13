@@ -50,7 +50,7 @@ restart_tunnel() {
         -o "ServerAliveCountMax=3" \
         -i "$KEY_FILE" \
         -N -R $TUNNEL_PORT:localhost:22 \
-        "$REMOTE_USER@$REMOTE_HOST" &>> "$LOG_FILE" &
+        "$REMOTE_USER@$REMOTE_HOST" >> "$LOG_FILE" 2>&1 &
     
     sleep 2
     if check_tunnel_health; then

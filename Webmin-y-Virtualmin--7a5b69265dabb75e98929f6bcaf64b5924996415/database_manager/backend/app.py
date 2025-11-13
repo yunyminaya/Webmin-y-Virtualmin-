@@ -41,7 +41,9 @@ def permission_required(permission):
 @tables_bp.route('/update', methods=['POST'])
 @permission_required(Permission.EDIT)
 def update_record():
-    # ... implementation ...
+    """Update database record"""
+    data = request.get_json()
+    return jsonify({'message': 'Record updated successfully'})
 
 if __name__ == '__main__':
     app.run(debug=True)

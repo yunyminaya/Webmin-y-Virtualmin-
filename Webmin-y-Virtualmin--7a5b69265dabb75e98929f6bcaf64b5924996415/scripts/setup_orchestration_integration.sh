@@ -585,4 +585,4 @@ create_ansible_roles() {
     state: present
 
 - name: Agregar repositorio de Webmin
-  apt_repository
+  apt_repositoryEOF

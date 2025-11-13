@@ -58,7 +58,7 @@ check_internet_connection() {
     local test_urls=("https://google.com" "https://github.com" "https://software.virtualmin.com")
 
     for url in "${test_urls[@]}"; do
-        if curl -s --ssl-reqd --connect-timeout 10 --max-time "$timeout" --retry 3 --retry-delay 2 --user-agent "Dependency-Validator/1.0" "$url" > /dev/null 2>&1; then
+        if curl -s --ssl-reqd --connect-timeout=10 --max-time "$timeout" --retry 3 --retry-delay 2 --user-agent "Dependency-Validator/1.0" "$url" > /dev/null 2>&1; then
             log_success "Conectividad a internet OK (probado con $url)"
             return 0
         fi
@@ -525,7 +525,7 @@ check_repository_connectivity() {
     local repos=("https://software.virtualmin.com" "https://github.com" "https://deb.debian.org" "https://archive.ubuntu.com")
 
     for repo in "${repos[@]}"; do
-        if curl -s --ssl-reqd --connect-timeout 10 --max-time 5 --retry 3 --retry-delay 2 --user-agent "Dependency-Validator/1.0" "$repo" > /dev/null 2>&1; then
+        if curl -s --ssl-reqd --connect-timeout=10 --max-time=5 --retry 3 --retry-delay 2 --user-agent "Dependency-Validator/1.0" "$repo" > /dev/null 2>&1; then
             log_debug "Repositorio accesible: $repo"
         else
             log_warning "Repositorio no accesible: $repo"

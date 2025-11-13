@@ -1,75 +1,96 @@
-# Archivos del sistema operativo
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
+# =============================================================================
+# ARCHIVO .GITIGNORE - WEBMIN/VIRTUALMIN
+# Protege archivos sensibles y temporales
+# =============================================================================
 
-# Archivos temporales
-*.tmp
-*.temp
-*.log
-*.cache
-*.swp
-*.swo
-*~
+# =============================================================================
+# ARCHIVOS DE CONFIGURACIÓN SENSIBLES
+# =============================================================================
 
-# Archivos de configuración local
-config.local
-*.local
-.env
+# Archivos de entorno con credenciales reales
+.env.production
 .env.local
-.env.*.local
+.env.staging
+.env.development
+.env
 
-# Directorios de backup
-backup/
-backups/
-*.backup
-*.bak
-
-# Archivos de instalación temporal
-install.sh
-install.log
-setup.log
-
-# Archivos de certificados y claves privadas
+# Archivos de credenciales
 *.key
 *.pem
 *.crt
-*.csr
 *.p12
 *.pfx
-
-# Archivos de contraseñas
-passwords.txt
-*.passwd
 credentials.txt
+passwords.txt
+secrets.txt
+api_keys.txt
 
-# Directorios de logs
+# Archivos de configuración con datos sensibles
+config/production.conf
+config/staging.conf
+config/local.conf
+database.conf
+db_credentials.conf
+
+# =============================================================================
+# LOGS Y ARCHIVOS TEMPORALES
+# =============================================================================
+
+# Logs de instalación y validación
+/tmp/webmin_*.log
+/tmp/installation_*.log
+/tmp/validation_*.log
 logs/
 *.log
-log/
 
-# Archivos comprimidos grandes (mantener solo los necesarios)
-# *.zip
-# *.tar.gz
-# *.tar.bz2
+# Archivos temporales
+tmp/
+temp/
+*.tmp
+*.temp
+.cache/
 
-# Archivos de IDE
-.vscode/
-.idea/
-*.sublime-project
-*.sublime-workspace
+# =============================================================================
+# BACKUPS Y DATOS
+# =============================================================================
 
-# Archivos de Node.js (si se usan)
+# Directorios de backup
+backups/
+/var/backups/webmin/
+backup_*.tar.gz
+backup_*.sql
+backup_*.zip
+
+# Datos de usuarios y sistemas
+data/
+users_data/
+system_data/
+
+# =============================================================================
+# ARCHIVOS DE SISTEMA
+# =============================================================================
+
+# Archivos de credenciales generados
+/root/webmin_credentials.txt
+/root/db_credentials.txt
+/root/ssl_credentials.txt
+
+# Archivos de estado del sistema
+*.pid
+*.lock
+.state/
+
+# =============================================================================
+# DEPENDENCIAS Y BUILD
+# =============================================================================
+
+# Node.js
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Archivos de Python (si se usan)
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
@@ -91,37 +112,236 @@ wheels/
 .installed.cfg
 *.egg
 
-# Archivos de configuración específicos del servidor
-/etc/webmin/
-/var/log/webmin/
-/var/webmin/
+# =============================================================================
+# IDE Y EDITORES
+# =============================================================================
 
-# Archivos de base de datos
-*.sql
-*.db
-*.sqlite
-*.sqlite3
+# VSCode
+.vscode/
+*.code-workspace
 
-# Archivos de cache
-cache/
-.cache/
-tmp/
-temp/
+# Vim
+*.swp
+*.swo
+*~
 
-# Archivos de documentación generada automáticamente
-docs/_build/
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
 
-# Archivos específicos de macOS
+# =============================================================================
+# SISTEMAS OPERATIVOS
+# =============================================================================
+
+# macOS
+.DS_Store
 .AppleDouble
 .LSOverride
 Icon
+._*
 
-# Archivos específicos de Windows
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
 ehthumbs.db
-desktop.ini
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
 
-# Archivos específicos de Linux
-*~
+# =============================================================================
+# CERTIFICADOS SSL Y KEYS
+# =============================================================================
 
-# Mantener estructura de directorios vacía
-!.gitkeep
+# Certificados SSL generados
+ssl/certs/*.crt
+ssl/private/*.key
+ssl/certs/*.pem
+ssl/private/*.pem
+
+# Let's Encrypt
+/etc/letsencrypt/live/
+/etc/letsencrypt/archive/
+/etc/letsencrypt/renewal/
+
+# =============================================================================
+# BASES DE DATOS
+# =============================================================================
+
+# Archivos de base de datos
+*.db
+*.sqlite
+*.sqlite3
+*.sql
+*.dump
+
+# =============================================================================
+# MONITOREO Y MÉTRICAS
+# =============================================================================
+
+# Datos de monitoreo
+monitoring/data/
+monitoring/metrics/
+monitoring/logs/
+
+# Prometheus
+prometheus_data/
+
+# Grafana
+grafana/data/
+grafana/logs/
+
+# =============================================================================
+# CONTENEDORES Y VIRTUALIZACIÓN
+# =============================================================================
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# Kubernetes
+*.kubeconfig
+kubeconfig
+
+# =============================================================================
+# ARCHIVOS DE COMPRESIÓN
+# =============================================================================
+
+# Archivos comprimidos grandes
+*.tar.gz
+*.zip
+*.rar
+*.7z
+
+# =============================================================================
+# DOCUMENTACIÓN GENERADA
+# =============================================================================
+
+# Reportes generados
+*_report.txt
+*_report.html
+*_report.pdf
+
+# Documentación automática
+docs/generated/
+docs/build/
+
+# =============================================================================
+# TESTS Y COVERAGE
+# =============================================================================
+
+# Coverage reports
+coverage/
+*.cover
+.hypothesis/
+.pytest_cache/
+.coverage
+
+# Test results
+test_results/
+*.test
+tests/results/
+
+# =============================================================================
+# SEGURIDAD Y AUDITORÍA
+# =============================================================================
+
+# Reportes de seguridad
+security_audit_report_*.html
+security_scan_*.json
+vulnerability_report_*.xml
+
+# Archivos de auditoría
+audit_logs/
+security_logs/
+
+# =============================================================================
+# ARCHIVOS PERSONALIZADOS DEL USUARIO
+# =============================================================================
+
+# Configuraciones personalizadas
+custom_config/
+user_config/
+local_config/
+
+# Scripts personalizados
+custom_scripts/
+user_scripts/
+
+# =============================================================================
+# ARCHIVOS DE DEPLOYMENT
+# =============================================================================
+
+# Archivos de deployment con credenciales
+deploy/secrets/
+deploy/credentials/
+deploy/config/
+
+# Terraform state
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# =============================================================================
+# MISCELÁNEOS
+# =============================================================================
+
+# Archivos grandes (>100MB)
+*.iso
+*.dmg
+*.img
+*.vmdk
+
+# Archivos binarios
+*.bin
+*.exe
+*.msi
+*.deb
+*.rpm
+
+# Archivos de configuración local
+local_settings.py
+local_settings.js
+local_config.json
+
+# =============================================================================
+# EXCEPCIONES (ARCHIVOS QUE SÍ SE INCLUYEN)
+# =============================================================================
+
+# Mantener archivos de ejemplo
+!.env.production.example
+!.env.example
+!config/example.conf
+!credentials.example
+
+# Mantener documentación importante
+!README.md
+!CHANGELOG.md
+!LICENSE
+
+# Mantener scripts de instalación
+!install_*.sh
+!setup_*.sh
+!deploy_*.sh
+
+# Mantener archivos de configuración de ejemplo
+!*.example
+!*.template
+!*.sample
+
+# Mantener archivos de documentación
+!docs/
+!*.md
+!*.txt
+!*.rst

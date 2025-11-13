@@ -30,8 +30,8 @@ if [[ -f "${SCRIPT_DIR}/validar_dependencias.sh" ]]; then
     log_success "Validación de dependencias completada"
 fi
 
-# Variables globales
-SERVER_IP="tu-servidor"
+# Variables globales (se detectarán automáticamente)
+SERVER_IP="127.0.0.1"
 WEBMIN_PORT="10000"
 
 cleanup() {

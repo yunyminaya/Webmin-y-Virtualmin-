@@ -40,9 +40,20 @@ check_dependencies() {
     if ! command -v python3 &> /dev/null; then
         missing_deps+=("python3")
     else
-        # Check for required Python packages
-        if ! python3 -c "import sqlite3, pandas, sklearn" 2>/dev/null; then
-            missing_deps+=("python3-pandas python3-scikit-learn")
+        # Check for required Python packages individually
+        local python_missing=()
+        if ! python3 -c "import sqlite3" 2>/dev/null; then
+            python_missing+=("sqlite3")
+        fi
+        if ! python3 -c "import pandas" 2>/dev/null; then
+            python_missing+=("pandas")
+        fi
+        if ! python3 -c "import sklearn" 2>/dev/null; then
+            python_missing+=("scikit-learn")
+        fi
+        
+        if [ ${#python_missing[@]} -gt 0 ]; then
+            missing_deps+=("python3-${python_missing[*]}")
         fi
     fi
 

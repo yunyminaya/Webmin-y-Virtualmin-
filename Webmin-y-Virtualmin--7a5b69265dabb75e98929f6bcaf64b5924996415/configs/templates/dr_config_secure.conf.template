@@ -1,0 +1,164 @@
+# CONFIGURACIÓN DEL SISTEMA DE RECUPERACIÓN DE DESASTRES (DR) - Versión Segura
+# Este archivo es una plantilla - NO USAR DIRECTAMENTE
+# Reemplace las variables de entorno antes de usar
+
+# === CONFIGURACIÓN GENERAL ===
+DR_SYSTEM_VERSION="${DR_SYSTEM_VERSION:-1.0.0}"
+DR_ROOT_DIR="${DR_ROOT_DIR:-/opt/disaster_recovery}"
+LOG_DIR="${LOG_DIR:-$DR_ROOT_DIR/logs}"
+CONFIG_DIR="${CONFIG_DIR:-$DR_ROOT_DIR/config}"
+TEMP_DIR="${TEMP_DIR:-$DR_ROOT_DIR/temp}"
+
+# === CONFIGURACIÓN DE REPLICACIÓN ===
+# Tipos de replicación soportados
+REPLICATION_TYPE="${REPLICATION_TYPE:-real_time}"  # real_time | scheduled | hybrid
+REPLICATION_METHOD="${REPLICATION_METHOD:-rsync}"    # rsync | drbd | glusterfs | mysql_replication
+
+# Servidores de replicación (pares primario/secundario)
+PRIMARY_SERVER="${PRIMARY_SERVER}"
+SECONDARY_SERVER="${SECONDARY_SERVER}"
+REPLICATION_PORT="${REPLICATION_PORT:-873}"
+REPLICATION_USER="${REPLICATION_USER:-dr_sync}"
+
+# Directorios a replicar en tiempo real
+REALTIME_REPLICATION_DIRS=(
+    "${WEB_ROOT_DIR:-/var/www}"
+    "${DB_DATA_DIR:-/var/lib/mysql}"
+    "${WEBMIN_CONFIG_DIR:-/etc/webmin}"
+    "${VIRTUALMIN_CONFIG_DIR:-/etc/virtualmin}"
+    "${BACKUP_ROOT_DIR:-/opt/enterprise_backups}"
+)
+
+# Exclusiones de replicación
+REPLICATION_EXCLUDES=(
+    "*.log"
+    "*.tmp"
+    "*/cache/*"
+    "*/tmp/*"
+    "*/.git/*"
+)
+
+# === CONFIGURACIÓN DE FAILOVER ===
+# Umbrales de failover
+FAILOVER_CPU_THRESHOLD="${FAILOVER_CPU_THRESHOLD:-90}"
+FAILOVER_MEMORY_THRESHOLD="${FAILOVER_MEMORY_THRESHOLD:-95}"
+FAILOVER_DISK_THRESHOLD="${FAILOVER_DISK_THRESHOLD:-95}"
+FAILOVER_NETWORK_TIMEOUT="${FAILOVER_NETWORK_TIMEOUT:-30}"
+
+# Métodos de failover
+FAILOVER_METHOD="${FAILOVER_METHOD:-automatic}"  # automatic | manual | semi_automatic
+VIP_ADDRESS="${VIP_ADDRESS}"
+VIP_INTERFACE="${VIP_INTERFACE:-eth0}"
+
+# Servicios críticos para failover
+CRITICAL_SERVICES=(
+    "webmin"
+    "usermin"
+    "${WEB_SERVER_SERVICE:-apache2}"
+    "${DB_SERVICE:-mysql}"
+    "${DNS_SERVICE:-bind9}"
+)
+
+# === CONFIGURACIÓN DE RECUPERACIÓN ===
+# Objetivos de recuperación (RTO/RPO)
+RTO_MINUTES="${RTO_MINUTES:-15}"      # Recovery Time Objective
+RPO_SECONDS="${RPO_SECONDS:-60}"      # Recovery Point Objective
+
+# Estrategias de recuperación
+RECOVERY_STRATEGY="${RECOVERY_STRATEGY:-automatic}"  # automatic | semi_automatic | manual
+BACKUP_RESTORE_PRIORITY="${BACKUP_RESTORE_PRIORITY:-critical_first}"  # critical_first | parallel | sequential
+
+# === CONFIGURACIÓN DE TESTING ===
+# Tipos de pruebas de recuperación
+DR_TEST_TYPES=(
+    "full_failover_test"
+    "partial_failover_test"
+    "data_corruption_test"
+    "network_failure_test"
+    "service_failure_test"
+)
+
+# Frecuencia de pruebas
+DR_TEST_FREQUENCY="${DR_TEST_FREQUENCY:-weekly}"  # daily | weekly | monthly
+DR_TEST_SCHEDULE="${DR_TEST_SCHEDULE:-sunday 02:00}"
+
+# === CONFIGURACIÓN DE REPORTES ===
+# Reportes de cumplimiento
+COMPLIANCE_REPORTING="${COMPLIANCE_REPORTING:-enabled}"
+REPORT_RETENTION_DAYS="${REPORT_RETENTION_DAYS:-365}"
+REPORT_FORMAT="${REPORT_FORMAT:-html,pdf,json}"
+
+# Auditoría
+AUDIT_LOGGING="${AUDIT_LOGGING:-enabled}"
+AUDIT_RETENTION_DAYS="${AUDIT_RETENTION_DAYS:-2555}"  # 7 años
+
+# Notificaciones
+NOTIFICATION_EMAIL="${NOTIFICATION_EMAIL}"
+NOTIFICATION_WEBHOOK="${NOTIFICATION_WEBHOOK}"
+SLACK_WEBHOOK="${SLACK_WEBHOOK}"
+
+# === CONFIGURACIÓN DE INTEGRACIÓN ===
+# Integración con sistemas existentes
+INTEGRATE_BACKUP_SYSTEM="${INTEGRATE_BACKUP_SYSTEM:-true}"
+INTEGRATE_MONITORING_SYSTEM="${INTEGRATE_MONITORING_SYSTEM:-true}"
+INTEGRATE_CLUSTERING_SYSTEM="${INTEGRATE_CLUSTERING_SYSTEM:-true}"
+
+# Rutas a sistemas existentes
+BACKUP_SYSTEM_PATH="${BACKUP_SYSTEM_PATH:-/opt/enterprise_backups}"
+MONITORING_SYSTEM_PATH="${MONITORING_SYSTEM_PATH:-/opt/webmin-devops-monitoring}"
+CLUSTERING_SYSTEM_PATH="${CLUSTERING_SYSTEM_PATH:-/opt/pro_clustering}"
+
+# === CONFIGURACIÓN AVANZADA ===
+# Encriptación
+ENCRYPTION_ENABLED="${ENCRYPTION_ENABLED:-true}"
+ENCRYPTION_KEY_FILE="${ENCRYPTION_KEY_FILE:-$DR_ROOT_DIR/.dr_key}"
+ENCRYPTION_ALGORITHM="${ENCRYPTION_ALGORITHM:-aes-256-cbc}"
+
+# Compresión
+COMPRESSION_ENABLED="${COMPRESSION_ENABLED:-true}"
+COMPRESSION_LEVEL="${COMPRESSION_LEVEL:-6}"
+COMPRESSION_TYPE="${COMPRESSION_TYPE:-gzip}"
+
+# Monitoreo de salud
+HEALTH_CHECK_INTERVAL="${HEALTH_CHECK_INTERVAL:-30}"
+HEALTH_CHECK_TIMEOUT="${HEALTH_CHECK_TIMEOUT:-10}"
+HEALTH_CHECK_RETRIES="${HEALTH_CHECK_RETRIES:-3}"
+
+# Logging
+LOG_LEVEL="${LOG_LEVEL:-info}"  # debug | info | warning | error
+LOG_ROTATION="${LOG_ROTATION:-daily}"
+LOG_RETENTION="${LOG_RETENTION:-30}"
+
+# === CONFIGURACIÓN DE SEGURIDAD ===
+# Autenticación
+AUTH_METHOD="${AUTH_METHOD:-certificate}"  # password | key | certificate
+CERT_PATH="${CERT_PATH:-$DR_ROOT_DIR/certs}"
+CA_CERT="${CA_CERT:-$CERT_PATH/ca.crt}"
+CLIENT_CERT="${CLIENT_CERT:-$CERT_PATH/client.crt}"
+CLIENT_KEY="${CLIENT_KEY:-$CERT_PATH/client.key}"
+
+# Firewall rules
+FIREWALL_MANAGEMENT="${FIREWALL_MANAGEMENT:-auto}"
+ALLOWED_IPS="${ALLOWED_IPS}"
+
+# === VARIABLES DE ENTORNO REQUERIDAS ===
+# Las siguientes variables de entorno deben estar definidas:
+# PRIMARY_SERVER - Servidor primario para replicación
+# SECONDARY_SERVER - Servidor secundario para failover
+# VIP_ADDRESS - IP virtual para failover
+# NOTIFICATION_EMAIL - Email para notificaciones
+# WEB_ROOT_DIR - Directorio raíz web
+# DB_DATA_DIR - Directorio de datos de base de datos
+# WEB_SERVER_SERVICE - Servicio del servidor web (apache2/nginx)
+# DB_SERVICE - Servicio de base de datos (mysql/postgresql)
+# DNS_SERVICE - Servicio DNS (bind9/unbound)
+
+# === NOTAS DE SEGURIDAD ===
+# 1. Configure las claves de encriptación antes de usar este sistema
+# 2. Asegúrese de que los certificados SSL sean válidos
+# 3. Restrinja el acceso a los directorios de configuración
+# 4. Use conexiones SSH con autenticación por clave
+# 5. Configure las reglas de firewall apropiadamente
+# 6. Realice pruebas periódicas de failover
+# 7. Mantenga actualizados los sistemas de monitoreo
+# 8. Documente todos los procedimientos de recuperación
