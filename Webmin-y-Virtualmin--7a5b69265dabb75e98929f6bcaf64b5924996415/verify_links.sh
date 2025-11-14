@@ -57,6 +57,7 @@ scripts=(
     "install_webmin_virtualmin_complete.sh"
     "install_pro_complete.sh"
     "install_ultra_simple.sh"
+    "instalacion_unificada.sh"
     "pro_activation_master.sh"
     "activate_all_pro_features.sh"
 )
