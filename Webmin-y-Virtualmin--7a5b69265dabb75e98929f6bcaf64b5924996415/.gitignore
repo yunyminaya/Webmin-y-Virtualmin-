@@ -1,347 +1,35 @@
 # =============================================================================
 # ARCHIVO .GITIGNORE - WEBMIN/VIRTUALMIN
+# =============================================================================
 # Protege archivos sensibles y temporales
-# =============================================================================
+# ============================================================================
 
-# =============================================================================
 # ARCHIVOS DE CONFIGURACIÓN SENSIBLES
 # =============================================================================
-
 # Archivos de entorno con credenciales reales
 .env.production
 .env.local
 .env.staging
 .env.development
-.env
 
 # Archivos de credenciales
 *.key
 *.pem
 *.crt
-*.p12
-*.pfx
 credentials.txt
 passwords.txt
-secrets.txt
 api_keys.txt
 
-# Archivos de configuración con datos sensibles
-config/production.conf
-config/staging.conf
-config/local.conf
-database.conf
-db_credentials.conf
-
-# =============================================================================
-# LOGS Y ARCHIVOS TEMPORALES
-# =============================================================================
-
-# Logs de instalación y validación
+# LOGS DE INSTALACIÓN Y VALIDACIÓN
 /tmp/webmin_*.log
 /tmp/installation_*.log
 /tmp/validation_*.log
-logs/
-*.log
 
-# Archivos temporales
-tmp/
+# ARCHIVOS TEMPORALES
+/tmp/
 temp/
-*.tmp
 *.temp
-.cache/
 
-# =============================================================================
-# BACKUPS Y DATOS
-# =============================================================================
-
-# Directorios de backup
-backups/
-/var/backups/webmin/
-backup_*.tar.gz
-backup_*.sql
-backup_*.zip
-
-# Datos de usuarios y sistemas
-data/
-users_data/
-system_data/
-
-# =============================================================================
-# ARCHIVOS DE SISTEMA
-# =============================================================================
-
-# Archivos de credenciales generados
-/root/webmin_credentials.txt
-/root/db_credentials.txt
-/root/ssl_credentials.txt
-
-# Archivos de estado del sistema
-*.pid
-*.lock
-.state/
-
-# =============================================================================
-# DEPENDENCIAS Y BUILD
-# =============================================================================
-
-# Node.js
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-
-# =============================================================================
-# IDE Y EDITORES
-# =============================================================================
-
-# VSCode
-.vscode/
-*.code-workspace
-
-# Vim
-*.swp
-*.swo
-*~
-
-# Emacs
-*~
-\#*\#
-/.emacs.desktop
-/.emacs.desktop.lock
-*.elc
-auto-save-list
-tramp
-.\#*
-
-# =============================================================================
-# SISTEMAS OPERATIVOS
-# =============================================================================
-
-# macOS
-.DS_Store
-.AppleDouble
-.LSOverride
-Icon
-._*
-
-# Windows
-Thumbs.db
-Thumbs.db:encryptable
-ehthumbs.db
-ehthumbs_vista.db
-*.stackdump
-[Dd]esktop.ini
-$RECYCLE.BIN/
-*.cab
-*.msi
-*.msix
-*.msm
-*.msp
-
-# =============================================================================
-# CERTIFICADOS SSL Y KEYS
-# =============================================================================
-
-# Certificados SSL generados
-ssl/certs/*.crt
-ssl/private/*.key
-ssl/certs/*.pem
-ssl/private/*.pem
-
-# Let's Encrypt
-/etc/letsencrypt/live/
-/etc/letsencrypt/archive/
-/etc/letsencrypt/renewal/
-
-# =============================================================================
-# BASES DE DATOS
-# =============================================================================
-
-# Archivos de base de datos
-*.db
-*.sqlite
-*.sqlite3
-*.sql
-*.dump
-
-# =============================================================================
-# MONITOREO Y MÉTRICAS
-# =============================================================================
-
-# Datos de monitoreo
-monitoring/data/
-monitoring/metrics/
-monitoring/logs/
-
-# Prometheus
-prometheus_data/
-
-# Grafana
-grafana/data/
-grafana/logs/
-
-# =============================================================================
-# CONTENEDORES Y VIRTUALIZACIÓN
-# =============================================================================
-
-# Docker
-.dockerignore
-docker-compose.override.yml
-
-# Kubernetes
-*.kubeconfig
-kubeconfig
-
-# =============================================================================
-# ARCHIVOS DE COMPRESIÓN
-# =============================================================================
-
-# Archivos comprimidos grandes
-*.tar.gz
-*.zip
-*.rar
-*.7z
-
-# =============================================================================
-# DOCUMENTACIÓN GENERADA
-# =============================================================================
-
-# Reportes generados
-*_report.txt
-*_report.html
-*_report.pdf
-
-# Documentación automática
-docs/generated/
-docs/build/
-
-# =============================================================================
-# TESTS Y COVERAGE
-# =============================================================================
-
-# Coverage reports
-coverage/
-*.cover
-.hypothesis/
-.pytest_cache/
-.coverage
-
-# Test results
-test_results/
-*.test
-tests/results/
-
-# =============================================================================
-# SEGURIDAD Y AUDITORÍA
-# =============================================================================
-
-# Reportes de seguridad
-security_audit_report_*.html
-security_scan_*.json
-vulnerability_report_*.xml
-
-# Archivos de auditoría
-audit_logs/
-security_logs/
-
-# =============================================================================
-# ARCHIVOS PERSONALIZADOS DEL USUARIO
-# =============================================================================
-
-# Configuraciones personalizadas
-custom_config/
-user_config/
-local_config/
-
-# Scripts personalizados
-custom_scripts/
-user_scripts/
-
-# =============================================================================
-# ARCHIVOS DE DEPLOYMENT
-# =============================================================================
-
-# Archivos de deployment con credenciales
-deploy/secrets/
-deploy/credentials/
-deploy/config/
-
-# Terraform state
-*.tfstate
-*.tfstate.*
-.terraform/
-
-# =============================================================================
-# MISCELÁNEOS
-# =============================================================================
-
-# Archivos grandes (>100MB)
-*.iso
-*.dmg
-*.img
-*.vmdk
-
-# Archivos binarios
-*.bin
-*.exe
-*.msi
-*.deb
-*.rpm
-
-# Archivos de configuración local
-local_settings.py
-local_settings.js
-local_config.json
-
-# =============================================================================
-# EXCEPCIONES (ARCHIVOS QUE SÍ SE INCLUYEN)
-# =============================================================================
-
-# Mantener archivos de ejemplo
-!.env.production.example
-!.env.example
-!config/example.conf
-!credentials.example
-
-# Mantener documentación importante
-!README.md
-!CHANGELOG.md
-!LICENSE
-
-# Mantener scripts de instalación
-!install_*.sh
-!setup_*.sh
-!deploy_*.sh
-
-# Mantener archivos de configuración de ejemplo
-!*.example
-!*.template
-!*.sample
-
-# Mantener archivos de documentación
-!docs/
-!*.md
-!*.txt
-!*.rst
+# SCRIPTS DE INSTALACIÓN
+install_webmin_ubuntu.sh
+install_webmin_simple.sh
