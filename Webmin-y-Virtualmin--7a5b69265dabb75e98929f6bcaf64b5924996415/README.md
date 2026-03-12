@@ -36,10 +36,16 @@ Sistema completo de Webmin/Virtualmin con seguridad empresarial, capacidad de es
 - 10GB espacio en disco
 - Acceso root/sudo
 
-### Instalación con un Solo Comando
+### Instalación con un Solo Comando (Ubuntu)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/install_webmin_virtualmin_complete.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/install_webmin_ubuntu.sh | sudo bash
+```
+
+### Instalación con un Solo Comando (Multi-Distro)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/instalar_webmin_virtualmin.sh | sudo bash
 ```
 
 ### Instalación Paso a Paso (Opcional)
@@ -49,8 +55,11 @@ curl -fsSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/mai
 git clone https://github.com/yunyminaya/Webmin-y-Virtualmin-.git
 cd Webmin-y-Virtualmin-
 
-# 2. Ejecutar instalación
-sudo ./install_webmin_virtualmin_complete.sh
+# 2. Ejecutar instalación (Ubuntu)
+sudo ./install_webmin_ubuntu.sh
+
+# O ejecutar instalación (Multi-Distro)
+sudo ./instalar_webmin_virtualmin.sh
 ```
 
 ## 🌐 Acceso al Sistema

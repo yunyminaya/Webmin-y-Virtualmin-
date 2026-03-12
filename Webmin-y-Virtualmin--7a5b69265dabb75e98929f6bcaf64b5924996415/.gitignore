@@ -30,6 +30,6 @@ api_keys.txt
 temp/
 *.temp
 
-# SCRIPTS DE INSTALACIÓN
-install_webmin_ubuntu.sh
-install_webmin_simple.sh
+# NOTA: Los scripts de instalación deben estar en el repositorio
+# para que los usuarios puedan descargarlos directamente desde GitHub
+# Los scripts de instalación se mantienen en el repositorio
