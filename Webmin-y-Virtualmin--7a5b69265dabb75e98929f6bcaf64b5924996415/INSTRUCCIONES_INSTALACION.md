@@ -11,17 +11,17 @@
 
 ```bash
 # Descargar y ejecutar el instalador en una sola línea
-curl -sSL https://raw.githubusercontent.com/yunyminaya/Webmin-Y-Virtualmin/main/instalar_webmin_virtualmin.sh | bash
+curl -sSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/instalar_webmin_virtualmin.sh | bash
 ```
 
 ### Método 2: Descargar Manual
 
 ```bash
 # Descargar el script
-wget https://raw.githubusercontent.com/yunyminaya/Webmin-Y-Virtualmin/main/instalar_webmin_virtualmin.sh
+wget https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/instalar_webmin_virtualmin.sh
 
 # O con curl
-curl -O https://raw.githubusercontent.com/yunyminaya/Webmin-Y-Virtualmin/main/instalar_webmin_virtualmin.sh
+curl -O https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/instalar_webmin_virtualmin.sh
 
 # Dar permisos de ejecución
 chmod +x instalar_webmin_virtualmin.sh
@@ -179,8 +179,8 @@ sudo ./instalar_webmin_virtualmin.sh
 
 Para más información o reportar problemas:
 
-- **Repositorio GitHub:** https://github.com/yunyminaya/Webmin-Y-Virtualmin
-- **Issues:** https://github.com/yunyminaya/Webmin-Y-Virtualmin/issues
+- **Repositorio GitHub:** https://github.com/yunyminaya/Webmin-y-Virtualmin-
+- **Issues:** https://github.com/yunyminaya/Webmin-y-Virtualmin-/issues
 
 ---
 
