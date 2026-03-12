@@ -146,16 +146,41 @@ create_backup() {
 install_service() {
     log_install "🔧 Instalando servicio systemd..."
 
-    local service_file="${SCRIPT_DIR}/virtualmin-defense.service"
+    local service_file="/etc/systemd/system/virtualmin-defense.service"
 
-    if [[ ! -f "$service_file" ]]; then
-        log_install "❌ Archivo de servicio no encontrado: $service_file"
-        return 1
-    fi
+    # Generar archivo de servicio dinámicamente con rutas correctas
+    cat > "$service_file" << EOF
+[Unit]
+Description=Sistema de Auto-Defensa Virtualmin
+After=network.target
+Wants=network.target
 
-    # Instalar el servicio
-    cp "$service_file" "/etc/systemd/system/virtualmin-defense.service"
-    chmod 644 "/etc/systemd/system/virtualmin-defense.service"
+[Service]
+Type=simple
+User=root
+Group=root
+ExecStart=/bin/bash ${SCRIPT_DIR}/auto_defense.sh start
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=virtualmin-defense
+
+# Security settings
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ReadWritePaths=${SCRIPT_DIR}/logs ${SCRIPT_DIR}/backups
+
+# Environment
+Environment=DEFENSE_ACTIVE=true
+Environment=MONITOR_INTERVAL=300
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    chmod 644 "$service_file"
 
     # Recargar systemd
     systemctl daemon-reload
@@ -212,8 +237,8 @@ configure_logrotate() {
 
     local logrotate_config="/etc/logrotate.d/virtualmin-defense"
 
-    cat > "$logrotate_config" << 'EOF'
-/Users/yunyminaya/Wedmin Y Virtualmin/Webmin-y-Virtualmin--7a5b69265dabb75e98929f6bcaf64b5924996415/logs/*.log {
+    cat > "$logrotate_config" << EOF
+${SCRIPT_DIR}/logs/*.log {
     daily
     rotate 30
     compress
