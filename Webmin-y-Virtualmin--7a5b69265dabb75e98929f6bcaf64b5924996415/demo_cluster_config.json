@@ -1,0 +1,435 @@
+{
+  "servers": {
+    "web1": {
+      "id": "web1",
+      "name": "Servidor Web Principal",
+      "type": "web",
+      "ip": "192.168.1.10",
+      "region": "us-east-1",
+      "status": "active",
+      "created_at": "2025-10-08T10:02:04.296111",
+      "last_check": "2025-10-08T10:02:04.298556",
+      "metrics": {
+        "cpu": 42.1,
+        "memory": 31.0,
+        "disk": 70.9,
+        "network": 38.7
+      }
+    },
+    "web2": {
+      "id": "web2",
+      "name": "Servidor Web Secundario",
+      "type": "web",
+      "ip": "192.168.1.11",
+      "region": "us-east-1",
+      "status": "active",
+      "created_at": "2025-10-08T10:02:04.296233",
+      "last_check": "2025-10-08T10:02:04.298560",
+      "metrics": {
+        "cpu": 14.8,
+        "memory": 52.0,
+        "disk": 77.0,
+        "network": 58.4
+      }
+    },
+    "db1": {
+      "id": "db1",
+      "name": "Base de Datos Principal",
+      "type": "database",
+      "ip": "192.168.1.20",
+      "region": "us-east-1",
+      "status": "active",
+      "created_at": "2025-10-08T10:02:04.296332",
+      "last_check": "2025-10-08T10:02:04.298563",
+      "metrics": {
+        "cpu": 59.1,
+        "memory": 59.3,
+        "disk": 77.7,
+        "network": 132.7
+      }
+    },
+    "db2": {
+      "id": "db2",
+      "name": "Base de Datos R\u00e9plica",
+      "type": "database",
+      "ip": "192.168.1.21",
+      "region": "us-east-1",
+      "status": "active",
+      "created_at": "2025-10-08T10:02:04.296402",
+      "last_check": "2025-10-08T10:02:04.298565",
+      "metrics": {
+        "cpu": 20.1,
+        "memory": 45.9,
+        "disk": 37.7,
+        "network": 115.5
+      }
+    },
+    "lb1": {
+      "id": "lb1",
+      "name": "Load Balancer",
+      "type": "load_balancer",
+      "ip": "192.168.1.5",
+      "region": "us-east-1",
+      "status": "active",
+      "created_at": "2025-10-08T10:02:04.296473",
+      "last_check": "2025-10-08T10:02:04.298568",
+      "metrics": {
+        "cpu": 32.8,
+        "memory": 70.0,
+        "disk": 35.7,
+        "network": 173.1
+      }
+    },
+    "cache1": {
+      "id": "cache1",
+      "name": "Redis Cache",
+      "type": "cache",
+      "ip": "192.168.1.30",
+      "region": "us-east-1",
+      "status": "active",
+      "created_at": "2025-10-08T10:02:04.296540",
+      "last_check": "2025-10-08T10:02:04.298572",
+      "metrics": {
+        "cpu": 35.2,
+        "memory": 75.6,
+        "disk": 51.3,
+        "network": 167.9
+      }
+    },
+    "monitor1": {
+      "id": "monitor1",
+      "name": "Sistema de Monitoreo",
+      "type": "monitoring",
+      "ip": "192.168.1.40",
+      "region": "us-east-1",
+      "status": "active",
+      "created_at": "2025-10-08T10:02:04.296606",
+      "last_check": "2025-10-08T10:02:04.298574",
+      "metrics": {
+        "cpu": 17.9,
+        "memory": 68.4,
+        "disk": 67.1,
+        "network": 155.9
+      }
+    },
+    "backup1": {
+      "id": "backup1",
+      "name": "Servidor de Backup",
+      "type": "backup",
+      "ip": "192.168.1.50",
+      "region": "us-east-1",
+      "status": "active",
+      "created_at": "2025-10-08T10:02:04.296685",
+      "last_check": "2025-10-08T10:02:04.298578",
+      "metrics": {
+        "cpu": 45.8,
+        "memory": 47.9,
+        "disk": 62.2,
+        "network": 86.5
+      }
+    },
+    "dns1": {
+      "id": "dns1",
+      "name": "Servidor DNS",
+      "type": "dns",
+      "ip": "192.168.1.53",
+      "region": "us-east-1",
+      "status": "active",
+      "created_at": "2025-10-08T10:02:04.296754",
+      "last_check": "2025-10-08T10:02:04.298580",
+      "metrics": {
+        "cpu": 74.0,
+        "memory": 49.2,
+        "disk": 53.1,
+        "network": 141.3
+      }
+    },
+    "security1": {
+      "id": "security1",
+      "name": "Firewall/Security",
+      "type": "security",
+      "ip": "192.168.1.1",
+      "region": "us-east-1",
+      "status": "active",
+      "created_at": "2025-10-08T10:02:04.296834",
+      "last_check": "2025-10-08T10:02:04.298583",
+      "metrics": {
+        "cpu": 63.2,
+        "memory": 77.0,
+        "disk": 45.8,
+        "network": 198.8
+      }
+    }
+  },
+  "connections": [
+    {
+      "id": "lb1_web1_1759932124",
+      "from": "lb1",
+      "to": "web1",
+      "type": "http",
+      "status": "active",
+      "created_at": "2025-10-08T10:02:04.296876",
+      "latency": 30.78
+    },
+    {
+      "id": "lb1_web2_1759932124",
+      "from": "lb1",
+      "to": "web2",
+      "type": "http",
+      "status": "active",
+      "created_at": "2025-10-08T10:02:04.296923",
+      "latency": 39.65
+    },
+    {
+      "id": "web1_db1_1759932124",
+      "from": "web1",
+      "to": "db1",
+      "type": "database",
+      "status": "active",
+      "created_at": "2025-10-08T10:02:04.296944",
+      "latency": 24.63
+    },
+    {
+      "id": "web2_db1_1759932124",
+      "from": "web2",
+      "to": "db1",
+      "type": "database",
+      "status": "active",
+      "created_at": "2025-10-08T10:02:04.296965",
+      "latency": 40.44
+    },
+    {
+      "id": "db1_db2_1759932124",
+      "from": "db1",
+      "to": "db2",
+      "type": "replication",
+      "status": "active",
+      "created_at": "2025-10-08T10:02:04.296985",
+      "latency": 29.12
+    },
+    {
+      "id": "web1_cache1_1759932124",
+      "from": "web1",
+      "to": "cache1",
+      "type": "cache",
+      "status": "active",
+      "created_at": "2025-10-08T10:02:04.297006",
+      "latency": 13.13
+    },
+    {
+      "id": "web2_cache1_1759932124",
+      "from": "web2",
+      "to": "cache1",
+      "type": "cache",
+      "status": "active",
+      "created_at": "2025-10-08T10:02:04.297026",
+      "latency": 30.45
+    },
+    {
+      "id": "monitor1_web1_1759932124",
+      "from": "monitor1",
+      "to": "web1",
+      "type": "monitoring",
+      "status": "active",
+      "created_at": "2025-10-08T10:02:04.297051",
+      "latency": 26.77
+    },
+    {
+      "id": "monitor1_db1_1759932124",
+      "from": "monitor1",
+      "to": "db1",
+      "type": "monitoring",
+      "status": "active",
+      "created_at": "2025-10-08T10:02:04.297076",
+      "latency": 22.44
+    },
+    {
+      "id": "backup1_db1_1759932124",
+      "from": "backup1",
+      "to": "db1",
+      "type": "backup",
+      "status": "active",
+      "created_at": "2025-10-08T10:02:04.297096",
+      "latency": 34.74
+    },
+    {
+      "id": "dns1_web1_1759932124",
+      "from": "dns1",
+      "to": "web1",
+      "type": "dns",
+      "status": "active",
+      "created_at": "2025-10-08T10:02:04.297116",
+      "latency": 5.93
+    },
+    {
+      "id": "dns1_web2_1759932124",
+      "from": "dns1",
+      "to": "web2",
+      "type": "dns",
+      "status": "active",
+      "created_at": "2025-10-08T10:02:04.297136",
+      "latency": 4.23
+    },
+    {
+      "id": "security1_lb1_1759932124",
+      "from": "security1",
+      "to": "lb1",
+      "type": "firewall",
+      "status": "active",
+      "created_at": "2025-10-08T10:02:04.297155",
+      "latency": 26.02
+    },
+    {
+      "id": "security1_web1_1759932124",
+      "from": "security1",
+      "to": "web1",
+      "type": "firewall",
+      "status": "active",
+      "created_at": "2025-10-08T10:02:04.297175",
+      "latency": 20.11
+    },
+    {
+      "id": "security1_db1_1759932124",
+      "from": "security1",
+      "to": "db1",
+      "type": "firewall",
+      "status": "active",
+      "created_at": "2025-10-08T10:02:04.297195",
+      "latency": 46.83
+    },
+    {
+      "id": "web1_web2_1759932124",
+      "from": "web1",
+      "to": "web2",
+      "type": "cluster_internal",
+      "status": "active",
+      "created_at": "2025-10-08T10:02:04.297222",
+      "latency": 28.68
+    },
+    {
+      "id": "web1_db2_1759932124",
+      "from": "web1",
+      "to": "db2",
+      "type": "cluster_internal",
+      "status": "active",
+      "created_at": "2025-10-08T10:02:04.297267",
+      "latency": 46.12
+    },
+    {
+      "id": "web2_db2_1759932124",
+      "from": "web2",
+      "to": "db2",
+      "type": "cluster_internal",
+      "status": "active",
+      "created_at": "2025-10-08T10:02:04.297335",
+      "latency": 24.99
+    },
+    {
+      "id": "db1_lb1_1759932124",
+      "from": "db1",
+      "to": "lb1",
+      "type": "cluster_internal",
+      "status": "active",
+      "created_at": "2025-10-08T10:02:04.297406",
+      "latency": 35.64
+    },
+    {
+      "id": "db1_cache1_1759932124",
+      "from": "db1",
+      "to": "cache1",
+      "type": "cluster_internal",
+      "status": "active",
+      "created_at": "2025-10-08T10:02:04.297426",
+      "latency": 6.7
+    },
+    {
+      "id": "db2_lb1_1759932124",
+      "from": "db2",
+      "to": "lb1",
+      "type": "cluster_internal",
+      "status": "active",
+      "created_at": "2025-10-08T10:02:04.297446",
+      "latency": 40.21
+    },
+    {
+      "id": "db2_cache1_1759932124",
+      "from": "db2",
+      "to": "cache1",
+      "type": "cluster_internal",
+      "status": "active",
+      "created_at": "2025-10-08T10:02:04.297469",
+      "latency": 3.48
+    },
+    {
+      "id": "lb1_cache1_1759932124",
+      "from": "lb1",
+      "to": "cache1",
+      "type": "cluster_internal",
+      "status": "active",
+      "created_at": "2025-10-08T10:02:04.297491",
+      "latency": 13.95
+    },
+    {
+      "id": "monitor1_backup1_1759932124",
+      "from": "monitor1",
+      "to": "backup1",
+      "type": "cluster_internal",
+      "status": "active",
+      "created_at": "2025-10-08T10:02:04.297533",
+      "latency": 24.31
+    },
+    {
+      "id": "dns1_security1_1759932124",
+      "from": "dns1",
+      "to": "security1",
+      "type": "cluster_internal",
+      "status": "active",
+      "created_at": "2025-10-08T10:02:04.297574",
+      "latency": 30.89
+    }
+  ],
+  "clusters": {
+    "production_cluster": {
+      "id": "production_cluster",
+      "name": "production_cluster",
+      "servers": [
+        "web1",
+        "web2",
+        "db1",
+        "db2",
+        "lb1",
+        "cache1"
+      ],
+      "created_at": "2025-10-08T10:02:04.297216",
+      "status": "active",
+      "load_balancer": "web1",
+      "health_status": "healthy"
+    },
+    "monitoring_cluster": {
+      "id": "monitoring_cluster",
+      "name": "monitoring_cluster",
+      "servers": [
+        "monitor1",
+        "backup1"
+      ],
+      "created_at": "2025-10-08T10:02:04.297529",
+      "status": "active",
+      "load_balancer": null,
+      "health_status": "healthy"
+    },
+    "infrastructure_cluster": {
+      "id": "infrastructure_cluster",
+      "name": "infrastructure_cluster",
+      "servers": [
+        "dns1",
+        "security1"
+      ],
+      "created_at": "2025-10-08T10:02:04.297570",
+      "status": "active",
+      "load_balancer": null,
+      "health_status": "healthy"
+    }
+  },
+  "exported_at": "2025-10-08T10:02:04.298640",
+  "version": "1.0"
+}

@@ -1,0 +1,72 @@
+---
+# Configuración de monitoreo de costos AWS
+
+- name: "Configurar credenciales AWS para monitoreo de costos"
+  template:
+    src: aws_credentials.j2
+    dest: "/opt/cost_monitoring/aws_credentials"
+    mode: '0600'
+
+- name: "Crear política IAM para Cost Explorer"
+  template:
+    src: aws_cost_policy.json.j2
+    dest: "/opt/cost_monitoring/cost_policy.json"
+    mode: '0644'
+
+- name: "Crear script de monitoreo de costos AWS"
+  template:
+    src: aws_cost_monitor.sh.j2
+    dest: "/opt/cost_monitoring/aws_cost_monitor.sh"
+    mode: '0755'
+
+- name: "Crear script de análisis de costos AWS"
+  template:
+    src: aws_cost_analysis.py.j2
+    dest: "/opt/cost_monitoring/aws_cost_analysis.py"
+    mode: '0755'
+
+- name: "Configurar cron job para monitoreo diario de costos"
+  cron:
+    name: "AWS Cost Monitoring"
+    minute: "0"
+    hour: "6"
+    job: "/opt/cost_monitoring/aws_cost_monitor.sh"
+    state: present
+
+- name: "Configurar cron job para análisis semanal de costos"
+  cron:
+    name: "AWS Cost Analysis"
+    minute: "0"
+    hour: "7"
+    weekday: "1"
+    job: "/opt/cost_monitoring/aws_cost_analysis.py"
+    state: present
+
+- name: "Crear bucket S3 para datos de costos"
+  command: >
+    aws s3 mb s3://{{ cluster_name }}-cost-data
+    --region {{ aws_region }}
+  ignore_errors: yes
+
+- name: "Configurar lifecycle policy para datos de costos"
+  template:
+    src: s3_lifecycle_policy.json.j2
+    dest: "/opt/cost_monitoring/s3_lifecycle.json"
+    mode: '0644'
+
+- name: "Aplicar lifecycle policy al bucket de costos"
+  command: >
+    aws s3api put-bucket-lifecycle-configuration
+    --bucket {{ cluster_name }}-cost-data
+    --lifecycle-configuration file:///opt/cost_monitoring/s3_lifecycle.json
+  ignore_errors: yes
+
+- name: "Configurar Cost Allocation Tags"
+  command: >
+    aws ce update-cost-allocation-tags
+    --cost-allocation-tags-status INCLUDE_AUTO_TAGGING
+  ignore_errors: yes
+
+- name: "Ejecutar monitoreo inicial de costos"
+  command: "/opt/cost_monitoring/aws_cost_monitor.sh"
+  ignore_errors: yes

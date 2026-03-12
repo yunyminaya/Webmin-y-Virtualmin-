@@ -1,0 +1,54 @@
+name: CI - Smoke Tests
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install shellcheck
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y shellcheck
+
+      - name: Syntax check (bash -n)
+        run: |
+          set -e
+          for f in \
+            instalar_webmin_virtualmin.sh \
+            instalacion_un_comando.sh \
+            verificar_instalacion_un_comando.sh \
+            webmin-self-healing-enhanced.sh \
+            webmin-repo-validation.sh \
+            webmin-performance-optimizer.sh \
+            webmin-tunnel-system.sh \
+            cuentas_revendedor.sh \
+            ; do
+            echo "Checking syntax: $f";
+            bash -n "$f";
+          done
+
+      - name: Lint with shellcheck (key scripts)
+        run: |
+          set -e
+          shellcheck -s bash instalar_webmin_virtualmin.sh instalacion_un_comando.sh || true
+          shellcheck -s bash verificar_instalacion_un_comando.sh || true
+          shellcheck -s bash cuentas_revendedor.sh || true
+
+      - name: Verify README one-liner
+        run: |
+          grep -q "instalar_webmin_virtualmin.sh | sudo bash" README.md
+
+      - name: Run installer (dry-run mode)
+        env:
+          WV_DRY_RUN: "1"
+        run: |
+          sudo -E bash instalar_webmin_virtualmin.sh
+

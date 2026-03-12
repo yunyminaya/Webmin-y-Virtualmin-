@@ -1,0 +1,36 @@
+---
+# Cost Anomaly Detection
+# Implementa detección automática de anomalías en costos
+
+- name: "Instalar herramientas de análisis de anomalías"
+  package:
+    name:
+      - python3-scipy
+      - python3-pandas
+      - python3-sklearn
+    state: present
+
+- name: "Configurar script de detección de anomalías"
+  template:
+    src: "cost_anomaly_detector.py.j2"
+    dest: "/opt/cost_monitoring/anomaly_detector.py"
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: "Crear directorio para datos de anomalías"
+  file:
+    path: "/var/lib/cost_monitoring/anomalies"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: "Configurar cron job para detección de anomalías"
+  cron:
+    name: "cost_anomaly_detection"
+    minute: "0"
+    hour: "*/6"
+    job: "/opt/cost_monitoring/anomaly_detector.py"
+    user: root
+    state: present

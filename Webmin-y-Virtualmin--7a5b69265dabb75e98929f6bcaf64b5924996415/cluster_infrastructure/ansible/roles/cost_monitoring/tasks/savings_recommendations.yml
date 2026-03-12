@@ -1,0 +1,37 @@
+---
+# Cost Savings Recommendations
+# Implementa recomendaciones automáticas de ahorro
+
+- name: "Crear script de recomendaciones de ahorro"
+  template:
+    src: "cost_savings_recommendations.py.j2"
+    dest: "/opt/cost_monitoring/savings_recommendations.py"
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: "Crear directorio para recomendaciones"
+  file:
+    path: "/var/lib/cost_monitoring/recommendations"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: "Configurar generación automática de recomendaciones"
+  cron:
+    name: "cost_savings_recommendations"
+    minute: "0"
+    hour: "9"
+    weekday: "1"
+    job: "/opt/cost_monitoring/savings_recommendations.py"
+    user: root
+    state: present
+
+- name: "Configurar notificaciones de recomendaciones"
+  template:
+    src: "savings_notification.sh.j2"
+    dest: "/opt/cost_monitoring/savings_notification.sh"
+    owner: root
+    group: root
+    mode: '0755'

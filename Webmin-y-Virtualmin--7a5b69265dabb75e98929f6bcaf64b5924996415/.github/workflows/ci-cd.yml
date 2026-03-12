@@ -1,0 +1,293 @@
+name: CI/CD Pipeline - Webmin/Virtualmin DevOps
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  release:
+    types: [ published ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # ===== CI: Continuous Integration =====
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        test-type: [unit, integration, functional]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js for tooling
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    - name: Set up Python for testing
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Install shellcheck for shell script validation
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y shellcheck
+
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Install Python dependencies
+      run: |
+        pip install pytest pytest-cov
+
+    - name: Validate shell scripts
+      run: |
+        find . -name "*.sh" -type f -exec shellcheck {} \;
+
+    - name: Run ${{ matrix.test-type }} tests
+      run: |
+        case "${{ matrix.test-type }}" in
+          unit)
+            bash scripts/run_unit_tests.sh
+            ;;
+          integration)
+            bash scripts/run_integration_tests.sh
+            ;;
+          functional)
+            bash scripts/run_functional_tests.sh
+            ;;
+        esac
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: test-results-${{ matrix.test-type }}
+        path: test_results/
+
+  # ===== Code Quality Checks =====
+  quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Install quality tools
+      run: |
+        pip install flake8 black isort mypy
+
+    - name: Run flake8
+      run: |
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+    - name: Run black check
+      run: |
+        black --check --diff .
+
+    - name: Run isort check
+      run: |
+        isort --check-only --diff .
+
+    - name: Run mypy
+      run: |
+        mypy . --ignore-missing-imports || true
+
+  # ===== Security Scanning =====
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+    - name: Check for secrets
+      uses: gitleaks/gitleaks-action@v2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ===== Build =====
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [test, quality, security]
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  # ===== CD: Continuous Deployment =====
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    environment: staging
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Deploy to staging environment
+      run: |
+        echo "🚀 Deploying to staging environment..."
+        # Aquí irían los comandos de despliegue específicos
+        echo "✅ Staging deployment completed"
+
+    - name: Run smoke tests on staging
+      run: |
+        echo "🧪 Running smoke tests on staging..."
+        # Aquí irían las pruebas de humo
+        echo "✅ Smoke tests passed"
+
+    - name: Notify deployment
+      run: |
+        echo "📢 Notifying stakeholders about staging deployment..."
+        # Aquí iría la lógica de notificación
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: production
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Deploy to production environment
+      run: |
+        echo "🚀 Deploying to production environment..."
+        # Aquí irían los comandos de despliegue específicos
+        echo "✅ Production deployment completed"
+
+    - name: Run smoke tests on production
+      run: |
+        echo "🧪 Running smoke tests on production..."
+        # Aquí irían las pruebas de humo
+        echo "✅ Smoke tests passed"
+
+    - name: Create deployment notification
+      run: |
+        echo "📢 Creating deployment notification..."
+        # Aquí iría la lógica de notificación
+
+  # ===== Release Management =====
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: [test, quality, security]
+    if: github.event_name == 'release' && github.event.action == 'published'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Generate changelog
+      run: |
+        echo "📝 Generating changelog for release ${{ github.event.release.tag_name }}..."
+        # Aquí iría la lógica para generar changelog
+
+    - name: Create release artifacts
+      run: |
+        echo "📦 Creating release artifacts..."
+        # Aquí iría la lógica para crear artifacts
+
+    - name: Upload release assets
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: ./release-artifacts.zip
+        asset_name: webmin-virtualmin-${{ github.event.release.tag_name }}.zip
+        asset_content_type: application/zip
+
+  # ===== Notification =====
+  notify:
+    name: Send Notifications
+    runs-on: ubuntu-latest
+    needs: [deploy-staging, deploy-production, release]
+    if: always()
+
+    steps:
+    - name: Send success notification
+      if: needs.deploy-production.result == 'success' || needs.release.result == 'success'
+      run: |
+        echo "✅ Pipeline completed successfully"
+        # Aquí iría la lógica de notificación de éxito
+
+    - name: Send failure notification
+      if: failure()
+      run: |
+        echo "❌ Pipeline failed"
+        # Aquí iría la lógica de notificación de fallo

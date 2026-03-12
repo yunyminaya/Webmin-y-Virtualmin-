@@ -1,0 +1,91 @@
+# Configuración de despliegue para entorno STAGING
+# Este archivo contiene la configuración específica para el entorno de staging
+
+environment:
+  name: staging
+  type: development
+  domain: staging.example.com
+
+webmin:
+  port: 10001
+  ssl_enabled: false
+  theme: authentic-theme
+  log_level: debug
+  allowed_ips: "192.168.1.0/24,10.0.0.0/8"
+
+virtualmin:
+  ssl_enabled: false
+  mysql_enabled: true
+  postgresql_enabled: false
+  default_quota: 500MB
+  max_domains: 10
+  backup_schedule: "daily"
+  log_level: info
+
+database:
+  host: localhost
+  port: 3306
+  user: virtualmin_staging
+  password: "${DB_PASSWORD_STAGING}"  # Variable de entorno
+  name: virtualmin_staging
+  backup_enabled: true
+  backup_retention: 3
+
+services:
+  apache:
+    enabled: true
+    port: 8080
+    ssl_port: 8443
+  nginx:
+    enabled: false
+  postfix:
+    enabled: true
+    smtp_port: 25
+    submission_port: 587
+  dovecot:
+    enabled: true
+    imap_port: 143
+    imaps_port: 993
+    pop3_port: 110
+    pop3s_port: 995
+
+monitoring:
+  enabled: true
+  prometheus_port: 9090
+  grafana_port: 3000
+  alertmanager_enabled: false
+
+backup:
+  enabled: true
+  retention_days: 7
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  destination: "/var/backups/staging"
+  compression: true
+  encryption: false
+
+security:
+  firewall_enabled: true
+  fail2ban_enabled: true
+  ssl_enforcement: false
+  brute_force_protection: true
+  auto_updates: false
+
+features:
+  cms_frameworks: true
+  ai_protection: false
+  intelligent_backup: true
+  multi_cloud_integration: false
+  container_orchestration: false
+
+notifications:
+  slack_webhook: "${SLACK_WEBHOOK_STAGING}"
+  email_recipients: "devops@example.com"
+  on_success: false
+  on_failure: true
+  on_rollback: true
+
+rollback:
+  enabled: true
+  max_attempts: 3
+  timeout_minutes: 30
+  backup_before_rollback: true

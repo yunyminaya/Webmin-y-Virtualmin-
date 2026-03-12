@@ -1,0 +1,215 @@
+#!/usr/bin/env python3
+# AWS Cost Analysis Script
+# Análisis avanzado de costos con machine learning
+
+import json
+import os
+import sys
+from datetime import datetime, timedelta
+import pandas as pd
+import numpy as np
+from pathlib import Path
+
+# Configuración
+CLUSTER_NAME = "{{ cluster_name }}"
+DATA_DIR = "/var/lib/cost_monitoring"
+LOG_FILE = "/var/log/cost_monitoring/aws_cost_analysis.log"
+
+def log(message):
+    """Función de logging"""
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    with open(LOG_FILE, 'a') as f:
+        f.write(f"{timestamp} - {message}\n")
+    print(message)
+
+def load_cost_data(date):
+    """Cargar datos de costos para una fecha específica"""
+    data_path = Path(DATA_DIR) / "aws" / date
+
+    if not data_path.exists():
+        log(f"No se encontraron datos para la fecha {date}")
+        return None
+
+    try:
+        with open(data_path / "monthly_costs.json", 'r') as f:
+            monthly_data = json.load(f)
+
+        with open(data_path / "daily_costs.json", 'r') as f:
+            daily_data = json.load(f)
+
+        return {
+            'monthly': monthly_data,
+            'daily': daily_data,
+            'date': date
+        }
+    except Exception as e:
+        log(f"Error cargando datos: {e}")
+        return None
+
+def analyze_cost_trends(data):
+    """Analizar tendencias de costos"""
+    log("Analizando tendencias de costos...")
+
+    # Extraer datos diarios
+    daily_results = data['daily'].get('ResultsByTime', [])
+
+    costs_by_service = {}
+    daily_costs = []
+
+    for result in daily_results:
+        date = result['TimePeriod']['Start']
+        day_cost = 0
+
+        for group in result.get('Groups', []):
+            service = group['Keys'][0]
+            cost = float(group['Metrics']['BlendedCost']['Amount'])
+
+            if service not in costs_by_service:
+                costs_by_service[service] = []
+            costs_by_service[service].append((date, cost))
+            day_cost += cost
+
+        daily_costs.append((date, day_cost))
+
+    # Calcular tendencias
+    trends = {}
+
+    for service, cost_data in costs_by_service.items():
+        if len(cost_data) >= 7:  # Al menos una semana de datos
+            costs = [cost for _, cost in cost_data[-7:]]  # Últimos 7 días
+            avg_cost = np.mean(costs)
+            trend = (costs[-1] - costs[0]) / costs[0] * 100 if costs[0] > 0 else 0
+
+            trends[service] = {
+                'average_daily': avg_cost,
+                'weekly_trend_percent': trend,
+                'total_weekly': sum(costs)
+            }
+
+    return trends, daily_costs
+
+def detect_anomalies(daily_costs):
+    """Detectar anomalías en costos usando estadísticas simples"""
+    log("Detectando anomalías en costos...")
+
+    if len(daily_costs) < 7:
+        return []
+
+    # Calcular media y desviación estándar de los últimos 7 días
+    recent_costs = [cost for _, cost in daily_costs[-7:]]
+    mean_cost = np.mean(recent_costs)
+    std_cost = np.std(recent_costs)
+
+    anomalies = []
+    threshold = mean_cost + 2 * std_cost  # 2 desviaciones estándar
+
+    for date, cost in daily_costs[-3:]:  # Revisar últimos 3 días
+        if cost > threshold:
+            anomalies.append({
+                'date': date,
+                'cost': cost,
+                'threshold': threshold,
+                'deviation_percent': (cost - mean_cost) / mean_cost * 100
+            })
+
+    return anomalies
+
+def generate_recommendations(trends, anomalies):
+    """Generar recomendaciones de optimización"""
+    log("Generando recomendaciones de optimización...")
+
+    recommendations = []
+
+    # Recomendaciones basadas en tendencias
+    for service, trend_data in trends.items():
+        if trend_data['weekly_trend_percent'] > 20:
+            recommendations.append({
+                'type': 'cost_increase',
+                'service': service,
+                'severity': 'high',
+                'message': f"Incremento significativo en costos de {service} (+{trend_data['weekly_trend_percent']:.1f}%)",
+                'action': 'Revisar uso y considerar optimizaciones'
+            })
+
+        if trend_data['average_daily'] > 50:  # Umbral configurable
+            recommendations.append({
+                'type': 'high_cost_service',
+                'service': service,
+                'severity': 'medium',
+                'message': f"Servicio {service} tiene costos diarios altos (${trend_data['average_daily']:.2f})",
+                'action': 'Considerar Reserved Instances o optimización de recursos'
+            })
+
+    # Recomendaciones basadas en anomalías
+    for anomaly in anomalies:
+        recommendations.append({
+            'type': 'anomaly',
+            'severity': 'high',
+            'message': f"Anomalía detectada el {anomaly['date']}: ${anomaly['cost']:.2f} (umbral: ${anomaly['threshold']:.2f})",
+            'action': 'Investigar causa del pico de costos'
+        })
+
+    return recommendations
+
+def save_analysis_results(date, trends, anomalies, recommendations):
+    """Guardar resultados del análisis"""
+    output_dir = Path(DATA_DIR) / "aws" / date
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    results = {
+        'cluster_name': CLUSTER_NAME,
+        'analysis_date': datetime.now().isoformat(),
+        'data_date': date,
+        'cost_trends': trends,
+        'anomalies': anomalies,
+        'recommendations': recommendations,
+        'summary': {
+            'total_services_analyzed': len(trends),
+            'anomalies_detected': len(anomalies),
+            'recommendations_count': len(recommendations),
+            'high_priority_actions': len([r for r in recommendations if r['severity'] == 'high'])
+        }
+    }
+
+    output_file = output_dir / "cost_analysis_results.json"
+    with open(output_file, 'w') as f:
+        json.dump(results, f, indent=2, default=str)
+
+    log(f"Resultados guardados en {output_file}")
+
+def main():
+    """Función principal"""
+    log(f"Iniciando análisis de costos para cluster {CLUSTER_NAME}")
+
+    # Usar fecha de ayer para análisis (datos completos)
+    analysis_date = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+
+    # Cargar datos
+    data = load_cost_data(analysis_date)
+    if not data:
+        log("No hay datos suficientes para análisis")
+        sys.exit(1)
+
+    # Realizar análisis
+    trends, daily_costs = analyze_cost_trends(data)
+    anomalies = detect_anomalies(daily_costs)
+    recommendations = generate_recommendations(trends, anomalies)
+
+    # Guardar resultados
+    save_analysis_results(analysis_date, trends, anomalies, recommendations)
+
+    # Resumen
+    log("=== RESUMEN DEL ANÁLISIS ===")
+    log(f"Servicios analizados: {len(trends)}")
+    log(f"Anomalías detectadas: {len(anomalies)}")
+    log(f"Recomendaciones generadas: {len(recommendations)}")
+
+    if recommendations:
+        log("Recomendaciones principales:")
+        for rec in recommendations[:3]:  # Mostrar top 3
+            log(f"- {rec['severity'].upper()}: {rec['message']}")
+
+    log("Análisis completado exitosamente")
+
+if __name__ == "__main__":
+    main()

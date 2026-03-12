@@ -1,0 +1,115 @@
+#!/bin/bash
+# AWS Cost Monitoring Script
+# Recopila datos de costos y genera reportes
+
+set -e
+
+# Configuración
+CLUSTER_NAME="{{ cluster_name }}"
+BUCKET_NAME="${CLUSTER_NAME}-cost-data"
+LOG_FILE="/var/log/cost_monitoring/aws_cost_monitor.log"
+DATA_DIR="/var/lib/cost_monitoring"
+DATE=$(date +%Y-%m-%d)
+MONTH=$(date +%Y-%m)
+
+# Función de logging
+log() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $*" | tee -a "$LOG_FILE"
+}
+
+# Crear directorios si no existen
+mkdir -p "$DATA_DIR/aws/$DATE"
+
+# Configurar AWS CLI
+export AWS_PROFILE=cost_monitoring
+export AWS_DEFAULT_REGION="{{ aws_region }}"
+
+log "Iniciando monitoreo de costos AWS para cluster $CLUSTER_NAME"
+
+# Obtener costos del mes actual
+log "Obteniendo costos del mes actual..."
+aws ce get-cost-and-usage \
+    --time-period Start="$MONTH-01",End="$(date +%Y-%m-%d)" \
+    --granularity MONTHLY \
+    --metrics "BlendedCost" "UnblendedCost" "NetUnblendedCost" "NetAmortizedCost" \
+    --group-by Type=DIMENSION,Key=SERVICE \
+    --output json > "$DATA_DIR/aws/$DATE/monthly_costs.json"
+
+# Obtener costos diarios de los últimos 30 días
+log "Obteniendo costos diarios..."
+aws ce get-cost-and-usage \
+    --time-period Start="$(date -d '30 days ago' +%Y-%m-%d)",End="$(date +%Y-%m-%d)" \
+    --granularity DAILY \
+    --metrics "BlendedCost" "UnblendedCost" \
+    --group-by Type=DIMENSION,Key=SERVICE \
+    --output json > "$DATA_DIR/aws/$DATE/daily_costs.json"
+
+# Obtener breakdown por instancia EC2
+log "Obteniendo costos por instancia EC2..."
+aws ce get-cost-and-usage \
+    --time-period Start="$MONTH-01",End="$(date +%Y-%m-%d)" \
+    --granularity MONTHLY \
+    --metrics "BlendedCost" \
+    --group-by Type=DIMENSION,Key=INSTANCE_TYPE \
+    --filter '{"Dimensions": {"Key": "SERVICE", "Values": ["Amazon Elastic Compute Cloud - Compute"]}}' \
+    --output json > "$DATA_DIR/aws/$DATE/ec2_instance_costs.json"
+
+# Obtener costos de almacenamiento
+log "Obteniendo costos de almacenamiento..."
+aws ce get-cost-and-usage \
+    --time-period Start="$MONTH-01",End="$(date +%Y-%m-%d)" \
+    --granularity MONTHLY \
+    --metrics "BlendedCost" \
+    --group-by Type=DIMENSION,Key=STORAGE_TYPE \
+    --filter '{"Dimensions": {"Key": "SERVICE", "Values": ["Amazon Simple Storage Service", "Amazon Elastic Block Store"]}}' \
+    --output json > "$DATA_DIR/aws/$DATE/storage_costs.json"
+
+# Obtener recomendaciones de Cost Explorer
+log "Obteniendo recomendaciones de ahorro..."
+aws ce get-reservation-recommendations \
+    --service "Amazon Elastic Compute Cloud - Compute" \
+    --output json > "$DATA_DIR/aws/$DATE/reservation_recommendations.json"
+
+aws ce get-reservation-recommendations \
+    --service "Amazon Relational Database Service" \
+    --output json > "$DATA_DIR/aws/$DATE/rds_reservation_recommendations.json"
+
+# Calcular totales
+log "Calculando totales..."
+TOTAL_COST=$(jq -r '.ResultsByTime[0].Groups[] | select(.Keys[0] == "Amazon Elastic Compute Cloud - Compute") | .Metrics.BlendedCost.Amount' "$DATA_DIR/aws/$DATE/monthly_costs.json" 2>/dev/null || echo "0")
+TOTAL_COST=${TOTAL_COST:-0}
+
+# Verificar alertas de presupuesto
+BUDGET_LIMIT="{{ cost_monitoring.budget_limit }}"
+if (( $(echo "$TOTAL_COST > $BUDGET_LIMIT * 0.8" | bc -l) )); then
+    log "ALERTA: Costos cercanos al límite de presupuesto ($TOTAL_COST / $BUDGET_LIMIT)"
+    # Aquí se podría integrar con sistemas de notificación
+fi
+
+# Subir datos a S3
+log "Subiendo datos a S3..."
+aws s3 sync "$DATA_DIR/aws/$DATE/" "s3://$BUCKET_NAME/aws/$DATE/" --delete
+
+# Generar resumen
+cat > "$DATA_DIR/aws/$DATE/summary.json" << EOF
+{
+    "cluster_name": "$CLUSTER_NAME",
+    "date": "$DATE",
+    "month": "$MONTH",
+    "total_cost": $TOTAL_COST,
+    "budget_limit": $BUDGET_LIMIT,
+    "budget_percentage": $(echo "scale=2; $TOTAL_COST / $BUDGET_LIMIT * 100" | bc -l),
+    "data_files": [
+        "monthly_costs.json",
+        "daily_costs.json",
+        "ec2_instance_costs.json",
+        "storage_costs.json",
+        "reservation_recommendations.json",
+        "rds_reservation_recommendations.json"
+    ]
+}
+EOF
+
+log "Monitoreo de costos completado exitosamente"
+log "Total costos del mes: $$TOTAL_COST"
+log "Datos guardados en: $DATA_DIR/aws/$DATE/"

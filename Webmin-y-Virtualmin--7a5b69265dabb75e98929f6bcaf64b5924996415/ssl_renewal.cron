@@ -1,0 +1,9 @@
+# Cron job para renovación automática de certificados SSL/TLS
+# Ejecutar diariamente a las 2:00 AM
+0 2 * * * /usr/local/bin/advanced_ssl_manager.sh renew >> /var/log/ssl_renewal.log 2>&1
+
+# Cron job para rotación de claves (cada 90 días, ejecutado semanalmente para verificar)
+0 3 * * 0 /usr/local/bin/advanced_ssl_manager.sh rotate >> /var/log/ssl_rotation.log 2>&1
+
+# Cron job para validación de certificados (cada hora)
+0 * * * * /usr/local/bin/advanced_ssl_manager.sh validate >> /var/log/ssl_validation.log 2>&1

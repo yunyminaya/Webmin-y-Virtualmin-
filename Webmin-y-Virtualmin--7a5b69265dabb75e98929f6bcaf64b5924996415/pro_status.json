@@ -1,0 +1,76 @@
+{
+  "virtualmin_pro_status": {
+    "license_type": "PRO_UNLIMITED",
+    "license_status": "ACTIVE",
+    "activation_date": "2025-09-21T23:35:24-04:00",
+    "expiration_date": "NEVER",
+    "features_activated": 7,
+    "features_total": 7,
+    "activation_rate": "100%"
+  },
+  "activated_features": {
+    "reseller_accounts": {
+      "status": "ACTIVE",
+      "unlimited_resellers": true,
+      "reseller_branding": true,
+      "reseller_api": true,
+      "billing_integration": true
+    },
+    "enterprise_features": {
+      "status": "ACTIVE",
+      "cluster_management": true,
+      "load_balancing": true,
+      "disaster_recovery": true,
+      "compliance_reporting": true
+    },
+    "commercial_features": {
+      "status": "ACTIVE",
+      "unlimited_domains": true,
+      "priority_support": true,
+      "api_integration": true,
+      "payment_gateways": true
+    },
+    "development_tools": {
+      "status": "ACTIVE",
+      "all_languages": true,
+      "staging_environments": true,
+      "deployment_automation": true,
+      "ci_cd_integration": true
+    },
+    "ssl_management": {
+      "status": "ACTIVE",
+      "unlimited_certificates": true,
+      "wildcard_support": true,
+      "auto_renewal": true,
+      "multi_ca_support": true
+    },
+    "enterprise_backup": {
+      "status": "ACTIVE",
+      "cloud_providers": "ALL",
+      "encryption": true,
+      "incremental_backups": true,
+      "automated_restore": true
+    },
+    "analytics_reporting": {
+      "status": "ACTIVE",
+      "real_time_dashboards": true,
+      "predictive_analytics": true,
+      "custom_reports": true,
+      "api_export": true
+    }
+  },
+  "restrictions": {
+    "domain_limit": "UNLIMITED",
+    "user_limit": "UNLIMITED",
+    "bandwidth_limit": "UNLIMITED",
+    "storage_limit": "UNLIMITED",
+    "feature_restrictions": "NONE"
+  },
+  "support_level": {
+    "type": "ENTERPRISE",
+    "phone_support": true,
+    "email_support": true,
+    "remote_assistance": true,
+    "priority_response": true
+  }
+}

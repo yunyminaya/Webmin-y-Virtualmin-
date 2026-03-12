@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FossFlow - Reporte de Infraestructura</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 20px;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .nodes-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .nodes-table th, .nodes-table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        .nodes-table th {
+            background-color: #667eea;
+            color: white;
+        }
+        .status-active { color: #4CAF50; font-weight: bold; }
+        .status-inactive { color: #f44336; font-weight: bold; }
+        .status-warning { color: #FF9800; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 FossFlow - Reporte de Infraestructura</h1>
+            <p>Generado el: 2025-10-08 10:02:04</p>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>10</h3>
+                <p>Total de Nodos</p>
+            </div>
+            <div class="stat-card">
+                <h3>25</h3>
+                <p>Total de Conexiones</p>
+            </div>
+            <div class="stat-card">
+                <h3>3</h3>
+                <p>Total de Clusters</p>
+            </div>
+            <div class="stat-card">
+                <h3>0.0%</h3>
+                <p>CPU Promedio</p>
+            </div>
+        </div>
+        
+        <h2>📊 Nodos del Sistema</h2>
+        <table class="nodes-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Tipo</th>
+                    <th>IP</th>
+                    <th>Estado</th>
+                    <th>CPU</th>
+                    <th>Memoria</th>
+                    <th>Disco</th>
+                </tr>
+            </thead>
+            <tbody>
+                
+                <tr>
+                    <td>web1</td>
+                    <td>Servidor Web Principal</td>
+                    <td>web</td>
+                    <td>192.168.1.10</td>
+                    <td class="status-unknown">N/A</td>
+                    <td>0%</td>
+                    <td>0%</td>
+                    <td>0%</td>
+                </tr>
+            
+                <tr>
+                    <td>web2</td>
+                    <td>Servidor Web Secundario</td>
+                    <td>web</td>
+                    <td>192.168.1.11</td>
+                    <td class="status-unknown">N/A</td>
+                    <td>0%</td>
+                    <td>0%</td>
+                    <td>0%</td>
+                </tr>
+            
+                <tr>
+                    <td>db1</td>
+                    <td>Base de Datos Principal</td>
+                    <td>database</td>
+                    <td>192.168.1.20</td>
+                    <td class="status-unknown">N/A</td>
+                    <td>0%</td>
+                    <td>0%</td>
+                    <td>0%</td>
+                </tr>
+            
+                <tr>
+                    <td>db2</td>
+                    <td>Base de Datos Réplica</td>
+                    <td>database</td>
+                    <td>192.168.1.21</td>
+                    <td class="status-unknown">N/A</td>
+                    <td>0%</td>
+                    <td>0%</td>
+                    <td>0%</td>
+                </tr>
+            
+                <tr>
+                    <td>lb1</td>
+                    <td>Load Balancer</td>
+                    <td>load_balancer</td>
+                    <td>192.168.1.5</td>
+                    <td class="status-unknown">N/A</td>
+                    <td>0%</td>
+                    <td>0%</td>
+                    <td>0%</td>
+                </tr>
+            
+                <tr>
+                    <td>cache1</td>
+                    <td>Redis Cache</td>
+                    <td>cache</td>
+                    <td>192.168.1.30</td>
+                    <td class="status-unknown">N/A</td>
+                    <td>0%</td>
+                    <td>0%</td>
+                    <td>0%</td>
+                </tr>
+            
+                <tr>
+                    <td>monitor1</td>
+                    <td>Sistema de Monitoreo</td>
+                    <td>monitoring</td>
+                    <td>192.168.1.40</td>
+                    <td class="status-unknown">N/A</td>
+                    <td>0%</td>
+                    <td>0%</td>
+                    <td>0%</td>
+                </tr>
+            
+                <tr>
+                    <td>backup1</td>
+                    <td>Servidor de Backup</td>
+                    <td>backup</td>
+                    <td>192.168.1.50</td>
+                    <td class="status-unknown">N/A</td>
+                    <td>0%</td>
+                    <td>0%</td>
+                    <td>0%</td>
+                </tr>
+            
+                <tr>
+                    <td>dns1</td>
+                    <td>Servidor DNS</td>
+                    <td>dns</td>
+                    <td>192.168.1.53</td>
+                    <td class="status-unknown">N/A</td>
+                    <td>0%</td>
+                    <td>0%</td>
+                    <td>0%</td>
+                </tr>
+            
+                <tr>
+                    <td>security1</td>
+                    <td>Firewall/Security</td>
+                    <td>security</td>
+                    <td>192.168.1.1</td>
+                    <td class="status-unknown">N/A</td>
+                    <td>0%</td>
+                    <td>0%</td>
+                    <td>0%</td>
+                </tr>
+            
+            </tbody>
+        </table>
+        
+        <h2>🔗 Conexiones</h2>
+        <table class="nodes-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Origen</th>
+                    <th>Destino</th>
+                    <th>Tipo</th>
+                    <th>Latencia</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                
+                <tr>
+                    <td>lb1_web1_1759932124</td>
+                    <td>lb1</td>
+                    <td>web1</td>
+                    <td>http</td>
+                    <td>30.78ms</td>
+                    <td class="status-unknown">N/A</td>
+                </tr>
+            
+                <tr>
+                    <td>lb1_web2_1759932124</td>
+                    <td>lb1</td>
+                    <td>web2</td>
+                    <td>http</td>
+                    <td>39.65ms</td>
+                    <td class="status-unknown">N/A</td>
+                </tr>
+            
+                <tr>
+                    <td>web1_db1_1759932124</td>
+                    <td>web1</td>
+                    <td>db1</td>
+                    <td>database</td>
+                    <td>24.63ms</td>
+                    <td class="status-unknown">N/A</td>
+                </tr>
+            
+                <tr>
+                    <td>web2_db1_1759932124</td>
+                    <td>web2</td>
+                    <td>db1</td>
+                    <td>database</td>
+                    <td>40.44ms</td>
+                    <td class="status-unknown">N/A</td>
+                </tr>
+            
+                <tr>
+                    <td>db1_db2_1759932124</td>
+                    <td>db1</td>
+                    <td>db2</td>
+                    <td>replication</td>
+                    <td>29.12ms</td>
+                    <td class="status-unknown">N/A</td>
+                </tr>
+            
+                <tr>
+                    <td>web1_cache1_1759932124</td>
+                    <td>web1</td>
+                    <td>cache1</td>
+                    <td>cache</td>
+                    <td>13.13ms</td>
+                    <td class="status-unknown">N/A</td>
+                </tr>
+            
+                <tr>
+                    <td>web2_cache1_1759932124</td>
+                    <td>web2</td>
+                    <td>cache1</td>
+                    <td>cache</td>
+                    <td>30.45ms</td>
+                    <td class="status-unknown">N/A</td>
+                </tr>
+            
+                <tr>
+                    <td>monitor1_web1_1759932124</td>
+                    <td>monitor1</td>
+                    <td>web1</td>
+                    <td>monitoring</td>
+                    <td>26.77ms</td>
+                    <td class="status-unknown">N/A</td>
+                </tr>
+            
+                <tr>
+                    <td>monitor1_db1_1759932124</td>
+                    <td>monitor1</td>
+                    <td>db1</td>
+                    <td>monitoring</td>
+                    <td>22.44ms</td>
+                    <td class="status-unknown">N/A</td>
+                </tr>
+            
+                <tr>
+                    <td>backup1_db1_1759932124</td>
+                    <td>backup1</td>
+                    <td>db1</td>
+                    <td>backup</td>
+                    <td>34.74ms</td>
+                    <td class="status-unknown">N/A</td>
+                </tr>
+            
+                <tr>
+                    <td>dns1_web1_1759932124</td>
+                    <td>dns1</td>
+                    <td>web1</td>
+                    <td>dns</td>
+                    <td>5.93ms</td>
+                    <td class="status-unknown">N/A</td>
+                </tr>
+            
+                <tr>
+                    <td>dns1_web2_1759932124</td>
+                    <td>dns1</td>
+                    <td>web2</td>
+                    <td>dns</td>
+                    <td>4.23ms</td>
+                    <td class="status-unknown">N/A</td>
+                </tr>
+            
+                <tr>
+                    <td>security1_lb1_1759932124</td>
+                    <td>security1</td>
+                    <td>lb1</td>
+                    <td>firewall</td>
+                    <td>26.02ms</td>
+                    <td class="status-unknown">N/A</td>
+                </tr>
+            
+                <tr>
+                    <td>security1_web1_1759932124</td>
+                    <td>security1</td>
+                    <td>web1</td>
+                    <td>firewall</td>
+                    <td>20.11ms</td>
+                    <td class="status-unknown">N/A</td>
+                </tr>
+            
+                <tr>
+                    <td>security1_db1_1759932124</td>
+                    <td>security1</td>
+                    <td>db1</td>
+                    <td>firewall</td>
+                    <td>46.83ms</td>
+                    <td class="status-unknown">N/A</td>
+                </tr>
+            
+                <tr>
+                    <td>web1_web2_1759932124</td>
+                    <td>web1</td>
+                    <td>web2</td>
+                    <td>cluster_internal</td>
+                    <td>28.68ms</td>
+                    <td class="status-unknown">N/A</td>
+                </tr>
+            
+                <tr>
+                    <td>web1_db2_1759932124</td>
+                    <td>web1</td>
+                    <td>db2</td>
+                    <td>cluster_internal</td>
+                    <td>46.12ms</td>
+                    <td class="status-unknown">N/A</td>
+                </tr>
+            
+                <tr>
+                    <td>web2_db2_1759932124</td>
+                    <td>web2</td>
+                    <td>db2</td>
+                    <td>cluster_internal</td>
+                    <td>24.99ms</td>
+                    <td class="status-unknown">N/A</td>
+                </tr>
+            
+                <tr>
+                    <td>db1_lb1_1759932124</td>
+                    <td>db1</td>
+                    <td>lb1</td>
+                    <td>cluster_internal</td>
+                    <td>35.64ms</td>
+                    <td class="status-unknown">N/A</td>
+                </tr>
+            
+                <tr>
+                    <td>db1_cache1_1759932124</td>
+                    <td>db1</td>
+                    <td>cache1</td>
+                    <td>cluster_internal</td>
+                    <td>6.7ms</td>
+                    <td class="status-unknown">N/A</td>
+                </tr>
+            
+                <tr>
+                    <td>db2_lb1_1759932124</td>
+                    <td>db2</td>
+                    <td>lb1</td>
+                    <td>cluster_internal</td>
+                    <td>40.21ms</td>
+                    <td class="status-unknown">N/A</td>
+                </tr>
+            
+                <tr>
+                    <td>db2_cache1_1759932124</td>
+                    <td>db2</td>
+                    <td>cache1</td>
+                    <td>cluster_internal</td>
+                    <td>3.48ms</td>
+                    <td class="status-unknown">N/A</td>
+                </tr>
+            
+                <tr>
+                    <td>lb1_cache1_1759932124</td>
+                    <td>lb1</td>
+                    <td>cache1</td>
+                    <td>cluster_internal</td>
+                    <td>13.95ms</td>
+                    <td class="status-unknown">N/A</td>
+                </tr>
+            
+                <tr>
+                    <td>monitor1_backup1_1759932124</td>
+                    <td>monitor1</td>
+                    <td>backup1</td>
+                    <td>cluster_internal</td>
+                    <td>24.31ms</td>
+                    <td class="status-unknown">N/A</td>
+                </tr>
+            
+                <tr>
+                    <td>dns1_security1_1759932124</td>
+                    <td>dns1</td>
+                    <td>security1</td>
+                    <td>cluster_internal</td>
+                    <td>30.89ms</td>
+                    <td class="status-unknown">N/A</td>
+                </tr>
+            
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

@@ -1,0 +1,116 @@
+---
+# Configuración de escalado ilimitado de servidores
+
+- name: Instalar herramientas de escalado inteligente
+  package:
+    name:
+      - python3-pip
+      - jq
+      - curl
+      - awscli
+    state: present
+
+- name: Instalar bibliotecas Python para IA
+  pip:
+    name:
+      - boto3
+      - kubernetes
+      - prometheus_client
+      - scikit-learn
+      - pandas
+      - numpy
+    state: present
+
+- name: Crear directorio para scripts de escalado
+  file:
+    path: /opt/unlimited_scaling
+    state: directory
+    mode: '0755'
+
+- name: Configurar script de escalado inteligente
+  template:
+    src: intelligent_scaling.py.j2
+    dest: /opt/unlimited_scaling/intelligent_scaling.py
+    mode: '0755'
+
+- name: Configurar servicio de escalado inteligente
+  template:
+    src: unlimited-scaling.service.j2
+    dest: /etc/systemd/system/unlimited-scaling.service
+    mode: '0644'
+
+- name: Configurar timer para escalado inteligente
+  template:
+    src: unlimited-scaling.timer.j2
+    dest: /etc/systemd/system/unlimited-scaling.timer
+    mode: '0644'
+
+- name: Habilitar e iniciar servicios de escalado
+  systemd:
+    name: "{{ item }}"
+    enabled: true
+    state: started
+    daemon_reload: true
+  loop:
+    - unlimited-scaling.timer
+
+- name: Configurar métricas de escalado en Prometheus
+  template:
+    src: scaling_metrics.yml.j2
+    dest: /etc/prometheus/scaling_metrics.yml
+    mode: '0644'
+  notify: reload prometheus
+
+- name: Configurar alertas de escalado
+  template:
+    src: scaling_alerts.yml.j2
+    dest: /etc/prometheus/scaling_alerts.yml
+    mode: '0644'
+  notify: reload prometheus
+
+- name: Configurar auto-scaling policies avanzadas
+  template:
+    src: advanced_scaling_policies.yml.j2
+    dest: /opt/unlimited_scaling/advanced_policies.yml
+    mode: '0644'
+
+- name: Configurar predicción de carga
+  template:
+    src: load_prediction.py.j2
+    dest: /opt/unlimited_scaling/load_prediction.py
+    mode: '0755'
+
+- name: Configurar optimización de costos
+  template:
+    src: cost_optimization.py.j2
+    dest: /opt/unlimited_scaling/cost_optimization.py
+    mode: '0755'
+
+- name: Configurar base de datos de métricas históricas
+  template:
+    src: metrics_database.py.j2
+    dest: /opt/unlimited_scaling/metrics_database.py
+    mode: '0755'
+
+- name: Inicializar base de datos de métricas
+  command: python3 /opt/unlimited_scaling/metrics_database.py --init
+  ignore_errors: true
+
+- name: Configurar logging para escalado
+  template:
+    src: scaling_logging.conf.j2
+    dest: /etc/rsyslog.d/scaling_logging.conf
+    mode: '0644'
+  notify: restart rsyslog
+
+- name: Configurar monitoreo de recursos para escalado
+  template:
+    src: resource_monitor.py.j2
+    dest: /opt/unlimited_scaling/resource_monitor.py
+    mode: '0755'
+
+- name: Configurar notificaciones de escalado
+  template:
+    src: scaling_notifications.py.j2
+    dest: /opt/unlimited_scaling/scaling_notifications.py
+    mode: '0755'

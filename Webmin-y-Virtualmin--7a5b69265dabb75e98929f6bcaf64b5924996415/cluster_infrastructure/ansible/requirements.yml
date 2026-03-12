@@ -1,0 +1,154 @@
+---
+# Requirements para Ansible - Clúster Enterprise Webmin/Virtualmin
+
+collections:
+  # Colecciones oficiales de Ansible
+  - name: ansible.posix
+    version: ">=1.5.0"
+  - name: community.general
+    version: ">=7.0.0"
+  - name: community.crypto
+    version: ">=2.0.0"
+  - name: community.mysql
+    version: ">=3.0.0"
+  - name: community.docker
+    version: ">=3.0.0"
+  - name: amazon.aws
+    version: ">=5.0.0"
+  - name: kubernetes.core
+    version: ">=2.0.0"
+
+  # Colecciones específicas para el proyecto
+  - name: git+https://github.com/bertvv/ansible-role-mariadb.git
+    type: git
+    version: master
+  - name: git+https://github.com/geerlingguy/ansible-role-docker.git
+    type: git
+    version: master
+  - name: git+https://github.com/geerlingguy/ansible-role-nginx.git
+    type: git
+    version: master
+  - name: git+https://github.com/geerlingguy/ansible-role-haproxy.git
+    type: git
+    version: master
+
+roles:
+  # Roles de la comunidad
+  - name: geerlingguy.security
+    version: "2.2.0"
+  - name: geerlingguy.firewall
+    version: "2.5.0"
+  - name: geerlingguy.ntp
+    version: "2.3.0"
+  - name: geerlingguy.fail2ban
+    version: "1.0.0"
+  - name: geerlingguy.logrotate
+    version: "1.0.0"
+  - name: geerlingguy.certbot
+    version: "2.0.0"
+  - name: geerlingguy.prometheus
+    version: "2.0.0"
+  - name: geerlingguy.grafana
+    version: "3.0.0"
+  - name: geerlingguy.alertmanager
+    version: "1.0.0"
+  - name: geerlingguy.node_exporter
+    version: "2.0.0"
+  - name: geerlingguy.blackbox_exporter
+    version: "1.0.0"
+  - name: geerlingguy.mysql
+    version: "4.0.0"
+  - name: geerlingguy.php
+    version: "5.0.0"
+  - name: geerlingguy.apache
+    version: "4.0.0"
+  - name: geerlingguy.postfix
+    version: "2.0.0"
+  - name: robertdebock.keepalived
+    version: "5.0.0"
+  - name: robertdebock.glusterfs
+    version: "4.0.0"
+  - name: robertdebock.rsyslog
+    version: "5.0.0"
+
+  # Roles personalizados del proyecto
+  - name: webmin_virtualmin
+    src: https://github.com/webmin/ansible-role-webmin.git
+    version: master
+  - name: virtualmin_api
+    src: https://github.com/virtualmin/ansible-role-virtualmin-api.git
+    version: master
+  - name: mariadb_galera
+    src: https://github.com/bertvv/ansible-role-mariadb.git
+    version: master
+  - name: glusterfs_cluster
+    src: https://github.com/robertdebock/ansible-role-glusterfs.git
+    version: master
+
+  # Roles de monitoreo avanzado
+  - name: prometheus_stack
+    src: https://github.com/cloudalchemy/ansible-prometheus.git
+    version: master
+  - name: grafana_dashboards
+    src: https://github.com/cloudalchemy/ansible-grafana.git
+    version: master
+
+  # Roles de seguridad enterprise
+  - name: lynis_audit
+    src: https://github.com/robertdebock/ansible-role-lynis.git
+    version: master
+  - name: wazuh_agent
+    src: https://github.com/wazuh/wazuh-ansible.git
+    version: master
+  - name: ossec_server
+    src: https://github.com/robertdebock/ansible-role-ossec.git
+    version: master
+
+  # Roles de backup
+  - name: restic_backup
+    src: https://github.com/robertdebock/ansible-role-restic.git
+    version: master
+  - name: borgbackup
+    src: https://github.com/robertdebock/ansible-role-borgbackup.git
+    version: master
+
+  # Roles de CMS y frameworks
+  - name: wordpress_site
+    src: https://github.com/geerlingguy/ansible-role-wordpress.git
+    version: master
+  - name: drupal_site
+    src: https://github.com/geerlingguy/ansible-role-drupal.git
+    version: master
+  - name: joomla_site
+    src: https://github.com/geerlingguy/ansible-role-joomla.git
+    version: master
+  - name: laravel_app
+    src: https://github.com/geerlingguy/ansible-role-laravel.git
+    version: master
+  - name: symfony_app
+    src: https://github.com/geerlingguy/ansible-role-symfony.git
+    version: master
+
+  # Roles de virtualización y containers
+  - name: docker_compose
+    src: https://github.com/geerlingguy/ansible-role-docker-compose.git
+    version: master
+  - name: kubernetes_master
+    src: https://github.com/geerlingguy/ansible-role-kubernetes.git
+    version: master
+
+  # Roles de networking
+  - name: haproxy_loadbalancer
+    src: https://github.com/geerlingguy/ansible-role-haproxy.git
+    version: master
+  - name: nginx_loadbalancer
+    src: https://github.com/geerlingguy/ansible-role-nginx.git
+    version: master
+
+  # Roles de compliance y auditoría
+  - name: cis_hardening
+    src: https://github.com/robertdebock/ansible-role-cis.git
+    version: master
+  - name: stig_hardening
+    src: https://github.com/robertdebock/ansible-role-stig.git
+    version: master

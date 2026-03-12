@@ -1,0 +1,19 @@
+rules:
+  - id: 1001
+    description: "SQL Injection Attack"
+    action: "block"
+    conditions:
+      - detection: "sql_injection"
+        operator: "contains"
+  - id: 1002
+    description: "Cross-site Scripting (XSS)"
+    action: "block"
+    conditions:
+      - detection: "xss"
+        operator: "contains"
+  - id: 1003
+    description: "Path Traversal"
+    action: "block"
+    conditions:
+      - detection: "path_traversal"
+        operator: "contains"

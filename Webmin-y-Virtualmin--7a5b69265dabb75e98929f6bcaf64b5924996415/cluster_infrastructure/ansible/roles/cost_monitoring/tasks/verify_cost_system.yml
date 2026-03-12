@@ -1,0 +1,41 @@
+---
+# Cost System Verification
+# Verifica que el sistema de monitoreo de costos esté funcionando correctamente
+
+- name: "Verificar que los servicios de monitoreo de costos estén ejecutándose"
+  service:
+    name: "{{ item }}"
+    state: started
+  loop:
+    - cost_monitoring
+    - cost_optimization
+  ignore_errors: true
+
+- name: "Verificar conectividad con AWS Cost Explorer"
+  command: "/opt/cost_monitoring/aws_cost_monitor.sh --test-connection"
+  register: aws_connection_test
+  ignore_errors: true
+
+- name: "Verificar que los scripts de monitoreo sean ejecutables"
+  file:
+    path: "{{ item }}"
+    mode: '0755'
+  loop:
+    - "/opt/cost_monitoring/aws_cost_monitor.sh"
+    - "/opt/cost_monitoring/aws_cost_analysis.py"
+    - "/opt/cost_monitoring/cost_anomaly_detector.py"
+    - "/opt/cost_monitoring/savings_recommendations.py"
+    - "/opt/cost_monitoring/cost_reporting.py"
+
+- name: "Verificar configuración de alertas"
+  command: "/opt/cost_monitoring/aws_cost_monitor.sh --check-alerts"
+  register: alerts_check
+  ignore_errors: true
+
+- name: "Generar reporte de verificación de costos"
+  template:
+    src: "cost_verification_report.j2"
+    dest: "/var/log/cost_monitoring/verification_report.txt"
+    owner: root
+    group: root
+    mode: '0644'

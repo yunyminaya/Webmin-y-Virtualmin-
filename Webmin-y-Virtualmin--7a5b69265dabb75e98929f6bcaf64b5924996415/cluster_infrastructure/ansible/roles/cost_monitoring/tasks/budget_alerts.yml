@@ -1,0 +1,98 @@
+---
+# Configuración de alertas de presupuesto
+
+- name: "Crear presupuestos AWS"
+  command: >
+    aws budgets create-budget
+    --budget-name "{{ cluster_name }}-monthly-budget"
+    --budget '{"BudgetLimit": {"Amount": "{{ cost_monitoring.budget_limit }}", "Unit": "USD"}, "TimeUnit": "MONTHLY", "BudgetType": "COST"}'
+    --notifications-with-subscribers '[
+      {
+        "Notification": {
+          "NotificationType": "ACTUAL",
+          "ComparisonOperator": "GREATER_THAN",
+          "Threshold": 80,
+          "ThresholdType": "PERCENTAGE"
+        },
+        "Subscribers": [
+          {% for email in cost_monitoring.alert_emails %}
+          {"SubscriptionType": "EMAIL", "Address": "{{ email }}"}
+          {% if not loop.last %},{% endif %}
+          {% endfor %}
+        ]
+      },
+      {
+        "Notification": {
+          "NotificationType": "ACTUAL",
+          "ComparisonOperator": "GREATER_THAN",
+          "Threshold": 90,
+          "ThresholdType": "PERCENTAGE"
+        },
+        "Subscribers": [
+          {% for email in cost_monitoring.alert_emails %}
+          {"SubscriptionType": "EMAIL", "Address": "{{ email }}"}
+          {% if not loop.last %},{% endif %}
+          {% endfor %}
+        ]
+      },
+      {
+        "Notification": {
+          "NotificationType": "FORECASTED",
+          "ComparisonOperator": "GREATER_THAN",
+          "Threshold": 100,
+          "ThresholdType": "PERCENTAGE"
+        },
+        "Subscribers": [
+          {% for email in cost_monitoring.alert_emails %}
+          {"SubscriptionType": "EMAIL", "Address": "{{ email }}"}
+          {% if not loop.last %},{% endif %}
+          {% endfor %}
+        ]
+      }
+    ]'
+  when: cloud_provider == "aws" and cost_monitoring.alert_emails | length > 0
+  ignore_errors: yes
+
+- name: "Crear alertas de CloudWatch para costos"
+  template:
+    src: cloudwatch_cost_alarms.json.j2
+    dest: "/opt/cost_monitoring/cloudwatch_alarms.json"
+    mode: '0644'
+  when: cloud_provider == "aws"
+
+- name: "Aplicar alertas de CloudWatch"
+  command: >
+    aws cloudwatch put-metric-alarm --cli-input-json file:///opt/cost_monitoring/cloudwatch_alarms.json
+  when: cloud_provider == "aws"
+  ignore_errors: yes
+
+- name: "Crear script de alertas personalizado"
+  template:
+    src: custom_budget_alerts.sh.j2
+    dest: "/opt/cost_monitoring/custom_budget_alerts.sh"
+    mode: '0755'
+
+- name: "Configurar cron job para alertas personalizadas"
+  cron:
+    name: "Custom Budget Alerts"
+    minute: "*/30"
+    job: "/opt/cost_monitoring/custom_budget_alerts.sh"
+    state: present
+
+- name: "Crear configuración de Slack para alertas"
+  template:
+    src: slack_alerts_config.json.j2
+    dest: "/opt/cost_monitoring/slack_config.json"
+    mode: '0600'
+  when: slack_webhook is defined
+
+- name: "Crear configuración de PagerDuty para alertas"
+  template:
+    src: pagerduty_alerts_config.json.j2
+    dest: "/opt/cost_monitoring/pagerduty_config.json"
+    mode: '0600'
+  when: pagerduty_integration_key is defined
+
+- name: "Verificar configuración de alertas"
+  command: "/opt/cost_monitoring/custom_budget_alerts.sh --test"
+  ignore_errors: yes

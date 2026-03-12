@@ -1,0 +1,31 @@
+version: 2
+updates:
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "02:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "yunyminaya"
+    assignees:
+      - "yunyminaya"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+
+  # Docker (si se añaden Dockerfiles en el futuro)
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
+    reviewers:
+      - "yunyminaya"
+    assignees:
+      - "yunyminaya"
+    commit-message:
+      prefix: "docker"
+      include: "scope"

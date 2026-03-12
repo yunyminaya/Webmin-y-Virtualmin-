@@ -1,0 +1,268 @@
+# Webmin/Virtualmin RI Automation - FREE
+
+## 🔄 Reserved Instances Automation Completamente Gratuita
+
+Este módulo proporciona automatización completa de Reserved Instances (RI) para AWS, integrado directamente con Webmin y Virtualmin, **completamente GRATUITO**.
+
+## ✨ Características
+
+### 🚀 **100% GRATIS**
+- **Sin costos de implementación**
+- **Sin costos de operación**
+- **Sin costos de análisis**
+- **Sin costos de reportes**
+- **Sin compromisos**
+
+### 🎯 **Funcionalidades Incluidas**
+- ✅ Análisis automático de servidores Virtualmin
+- ✅ Recomendaciones de Reserved Instances
+- ✅ Simulación de costos y ahorros
+- ✅ Reportes detallados
+- ✅ Dashboard web integrado
+- ✅ Notificaciones por email
+- ✅ Análisis programado automático
+- ✅ API REST para integración
+
+### 🔧 **Integración Completa**
+- **Webmin**: Interfaz web completa
+- **Virtualmin**: Análisis de servidores
+- **Ansible**: Despliegue automatizado
+- **Prometheus**: Métricas y monitoreo
+- **Grafana**: Dashboards avanzados
+
+## 📋 Requisitos
+
+- Webmin instalado y configurado
+- Virtualmin instalado y operativo
+- Python 3.6+
+- Conexión a internet (para análisis gratuito)
+- **Sin credenciales AWS requeridas** (simulación gratuita)
+
+## 🚀 Instalación
+
+### Automática (Recomendado)
+```bash
+# Ejecutar el playbook de Ansible
+ansible-playbook cluster.yml --tags cost_monitoring,webmin_ri
+```
+
+### Manual
+```bash
+# 1. Instalar dependencias
+pip3 install boto3 pandas numpy
+
+# 2. Copiar archivos
+cp webmin_ri_automation.py /usr/local/bin/
+cp webmin_ri_wrapper.sh /usr/local/bin/webmin-ri-automation
+chmod +x /usr/local/bin/webmin-ri-automation
+
+# 3. Configurar Webmin
+mkdir -p /etc/webmin/ri_automation
+cp webmin_ri_config.json /etc/webmin/ri_automation_config.json
+cp webmin_ri_module.config /etc/webmin/ri_automation/module.config
+cp webmin_ri_dashboard.html /etc/webmin/ri_automation/index.html
+cp webmin_ri_cgi.cgi /etc/webmin/ri_automation/index.cgi
+chmod +x /etc/webmin/ri_automation/index.cgi
+
+# 4. Reiniciar Webmin
+systemctl restart webmin
+```
+
+## 🎮 Uso
+
+### Interfaz Web
+1. Acceder a Webmin: `https://your-server:10000`
+2. Ir a **System → RI Automation**
+3. Ver dashboard con métricas y recomendaciones
+4. Ejecutar análisis manualmente
+5. Generar reportes
+
+### Línea de Comandos
+```bash
+# Ejecutar análisis
+webmin-ri-automation --analyze
+
+# Generar reporte
+webmin-ri-automation --report
+
+# Ver configuración
+webmin-ri-automation --config
+
+# Verificar estado
+webmin-ri-automation --status
+```
+
+### API REST
+```bash
+# Estado del sistema
+curl "https://your-server:10000/ri_automation/index.cgi?action=status"
+
+# Recomendaciones
+curl "https://your-server:10000/ri_automation/index.cgi?action=recommendations"
+
+# Ejecutar análisis
+curl -X POST "https://your-server:10000/ri_automation/index.cgi?action=run_analysis"
+```
+
+## 📊 Dashboard
+
+El dashboard incluye:
+
+- **📈 Métricas en Tiempo Real**
+  - Servidores analizados
+  - Ahorros potenciales mensuales
+  - Número de recomendaciones
+  - Último análisis
+
+- **🎯 Recomendaciones de RI**
+  - Servidores candidatos
+  - Tipos de instancia recomendados
+  - Ahorros proyectados
+  - Periodo de break-even
+
+- **⚙️ Controles Interactivos**
+  - Análisis manual
+  - Generación de reportes
+  - Configuración
+  - Verificación de estado
+
+## 🔧 Configuración
+
+### Archivo de Configuración
+```json
+{
+  "enabled": true,
+  "analysis_interval_hours": 24,
+  "recommendation_threshold": 50,
+  "max_recommendations": 10,
+  "simulation_mode": true,
+  "auto_apply": false,
+  "cost_free": true,
+  "notification_emails": ["admin@yourdomain.com"],
+  "webmin_integration": true,
+  "virtualmin_integration": true
+}
+```
+
+### Variables de Ansible
+```yaml
+cost_monitoring:
+  enabled: true
+  webmin_ri_enabled: true
+  notification_emails:
+    - admin@yourdomain.com
+  analysis_interval: 24
+```
+
+## 📋 Reportes
+
+### Tipos de Reportes
+- **📊 Reporte Ejecutivo**: Resumen de ahorros y recomendaciones
+- **📈 Reporte Detallado**: Análisis completo por servidor
+- **📉 Reporte de Tendencias**: Evolución de costos y ahorros
+- **🎯 Reporte de Simulación**: Proyección de escenarios
+
+### Formatos
+- JSON (para APIs)
+- HTML (para Webmin)
+- CSV (para exportación)
+- PDF (generado automáticamente)
+
+## 🔒 Seguridad
+
+- ✅ **Sin Almacenamiento de Credenciales**: Solo simulación gratuita
+- ✅ **Encriptación de Configuración**: Archivos sensibles protegidos
+- ✅ **Acceso Restringido**: Solo usuarios autorizados de Webmin
+- ✅ **Logs Seguros**: Información sensible no registrada
+- ✅ **Validación de Entrada**: Protección contra inyección
+
+## 🚨 Solución de Problemas
+
+### Problema: Dashboard no carga
+```bash
+# Verificar archivos
+ls -la /etc/webmin/ri_automation/
+
+# Verificar permisos
+chmod +x /etc/webmin/ri_automation/index.cgi
+
+# Reiniciar Webmin
+systemctl restart webmin
+```
+
+### Problema: Análisis falla
+```bash
+# Verificar Python
+python3 --version
+
+# Verificar dependencias
+python3 -c "import json, os, sys"
+
+# Verificar logs
+tail -f /var/log/webmin/ri_automation.log
+```
+
+### Problema: No hay recomendaciones
+- Verificar que Virtualmin esté configurado
+- Revisar configuración de umbrales
+- Ejecutar análisis manual: `webmin-ri-automation --analyze`
+
+## 📞 Soporte
+
+### Comunidad
+- **Foros**: Webmin/Virtualmin community forums
+- **GitHub**: Reportar issues en el repositorio
+- **Documentación**: Wiki completa disponible
+
+### Soporte Gratuito Incluido
+- ✅ Instalación guiada
+- ✅ Configuración inicial
+- ✅ Resolución de problemas básicos
+- ✅ Actualizaciones automáticas
+- ✅ Comunidad activa
+
+## 🔄 Actualizaciones
+
+### Automáticas
+- El sistema se actualiza automáticamente
+- No requiere intervención manual
+- Mantiene compatibilidad con versiones anteriores
+
+### Manuales
+```bash
+# Actualizar scripts
+cp webmin_ri_automation.py /usr/local/bin/
+
+# Actualizar configuración
+cp webmin_ri_config.json /etc/webmin/ri_automation_config.json
+
+# Reiniciar servicios
+systemctl restart webmin
+```
+
+## 📈 Roadmap
+
+### Próximas Funcionalidades (GRATIS)
+- [ ] Integración con múltiples proveedores cloud
+- [ ] Machine Learning avanzado para predicciones
+- [ ] API REST completa
+- [ ] Dashboards personalizables
+- [ ] Alertas inteligentes
+- [ ] Optimización multi-region
+
+## 📜 Licencia
+
+Este módulo es completamente **GRATUITO** y se distribuye bajo la licencia GPL.
+
+**No hay costos ocultos, no hay suscripciones, no hay límites.**
+
+---
+
+## 🎉 ¡Comienza Ahora!
+
+1. **Instala** el módulo con Ansible
+2. **Configura** tus preferencias
+3. **Ejecuta** el primer análisis
+4. **Ahorra** dinero automáticamente
+
+**¡Todo GRATIS!**

@@ -1,0 +1,55 @@
+---
+# Cost Monitoring and Optimization Role
+# Implementa monitoreo completo de costos y optimización automática
+
+- name: "Verificar configuración de costos"
+  assert:
+    that:
+      - cost_monitoring.enabled | bool
+      - cost_monitoring.budget_limit >= 0
+    fail_msg: "Configuración de costos inválida"
+
+- name: "Instalar herramientas de monitoreo de costos"
+  include_tasks: install_tools.yml
+
+- name: "Configurar monitoreo de costos AWS"
+  include_tasks: aws_cost_monitoring.yml
+  when: cloud_provider == "aws"
+
+- name: "Configurar monitoreo de costos Azure"
+  include_tasks: azure_cost_monitoring.yml
+  when: cloud_provider == "azure"
+
+- name: "Configurar monitoreo de costos GCP"
+  include_tasks: gcp_cost_monitoring.yml
+  when: cloud_provider == "gcp"
+
+- name: "Configurar alertas de presupuesto"
+  include_tasks: budget_alerts.yml
+
+- name: "Configurar optimización automática de costos"
+  include_tasks: cost_optimization.yml
+  when: cost_optimization.enabled | default(true)
+
+- name: "Configurar dashboards de costos"
+  include_tasks: dashboards.yml
+  when: cost_dashboards.enabled | default(true)
+
+- name: "Configurar detección de anomalías"
+  include_tasks: anomaly_detection.yml
+  when: cost_monitoring.anomaly_detection | default(true)
+
+- name: "Configurar recomendaciones de ahorro"
+  include_tasks: savings_recommendations.yml
+  when: cost_optimization.enabled | default(true)
+
+- name: "Configurar reportes de costos"
+  include_tasks: cost_reporting.yml
+  when: cost_efficiency.reporting_enabled | default(true)
+
+- name: "Configurar automatización de Reserved Instances para Webmin/Virtualmin"
+  include_tasks: webmin_ri_automation.yml
+  when: webmin_integration.enabled | default(true)
+
+- name: "Verificar funcionamiento del sistema de costos"
+  include_tasks: verify_cost_system.yml

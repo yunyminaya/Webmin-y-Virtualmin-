@@ -1,0 +1,31 @@
+[Unit]
+Description=Sistema de Auto-Defensa Virtualmin
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+# NOTA: Este archivo se genera dinámicamente durante la instalación
+# La ruta se reemplaza con SCRIPT_DIR durante install_defense.sh
+ExecStart=/bin/bash /path/to/auto_defense.sh start
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=virtualmin-defense
+
+# Security settings
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+# NOTA: Estas rutas se reemplazan con SCRIPT_DIR durante install_defense.sh
+ReadWritePaths=/path/to/logs /path/to/backups
+
+# Environment
+Environment=DEFENSE_ACTIVE=true
+Environment=MONITOR_INTERVAL=300
+
+[Install]
+WantedBy=multi-user.target

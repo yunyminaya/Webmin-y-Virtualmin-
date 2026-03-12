@@ -1,0 +1,133 @@
+#!/usr/bin/env python3
+# Webmin RI Automation CGI Script - FREE Version
+
+import cgi
+import cgitb
+import json
+import os
+import sys
+from datetime import datetime
+
+# Habilitar debugging
+cgitb.enable()
+
+# Configuración
+SCRIPT_DIR = "/usr/local/bin"
+PYTHON_SCRIPT = os.path.join(SCRIPT_DIR, "webmin_ri_automation.py")
+CONFIG_FILE = "/etc/webmin/ri_automation_config.json"
+REPORTS_DIR = "/etc/webmin/ri_reports"
+
+def print_header(content_type="text/html"):
+    """Imprimir headers HTTP"""
+    print(f"Content-Type: {content_type}\n")
+
+def run_command(cmd):
+    """Ejecutar comando y retornar resultado"""
+    try:
+        result = os.popen(cmd).read()
+        return result.strip()
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+def get_system_status():
+    """Obtener estado del sistema"""
+    status = {
+        'status': 'Sistema RI Automation operativo - FREE',
+        'status_type': 'success',
+        'metrics': {
+            'servers': 0,
+            'savings': 0,
+            'recommendations': 0,
+            'last_analysis': 'Nunca'
+        }
+    }
+
+    # Verificar si hay reportes recientes
+    latest_report = os.path.join(REPORTS_DIR, "latest_report.json")
+    if os.path.exists(latest_report):
+        try:
+            with open(latest_report, 'r') as f:
+                data = json.load(f)
+                summary = data.get('summary', {})
+                status['metrics'] = {
+                    'servers': summary.get('total_servers_analyzed', 0),
+                    'savings': summary.get('total_potential_monthly_savings', 0),
+                    'recommendations': summary.get('total_recommendations', 0),
+                    'last_analysis': data.get('generated_at', 'Desconocido')
+                }
+        except:
+            pass
+
+    return status
+
+def get_recommendations():
+    """Obtener recomendaciones actuales"""
+    recommendations = []
+
+    latest_report = os.path.join(REPORTS_DIR, "latest_report.json")
+    if os.path.exists(latest_report):
+        try:
+            with open(latest_report, 'r') as f:
+                data = json.load(f)
+                recommendations = data.get('recommendations', [])
+        except:
+            pass
+
+    return {'recommendations': recommendations}
+
+def run_analysis():
+    """Ejecutar análisis"""
+    cmd = f"python3 {PYTHON_SCRIPT} --analyze"
+    result = run_command(cmd)
+
+    return {
+        'message': 'Análisis completado exitosamente' if 'completado' in result.lower() else 'Error en análisis',
+        'details': result
+    }
+
+def main():
+    """Función principal CGI"""
+    form = cgi.FieldStorage()
+    action = form.getvalue('action', 'status')
+
+    if action == 'status':
+        print_header("application/json")
+        status = get_system_status()
+        print(json.dumps(status, indent=2))
+
+    elif action == 'recommendations':
+        print_header("application/json")
+        recommendations = get_recommendations()
+        print(json.dumps(recommendations, indent=2))
+
+    elif action == 'run_analysis':
+        print_header("application/json")
+        result = run_analysis()
+        print(json.dumps(result, indent=2))
+
+    elif action == 'download_report':
+        print_header("application/json")
+        latest_report = os.path.join(REPORTS_DIR, "latest_report.json")
+
+        if os.path.exists(latest_report):
+            with open(latest_report, 'r') as f:
+                data = json.load(f)
+            print(json.dumps(data, indent=2))
+        else:
+            print(json.dumps({'error': 'No hay reportes disponibles'}))
+
+    elif action == 'view_config':
+        print_header("application/json")
+        if os.path.exists(CONFIG_FILE):
+            with open(CONFIG_FILE, 'r') as f:
+                config = json.load(f)
+            print(json.dumps(config, indent=2))
+        else:
+            print(json.dumps({'error': 'Configuración no encontrada'}))
+
+    else:
+        print_header("application/json")
+        print(json.dumps({'error': f'Acción no válida: {action}'}))
+
+if __name__ == '__main__':
+    main()

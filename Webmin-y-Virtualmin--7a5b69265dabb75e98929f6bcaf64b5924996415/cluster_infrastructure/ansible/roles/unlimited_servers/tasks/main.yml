@@ -1,0 +1,39 @@
+---
+# Tareas principales para configuración de servidores ilimitados
+
+- name: Configurar escalado ilimitado de servidores
+  include_tasks: unlimited_scaling.yml
+  when: unlimited_servers.enabled
+
+- name: Configurar inventario dinámico
+  include_tasks: dynamic_inventory.yml
+  when: unlimited_servers.dynamic_inventory
+
+- name: Configurar balanceo de carga ilimitado
+  include_tasks: unlimited_load_balancing.yml
+  when: unlimited_servers.load_balancer_auto_scaling
+
+- name: Configurar asignación inteligente de recursos
+  include_tasks: intelligent_allocation.yml
+  when: unlimited_servers.intelligent_allocation
+
+- name: Configurar failover automático
+  include_tasks: auto_failover.yml
+  when: unlimited_servers.auto_failover
+
+- name: Configurar replicación entre regiones
+  include_tasks: cross_region_replication.yml
+  when: unlimited_servers.cross_region_replication
+
+- name: Configurar backup ilimitado
+  include_tasks: unlimited_backup.yml
+  when: unlimited_servers.unlimited_backup
+
+- name: Configurar aprovisionamiento automático
+  include_tasks: auto_provisioning.yml
+
+- name: Configurar monitoreo ilimitado
+  include_tasks: unlimited_monitoring.yml
+
+- name: Configurar seguridad para escalado ilimitado
+  include_tasks: unlimited_security.yml

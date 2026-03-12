@@ -1,0 +1,183 @@
+#!/bin/bash
+
+# Script de backup automatizado para Virtualmin Enterprise
+# Este script crea backups de todos los componentes críticos del sistema
+
+BACKUP_DIR="{{ backup_dir }}"
+DATE=$(date +%Y%m%d_%H%M%S)
+BACKUP_FILE="$BACKUP_DIR/virtualmin_backup_$DATE.tar.gz"
+LOG_FILE="{{ log_file }}"
+
+# Función para registrar mensajes
+log_message() {
+    local message=$1
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $message" >> "$LOG_FILE"
+}
+
+# Función para verificar espacio en disco
+check_disk_space() {
+    local required_space_gb=10
+    local available_space=$(df "$BACKUP_DIR" | awk 'NR==2 {print $4}')
+    local available_space_gb=$((available_space / 1024 / 1024))
+    
+    if [ $available_space_gb -lt $required_space_gb ]; then
+        log_message "ERROR: Espacio en disco insuficiente. Disponible: ${available_space_gb}GB, Requerido: ${required_space_gb}GB"
+        return 1
+    fi
+    
+    return 0
+}
+
+# Función para crear backup
+create_backup() {
+    log_message "Iniciando backup del sistema"
+    
+    # Verificar espacio en disco
+    if ! check_disk_space; then
+        return 1
+    fi
+    
+    # Crear directorio temporal para el backup
+    local temp_dir="/tmp/virtualmin_backup_$DATE"
+    mkdir -p "$temp_dir"
+    
+    # Backup de configuración de Virtualmin/Webmin
+    log_message "Creando backup de configuración de Virtualmin/Webmin"
+    tar -czf "$temp_dir/webmin_config.tar.gz" /etc/webmin /etc/virtualmin
+    
+    # Backup de sitios web
+    log_message "Creando backup de sitios web"
+    tar -czf "$temp_dir/websites.tar.gz" /home /var/www
+    
+    # Backup de certificados SSL
+    log_message "Creando backup de certificados SSL"
+    tar -czf "$temp_dir/ssl.tar.gz" /etc/ssl /etc/letsencrypt
+    
+    # Backup de bases de datos
+    log_message "Creando backup de bases de datos"
+    
+    # Backup de MySQL/MariaDB
+    if [ -d /var/lib/mysql ]; then
+        mysqldump --all-databases --single-transaction --routines --triggers > "$temp_dir/mysql_dump.sql"
+        tar -czf "$temp_dir/mysql_data.tar.gz" /var/lib/mysql
+    fi
+    
+    # Backup de PostgreSQL
+    if [ -d /var/lib/postgresql ]; then
+        sudo -u postgres pg_dumpall > "$temp_dir/postgresql_dump.sql"
+        tar -czf "$temp_dir/postgresql_data.tar.gz" /var/lib/postgresql
+    fi
+    
+    # Backup de configuración de servicios
+    log_message "Creando backup de configuración de servicios"
+    tar -czf "$temp_dir/services_config.tar.gz" /etc/nginx /etc/apache2 /etc/mysql /etc/postgresql /etc/redis /etc/memcached.conf
+    
+    # Backup de scripts personalizados
+    log_message "Creando backup de scripts personalizados"
+    tar -czf "$temp_dir/custom_scripts.tar.gz" "{{ install_dir }}"
+    
+    # Crear archivo de manifiesto
+    log_message "Creando archivo de manifiesto"
+    cat > "$temp_dir/MANIFESTO.txt" << EOF
+Virtualmin Enterprise Backup
+Fecha: $(date)
+Servidor: $(hostname)
+IP: $(hostname -I | awk '{print $1}')
+SO: $(uname -a)
+Componentes:
+- webmin_config.tar.gz: Configuración de Virtualmin/Webmin
+- websites.tar.gz: Sitios web y datos de usuarios
+- ssl.tar.gz: Certificados SSL
+- mysql_dump.sql: Volcado de bases de datos MySQL/MariaDB
+- mysql_data.tar.gz: Datos de MySQL/MariaDB
+- postgresql_dump.sql: Volcado de bases de datos PostgreSQL
+- postgresql_data.tar.gz: Datos de PostgreSQL
+- services_config.tar.gz: Configuración de servicios
+- custom_scripts.tar.gz: Scripts personalizados
+EOF
+    
+    # Comprimir todo en un archivo
+    log_message "Comprimiendo backup"
+    tar -czf "$BACKUP_FILE" -C "$temp_dir" .
+    
+    # Limpiar directorio temporal
+    rm -rf "$temp_dir"
+    
+    # Verificar integridad del backup
+    if [ -f "$BACKUP_FILE" ] && [ -s "$BACKUP_FILE" ]; then
+        local backup_size=$(du -h "$BACKUP_FILE" | cut -f1)
+        log_message "Backup creado exitosamente: $BACKUP_FILE ($backup_size)"
+        return 0
+    else
+        log_message "ERROR: Falló la creación del backup"
+        return 1
+    fi
+}
+
+# Función para limpiar backups antiguos
+cleanup_old_backups() {
+    log_message "Limpiando backups antiguos"
+    
+    # Mantener solo los últimos 7 backups
+    find "$BACKUP_DIR" -name "virtualmin_backup_*.tar.gz" -mtime +7 -delete
+    
+    # Contar backups restantes
+    local backup_count=$(find "$BACKUP_DIR" -name "virtualmin_backup_*.tar.gz" | wc -l)
+    log_message "Backups restantes: $backup_count"
+}
+
+# Función para verificar backup
+verify_backup() {
+    log_message "Verificando integridad del backup"
+    
+    # Verificar que el archivo existe y no está vacío
+    if [ ! -f "$BACKUP_FILE" ] || [ ! -s "$BACKUP_FILE" ]; then
+        log_message "ERROR: El backup no existe o está vacío"
+        return 1
+    fi
+    
+    # Verificar que el archivo se puede descomprimir
+    if ! tar -tzf "$BACKUP_FILE" > /dev/null 2>&1; then
+        log_message "ERROR: El backup está corrupto"
+        return 1
+    fi
+    
+    # Verificar que contiene los archivos esperados
+    local expected_files=("webmin_config.tar.gz" "websites.tar.gz" "MANIFESTO.txt")
+    for file in "${expected_files[@]}"; do
+        if ! tar -tzf "$BACKUP_FILE" | grep -q "^$file$"; then
+            log_message "ERROR: Falta archivo crítico en el backup: $file"
+            return 1
+        fi
+    done
+    
+    log_message "Verificación de backup completada exitosamente"
+    return 0
+}
+
+# Función principal
+main() {
+    log_message "=== Iniciando proceso de backup ==="
+    
+    # Crear backup
+    if create_backup; then
+        # Verificar backup
+        if verify_backup; then
+            # Limpiar backups antiguos
+            cleanup_old_backups
+            
+            log_message "=== Backup completado exitosamente ==="
+            echo "Backup creado: $BACKUP_FILE"
+            return 0
+        else
+            log_message "ERROR: Falló la verificación del backup"
+            return 1
+        fi
+    else
+        log_message "ERROR: Falló la creación del backup"
+        return 1
+    fi
+}
+
+# Ejecutar función principal
+main "$@"

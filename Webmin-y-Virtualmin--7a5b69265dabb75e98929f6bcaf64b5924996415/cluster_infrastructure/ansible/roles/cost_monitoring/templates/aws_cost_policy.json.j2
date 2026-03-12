@@ -1,0 +1,38 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "ce:*",
+                "budgets:*",
+                "s3:GetObject",
+                "s3:PutObject",
+                "s3:ListBucket",
+                "s3:DeleteObject",
+                "cloudwatch:GetMetricStatistics",
+                "cloudwatch:ListMetrics",
+                "ec2:DescribeInstances",
+                "ec2:DescribeSnapshots",
+                "ec2:DescribeVolumes",
+                "rds:DescribeDBInstances",
+                "rds:DescribeDBSnapshots",
+                "lambda:ListFunctions",
+                "lambda:GetFunctionConfiguration",
+                "organizations:ListAccounts",
+                "organizations:DescribeAccount",
+                "support:*"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:CreateBucket",
+                "s3:PutBucketLifecycleConfiguration",
+                "s3:GetBucketLifecycleConfiguration"
+            ],
+            "Resource": "arn:aws:s3:::{{ cluster_name }}-cost-data*"
+        }
+    ]
+}

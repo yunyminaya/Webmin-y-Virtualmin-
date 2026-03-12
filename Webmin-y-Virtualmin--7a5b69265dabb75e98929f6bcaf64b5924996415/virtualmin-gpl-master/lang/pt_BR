@@ -1,0 +1,304 @@
+index_title2=Contas de e-mail
+
+indom=Domínio $1
+
+users_title=E-mail e usuários FTP
+users_title2=Usuários FTP
+users_domain=Domínio
+users_user=Usuário
+users_alias=Apelidos
+users_add=Adicionar um usuário
+users_size=Tamanho da caixa
+users_uquota=Quota usada
+users_ushell=Logim de acesso
+users_canadd0=Baseado em seus limites, $1 novos usuários podem ser adicionados
+users_delete=Apagar usuários selecionados
+users_batch2=Criar contas por lista
+users_dconfirm=Sim, apagar eles
+users_all=Todos
+
+user_edit=Editar usuário
+user_editweb=Editar usuário FTP
+user_header=Detalhes da conta de e-mail
+user_header2=Espaço em disco limite
+user_header2a=Configurações avançadas (Opcional)
+user_header3=Encaminhamento de mensagem (Opcional)
+user_user=Endereço de e-mail
+user_user2=Nome
+user_domain=No domínio
+user_real=Nome real
+user_pass=Senha
+user_passdef=Deixar inalterada
+user_passset=Definir para ..
+user_lastch=Última modificação em $1
+user_disabled=Desativada temporariamente
+user_read=(Ler e-mail)
+user_mailbox=Endereço de e-mail habilitado ?
+user_ushell=Permissões
+user_qmail=Usuário de correio apenas
+user_eextra6=O endereço de e-mail adicional '$1' foi listado duas vezes
+user_home=Diretório raiz
+user_home1=Automático
+user_ehome=Diretório home ausente ou inválido
+user_ehome2=Diretório home do usuário é relativo ao domínio, e por isso não deve começar com uma /
+user_edelete=Você não pode excluir o usuário de administração do servidor virtual!
+user_return=caixa de correio
+user_delete=Apagar caixa de e-mail
+user_deleteok=Apagar agora
+user_newmail=Enviar detalhes da conta para
+user_newmail1=Para esse mesmo endereço
+user_newmail0=Outro endereço
+user_remail0=Endereço
+user_remail1=Não envie
+user_nospam=Verificar Spam e Vírus nessa conta ?
+user_dbs=Permitir o acesso a bases de dados
+user_dbsall=Bases de dados no domínio
+user_dbssel=Acesso concedido a
+user_edbpass=A senha do usuário deve ser alterada quando o acesso a bases de dados pela primeira vez
+user_edbclash=Um login banco de dados com o mesmo nome já existe
+user_egroup='$1' não é um grupo secundário permitido
+user_header4=Outras permissões de usuário (Opcional)
+user_tome=Entrega de e-mail normal
+user_forward=Encaminhados para outros endereços
+user_auto=Enviar resposta automática
+user_period=Tempo mínimo entre respostas automáticas
+user_lastlogin=Último login
+user_lastlogin_imap=IMAP (fetching email)
+
+aliases_cmt=Descrição
+aliases_add=Adicionar um apelido.
+aliases_delete=Apagar aliases selecionados
+aliases_canadd0=Com base em seus limites, $1 aliases podem ser adicionadas
+
+alias_create=Criar apelido de e-mail
+alias_edit=Editar apelido de e-mail
+alias_header=Detalhes do encaminhamento
+alias_name=Nome
+alias_cmt=Descrição
+alias_catchall=Todas as caixas de endereço
+alias_mailbox=Caixa de correio
+alias_domain=Domínio
+alias_dests=Destino da mensagem
+alias_type0=Nenhum
+alias_type1=Endereço de e-mail
+alias_type11=Apagar e-mail
+alias_etype1='$1' não é um endereço de e-mail válido
+alias_etype7=Usuário '$1' não existe
+alias_afile=Editar ..
+alias_return=apelidos
+alias_local=Entregar localmente
+alias_localyes=Sim, enviar para esse caixa de correio
+alias_forwardyes=Sim, encaminhar para os endereços
+alias_everyone=Encaminhar para todos no domínio?
+alias_everyoneyes=Enviar para todas caixas de correios
+alias_auto=Enviar auto-resposta?
+alias_autoyes=Sim, mensagem abaixo
+alias_mins=minutos
+alias_from=De: e-mail para resposta
+alias_fromauto=Determinar automaticamente
+alias_complexmode=Modo avançado
+alias_simplemode=Modo básico
+alias_tomeyes=Sim, enviar para esse e-mail apenas
+alias_start=Data de início
+alias_end=Data de termino
+alias_pdef=Todo o tempo
+alias_psel=Na data
+alias_estart=Data de início inválida
+alias_eend=Data de termino inválido
+alias_aopts=Opções avançadas
+
+edit_header=Detalhes do servidor
+edit_domain=Domínio
+edit_user=Nome de administrador
+edit_group=Grupo
+edit_prefix=Prefixo da conta de e-mail
+edit_suffix=Sufixo da caixa de email
+edit_plan=Plano
+edit_proxy1=Proxy do site para
+edit_proxy2=Frame-Encaminhamento site para
+edit_dbs=Banco de dados
+edit_lv=Deixar inalterada
+edit_set=Alterar para ..
+edit_quota=Estaço total do servidor
+edit_uquota=Estaço disponível
+edit_dbquota=Estaço usado no banco de dados
+edit_allquotah=Estaço em disco utilizado
+edit_allquotam=Estaço em disco utilizado
+edit_totalquota=Total geral de estaço usado
+edit_virtoff=Remove agora
+edit_virtnone=Nenhum
+edit_virt6off=Nenhum
+edit_virt6using=Usando endereço
+edit_return=Detalhes do servidor
+edit_aliases=Editar apelidos de e-mail
+edit_qon=$1 de $2
+edit_qdbs=$1 no banco de dados
+edit_rename=Modificar nome do domínio
+edit_proxy=Editar Site Proxy
+edit_redirects=Redirecionamento de site
+edit_redirectsdesc=Edite redirecionamentos para caminhos de URL sob o site do servidor para outros domínios ou diretórios.
+edit_spamvirus=Entrega de Spam e Vírus
+edit_spf=DNS Opções
+edit_recordsdesc=Criar, editar e excluir registros de DNS para este servidor virtual.
+edit_changepass=Trocar senha
+edit_changeadminpass=Alterar sua senha
+edit_usage=Estaço usado
+edit_limitsect=Limites e Estaço em usado
+edit_featuresect=Recursos ativos
+edit_showpass=Mostra..
+edit_mailopts=Configuração do email
+edit_psearch=Lista Sub-servidores
+
+save_mysqlpass=Alterar senha MySQL ..
+save_mail=Alterar nome de domínio de e-mail ..
+save_mailalias=Atualizando email alias para o domínio ..
+
+acl_warn=Atenção! Para um usuário Webmin criado por Virtualmin, essas configurações podem ser automaticamente anulados.
+acl_domains=Domínios que este usuário pode gerenciar
+acl_all=Todos os domínios
+acl_sel=Selecionados abaixo ..
+acl_create=Pode criar novos domínios?
+acl_import=Pode importar os domínios existentes?
+acl_edit=Pode editar os domínios existentes?
+acl_local=Pode editar usuários locais?
+acl_stop=Pode iniciar e parar serviços?
+acl_only=Apenas os seus
+acl_lim=Limitar o acesso?
+
+check_webphpnovers=Não foram encontrados versões do PHP em seu sistema!
+
+backup_mailusers=Salvando e-mail e usuários FTP
+
+newtmpl_cust=Personalizado
+newtmpl_created=Criado em
+
+tmpl_for_users=Proprietário
+
+bwgraph_mode_0one=Limite e uso
+bwgraph_mode_2=Por data
+bwgraph_mode_3=Por mês
+bwgraph_mode_4=Servidores acima do limite
+bwgraph_mok=Mostrar
+
+databases_title=Editar banco de dados
+databases_hosted=Todos os bancos de dados deste sistema estão hospedados no servidor MySQL remoto $1.
+databases_none=Este servidor virtual não tem nenhum banco de dados ainda.
+databases_db=Nome do banco
+databases_type=Tipo de banco de dados
+databases_add=Criar um novo banco de dados
+databases_return=Lista de banco de dados
+databases_iheader=Importar banco de dados para o servidor
+databases_ilist=Banco de dados para o próprio servidor
+databases_import=Importar agora
+databases_ecannot=Você não tem permissão para gerenciar bancos de dados
+databases_canadd0=Com base em seus limites, $1 banco de dados podem ser adicionados
+databases_noadd0=Não há mais bancos de dados podem ser adicionados, como você já atingiu o seu máximo de $1.
+databases_action=Ação
+databases_man=Gerenciar..
+databases_delete=Apagar selecionados
+databases_uheader=Modificar usuário do banco de dados
+databases_leave=Deixar como $1
+databases_newuser=Modificar para
+databases_pheader=Modificar senha do banco de dados
+databases_samepass=Mesma senha de administração
+databases_enc=Pré-senha criptografada
+databases_newpass=Senha personalizada
+databases_tablist=Banco de dados
+databases_tabusernames=Usuários
+databases_tabpasswords=Senhas
+databases_tabimport=Importar Banco de dados
+databases_desc1=Esta tabela lista os bancos de dados existentes associados a este servidor virtual. Clique no Gerenciar links para ver suas tables, ou em um nome do banco para ver mais informações.
+databases_desc2=Este formulário pode ser usado para alterar os nomes dos logins de banco de dados para este servidor virtual. Por padrão, eles são mantidos o mesmo login do servidor de administração.
+databases_desc3=Este formulário pode ser utilizado para alterar as senhas de banco de dados primário para este servidor virtual. Por padrão, eles são mantidos a mesma senha do servidor de administração.
+databases_desc4=Este formulário permite que você traga existentes bases de dados criadas manualmente no sistema sob a posse deste servidor virtual.
+databases_tabhosts=Host remoto
+databases_desc5=Esse formulário lista hosts remotos que são permitidos para se conectar a bancos de dados pertencentes a esse servidor virtual, e todos os servidores sub-. Estas se aplicam ao proprietário do domínio e quaisquer outros usuários de caixas de correio com acesso MySQL.
+databases_ahosts=Hosts permitido para $1
+
+database_size=Espaço ocupado
+database_tables=Número de tabelas
+
+scripts_unsupver=Versão
+
+addscripts_elocal=Arquivo local não existe
+
+newquotas_nobody=Ninguém
+newquotas_mailbox_send=Notificar e-mail e usuários FTP ?
+
+mass_quota=Espaço em disco
+mass_set=Alterar para ..
+mass_email=Endereço de email principal habilitado
+
+defaults_quota=Espaço em disco
+defaults_equota=Cota de diretório ausente ou inválido
+
+links_web=Configurar site
+links_website=Pré visualizar site
+links_ssl=Configurar SSL para site
+
+massdomains_quota=Estaço total do servidor
+massdomains_phpver=Versão do PHP
+
+ddatabases_edb=$1 banco de dados $2 não existe mais!
+ddatabases_dbs=Bases de dados para apagar: $1
+ddatabases_err=Falha ao excluir bancos de dados
+ddatabases_enone=Nenhum selecionado
+ddatabases_ok=Apagar agora
+
+admins_name=Login
+admins_desc=Descrição
+admins_domsall=Todos
+
+admin_header2=Permitir funções
+admin_pass=Senha para o usuário
+admin_desc=Nome real ou descrição
+admin_email=E-mail de contato
+admin_create=Pode criar servidores virtuais?
+
+validate_edir=Diretório $1 não existe
+
+pass_title=Alterar senha
+pass_header2=Modificar sua senha
+pass_new1=Nova senha
+pass_new2=Nova senha novamente
+pass_ok=Modificar
+dbname_eclash=Um usuário de banco de dados com o mesmo nome já existe
+
+dbpass_err=Falha ao alterar as senhas de banco de dados
+
+history_stat_memused=Memória usada
+history_stat_quotalimit=Quota total atribuído
+history_stat_quotaused=Quota usada
+history_stat_users=Número de e-mail e usuários FTP
+
+mail_header=Virtual Server e-mail configurações relacionadas
+mail_bcc=BCC email de saída para
+mail_bcc1=Nada - apenas entregar aos destinatários
+mail_bcc0=Endereço de e-mail adicional $1
+
+dbhosts_doing=Definir permissão $1 banco de dados $1 para US $2 ..
+
+wizard_next=Próximo
+wizard_prev=Anterior
+wizard_title_intro=Introdução
+wizard_title_memory=Uso de memória
+wizard_title_spam=Filtragem de Spam
+wizard_spamd=Executar filtro SpamAssassin no servidor ?
+wizard_title_db=Servidor de banco de dados
+wizard_title_mysql=Senha MySQL
+wizard_mysql_pass=Modificar senha MySQL
+wizard_mysql_empty=Definir senha MySQL
+wizard_title_done=Tudo feito
+wizard_hashpass_mode=Guardar senhas como
+wizard_hashpass_mode0=Guardar senhas em texto-puro
+
+redirects_add=Adicionar um redirecionamento
+redirects_denone=Nenhum selecionado
+redirects_alias=Alias para diretório
+
+clone_dir=Cópia conteúdo diretório home
+clone_edir=.. falha em copiar : $1
+clone_dns=Cópia registros DNS ..
+clone_dom=Domínio para cópia
+clone_newuser=Novo nome
+clone_newpass=Nova senha

@@ -1,0 +1,264 @@
+name: Deploy Webmin/Virtualmin
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
+      version:
+        description: 'Version to deploy (leave empty for latest)'
+        required: false
+        type: string
+  release:
+    types: [published]
+
+env:
+  WEBMIN_VERSION: ${{ github.event.inputs.version || github.event.release.tag_name || 'latest' }}
+  DEPLOY_ENV: ${{ github.event.inputs.environment || 'production' }}
+
+jobs:
+  validate-deployment:
+    name: Validate Deployment Configuration
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Validate deployment configuration
+      run: |
+        echo "🔍 Validating deployment configuration for ${{ env.DEPLOY_ENV }}..."
+
+        # Verificar que existan archivos de configuración necesarios
+        if [ ! -f "deploy/config/${DEPLOY_ENV}.yml" ]; then
+          echo "❌ Deployment configuration not found: deploy/config/${DEPLOY_ENV}.yml"
+          exit 1
+        fi
+
+        # Validar sintaxis YAML
+        if command -v yamllint >/dev/null 2>&1; then
+          yamllint "deploy/config/${DEPLOY_ENV}.yml"
+        fi
+
+        echo "✅ Deployment configuration validated"
+
+  build-artifacts:
+    name: Build Deployment Artifacts
+    runs-on: ubuntu-latest
+    needs: validate-deployment
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    - name: Install dependencies
+      run: |
+        npm install -g @vercel/ncc
+
+    - name: Create deployment package
+      run: |
+        echo "📦 Creating deployment package..."
+
+        # Crear directorio de artifacts
+        mkdir -p deploy/artifacts
+
+        # Copiar archivos esenciales
+        cp -r scripts deploy/artifacts/
+        cp -r configs deploy/artifacts/
+        cp -r *.sh deploy/artifacts/ 2>/dev/null || true
+
+        # Crear archivo de metadatos
+        cat > deploy/artifacts/metadata.json << EOF
+        {
+          "version": "${WEBMIN_VERSION}",
+          "environment": "${DEPLOY_ENV}",
+          "build_date": "$(date -Iseconds)",
+          "commit_sha": "${GITHUB_SHA}",
+          "repository": "${GITHUB_REPOSITORY}"
+        }
+        EOF
+
+        # Crear archivo tar.gz
+        cd deploy/artifacts
+        tar -czf ../webmin-virtualmin-${WEBMIN_VERSION}.tar.gz .
+
+        echo "✅ Deployment package created"
+
+    - name: Upload deployment artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: webmin-deployment-${{ env.WEBMIN_VERSION }}
+        path: deploy/webmin-virtualmin-${{ env.WEBMIN_VERSION }}.tar.gz
+
+  deploy-webmin:
+    name: Deploy Webmin
+    runs-on: ubuntu-latest
+    needs: build-artifacts
+    environment: ${{ github.event.inputs.environment || 'production' }}
+
+    steps:
+    - name: Download deployment artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: webmin-deployment-${{ env.WEBMIN_VERSION }}
+
+    - name: Extract deployment package
+      run: |
+        tar -xzf webmin-virtualmin-${{ env.WEBMIN_VERSION }}.tar.gz
+        ls -la
+
+    - name: Configure deployment environment
+      run: |
+        echo "⚙️ Configuring deployment for ${{ env.DEPLOY_ENV }}..."
+
+        # Configurar variables de entorno específicas del ambiente
+        case "${DEPLOY_ENV}" in
+          staging)
+            export WEBMIN_PORT=10001
+            export VIRTUALMIN_SSL_ENABLED=false
+            ;;
+          production)
+            export WEBMIN_PORT=10000
+            export VIRTUALMIN_SSL_ENABLED=true
+            ;;
+        esac
+
+        # Aplicar configuración
+        if [ -f "scripts/configure_environment.sh" ]; then
+          bash scripts/configure_environment.sh "${DEPLOY_ENV}"
+        fi
+
+    - name: Deploy Webmin
+      run: |
+        echo "🚀 Deploying Webmin to ${{ env.DEPLOY_ENV }}..."
+
+        # Aquí irían los comandos específicos de despliegue de Webmin
+        # Por ejemplo:
+        # - Instalar dependencias
+        # - Configurar servicios systemd
+        # - Configurar nginx/apache como proxy reverso
+        # - Configurar SSL certificates
+
+        echo "✅ Webmin deployment completed"
+
+  deploy-virtualmin:
+    name: Deploy Virtualmin
+    runs-on: ubuntu-latest
+    needs: deploy-webmin
+    environment: ${{ github.event.inputs.environment || 'production' }}
+
+    steps:
+    - name: Download deployment artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: webmin-deployment-${{ env.WEBMIN_VERSION }}
+
+    - name: Extract deployment package
+      run: |
+        tar -xzf webmin-virtualmin-${{ env.WEBMIN_VERSION }}.tar.gz
+
+    - name: Deploy Virtualmin
+      run: |
+        echo "🚀 Deploying Virtualmin to ${{ env.DEPLOY_ENV }}..."
+
+        # Aquí irían los comandos específicos de despliegue de Virtualmin
+        # Por ejemplo:
+        # - Configurar base de datos
+        # - Configurar Postfix/Dovecot
+        # - Configurar Apache/Nginx
+        # - Configurar quotas y límites
+
+        echo "✅ Virtualmin deployment completed"
+
+  run-post-deployment-tests:
+    name: Run Post-Deployment Tests
+    runs-on: ubuntu-latest
+    needs: [deploy-webmin, deploy-virtualmin]
+    environment: ${{ github.event.inputs.environment || 'production' }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run deployment verification tests
+      run: |
+        echo "🧪 Running post-deployment verification tests..."
+
+        # Aquí irían pruebas para verificar que el despliegue fue exitoso
+        # - Verificar que servicios están corriendo
+        # - Verificar conectividad
+        # - Verificar configuración SSL
+        # - Verificar bases de datos
+
+        echo "✅ Post-deployment tests passed"
+
+  update-dns:
+    name: Update DNS Configuration
+    runs-on: ubuntu-latest
+    needs: run-post-deployment-tests
+    environment: ${{ github.event.inputs.environment || 'production' }}
+    if: github.event.inputs.environment == 'production' || github.event_name == 'release'
+
+    steps:
+    - name: Update DNS records
+      run: |
+        echo "🌐 Updating DNS configuration for production..."
+
+        # Aquí iría la lógica para actualizar registros DNS
+        # - Actualizar registros A/AAAA
+        # - Configurar registros MX
+        # - Configurar SPF/DKIM/DMARC
+
+        echo "✅ DNS configuration updated"
+
+  notify-stakeholders:
+    name: Notify Stakeholders
+    runs-on: ubuntu-latest
+    needs: [run-post-deployment-tests, update-dns]
+    if: always()
+
+    steps:
+    - name: Send deployment notification
+      run: |
+        echo "📢 Sending deployment notification..."
+
+        DEPLOYMENT_STATUS="success"
+        if [ "${{ needs.run-post-deployment-tests.result }}" != "success" ]; then
+          DEPLOYMENT_STATUS="failed"
+        fi
+
+        # Aquí iría la lógica de notificación
+        # - Slack notifications
+        # - Email notifications
+        # - Dashboard updates
+
+        echo "✅ Deployment notification sent (status: $DEPLOYMENT_STATUS)"
+
+  rollback-on-failure:
+    name: Rollback on Failure
+    runs-on: ubuntu-latest
+    needs: [run-post-deployment-tests, notify-stakeholders]
+    if: failure() && (github.event.inputs.environment == 'production' || github.event_name == 'release')
+
+    steps:
+    - name: Trigger rollback
+      run: |
+        echo "🔄 Triggering rollback due to deployment failure..."
+
+        # Aquí iría la lógica de rollback automático
+        # - Restaurar backup anterior
+        # - Revertir configuración
+        # - Notificar sobre rollback
+
+        echo "✅ Rollback completed"

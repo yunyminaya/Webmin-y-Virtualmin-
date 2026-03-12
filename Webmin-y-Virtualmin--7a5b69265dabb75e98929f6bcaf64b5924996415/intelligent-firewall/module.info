@@ -1,0 +1,6 @@
+desc=Firewall Inteligente con Aprendizaje Automático
+name=intelligent_firewall
+version=1.0
+longdesc=Firewall inteligente que utiliza aprendizaje automático para detectar anomalías en el tráfico, bloquear amenazas adaptativamente y aprender continuamente de patrones históricos.
+category=Security
+depends=virtual-server

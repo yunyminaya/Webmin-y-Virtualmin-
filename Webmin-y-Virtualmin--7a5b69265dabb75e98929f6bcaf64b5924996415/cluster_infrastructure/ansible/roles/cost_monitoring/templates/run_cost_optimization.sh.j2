@@ -1,0 +1,127 @@
+#!/bin/bash
+# Script de ejecución de algoritmos de optimización de costos
+# Versión Enterprise - Sistema GRATIS
+
+set -e
+
+LOG_FILE="/var/log/cost_optimization/optimization_$(date +%Y%m%d_%H%M%S).log"
+ACCOUNT_ID="{{ cost_monitoring.account_id | default('123456789012') }}"
+REGION="{{ cost_monitoring.region | default('us-east-1') }}"
+
+# Función de logging
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG_FILE"
+}
+
+log "=== INICIANDO OPTIMIZACIÓN DE COSTOS AWS ==="
+log "Account ID: $ACCOUNT_ID"
+log "Region: $REGION"
+
+# Verificar dependencias
+if ! command -v python3 &> /dev/null; then
+    log "ERROR: Python3 no está instalado"
+    exit 1
+fi
+
+if ! python3 -c "import boto3, pandas, sklearn" &> /dev/null; then
+    log "ERROR: Bibliotecas Python requeridas no están instaladas"
+    exit 1
+fi
+
+# Configurar credenciales AWS
+export AWS_ACCESS_KEY_ID="{{ cost_monitoring.aws_access_key }}"
+export AWS_SECRET_ACCESS_KEY="{{ cost_monitoring.aws_secret_key }}"
+export AWS_DEFAULT_REGION="$REGION"
+
+log "Ejecutando algoritmos de optimización..."
+
+# Ejecutar algoritmos de optimización
+cd /opt/cost_optimization
+if python3 cost_optimization_algorithms.py "$ACCOUNT_ID" >> "$LOG_FILE" 2>&1; then
+    log "✓ Algoritmos de optimización ejecutados exitosamente"
+
+    # Procesar resultados para Prometheus
+    if [ -f "/tmp/cost_optimization_report_${ACCOUNT_ID}.json" ]; then
+        log "Procesando resultados para métricas Prometheus..."
+
+        # Extraer métricas clave del reporte JSON
+        TOTAL_SAVINGS=$(python3 -c "
+import json
+with open('/tmp/cost_optimization_report_${ACCOUNT_ID}.json') as f:
+    data = json.load(f)
+print(data.get('total_potential_savings', 0))
+")
+
+        UNUSED_RESOURCES=$(python3 -c "
+import json
+with open('/tmp/cost_optimization_report_${ACCOUNT_ID}.json') as f:
+    data = json.load(f)
+unused = data.get('unused_resources', {})
+total_unused = sum(len(v) for v in unused.values())
+print(total_unused)
+")
+
+        RI_RECOMMENDATIONS=$(python3 -c "
+import json
+with open('/tmp/cost_optimization_report_${ACCOUNT_ID}.json') as f:
+    data = json.load(f)
+print(len(data.get('ri_recommendations', [])))
+")
+
+        COST_ANOMALIES=$(python3 -c "
+import json
+with open('/tmp/cost_optimization_report_${ACCOUNT_ID}.json') as f:
+    data = json.load(f)
+print(len(data.get('cost_anomalies', [])))
+")
+
+        # Crear archivo de métricas para Prometheus
+        METRICS_FILE="/var/lib/prometheus/metrics/cost_optimization.prom"
+        cat > "$METRICS_FILE" << EOF
+# HELP aws_cost_optimization_total_savings_total Ahorros potenciales totales en USD
+# TYPE aws_cost_optimization_total_savings_total gauge
+aws_cost_optimization_total_savings_total{account_id="$ACCOUNT_ID"} $TOTAL_SAVINGS
+
+# HELP aws_cost_optimization_unused_resources_total Número total de recursos no utilizados
+# TYPE aws_cost_optimization_unused_resources_total gauge
+aws_cost_optimization_unused_resources_total{account_id="$ACCOUNT_ID"} $UNUSED_RESOURCES
+
+# HELP aws_cost_optimization_ri_recommendations_total Número de recomendaciones de Reserved Instances
+# TYPE aws_cost_optimization_ri_recommendations_total gauge
+aws_cost_optimization_ri_recommendations_total{account_id="$ACCOUNT_ID"} $RI_RECOMMENDATIONS
+
+# HELP aws_cost_optimization_anomalies_total Número de anomalías de costo detectadas
+# TYPE aws_cost_optimization_anomalies_total gauge
+aws_cost_optimization_anomalies_total{account_id="$ACCOUNT_ID"} $COST_ANOMALIES
+
+# HELP aws_cost_optimization_last_run_timestamp Timestamp de la última ejecución
+# TYPE aws_cost_optimization_last_run_timestamp gauge
+aws_cost_optimization_last_run_timestamp{account_id="$ACCOUNT_ID"} $(date +%s)
+EOF
+
+        log "✓ Métricas Prometheus actualizadas"
+        log "  - Ahorros potenciales: $${TOTAL_SAVINGS}"
+        log "  - Recursos no utilizados: $UNUSED_RESOURCES"
+        log "  - Recomendaciones RI: $RI_RECOMMENDATIONS"
+        log "  - Anomalías detectadas: $COST_ANOMALIES"
+
+        # Copiar reporte a ubicación accesible
+        cp "/tmp/cost_optimization_report_${ACCOUNT_ID}.json" "/var/log/cost_optimization/latest_report.json"
+        chmod 644 "/var/log/cost_optimization/latest_report.json"
+
+    else
+        log "ERROR: No se generó el archivo de reporte"
+        exit 1
+    fi
+
+else
+    log "ERROR: Falló la ejecución de algoritmos de optimización"
+    exit 1
+fi
+
+log "=== OPTIMIZACIÓN DE COSTOS COMPLETADA ==="
+
+# Limpiar archivos temporales
+rm -f "/tmp/cost_optimization_report_${ACCOUNT_ID}.json"
+
+exit 0

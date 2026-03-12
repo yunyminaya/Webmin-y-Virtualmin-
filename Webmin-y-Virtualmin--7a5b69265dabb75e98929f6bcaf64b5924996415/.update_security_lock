@@ -1,0 +1,5 @@
+# BLOQUEO DE SEGURIDAD - NO ELIMINAR
+# Este archivo protege contra actualizaciones no autorizadas
+OFFICIAL_REPO_ONLY="https://github.com/yunyminaya/Webmin-y-Virtualmin-.git"
+LOCK_CREATED="2025-09-26 02:07:44"
+SECURITY_LEVEL="MAXIMUM"

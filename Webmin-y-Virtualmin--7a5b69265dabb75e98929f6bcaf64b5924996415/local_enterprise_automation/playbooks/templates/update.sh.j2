@@ -1,0 +1,327 @@
+#!/bin/bash
+
+# Script de actualización automatizada para Virtualmin Enterprise
+# Este script actualiza el sistema operativo, Virtualmin y todos los servicios
+
+LOG_FILE="{{ log_file }}"
+INSTALL_DIR="{{ install_dir }}"
+BACKUP_DIR="{{ backup_dir }}"
+
+# Función para registrar mensajes
+log_message() {
+    local message=$1
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $message" >> "$LOG_FILE"
+}
+
+# Función para verificar conectividad
+check_connectivity() {
+    log_message "Verificando conectividad a Internet"
+    
+    # Intentar conectar a varios servidores DNS
+    for dns in "8.8.8.8" "1.1.1.1" "208.67.222.222"; do
+        if ping -c 1 -W 5 "$dns" &> /dev/null; then
+            log_message "Conectividad verificada con $dns"
+            return 0
+        fi
+    done
+    
+    log_message "ERROR: No hay conectividad a Internet"
+    return 1
+}
+
+# Función para crear backup antes de actualizar
+create_pre_update_backup() {
+    log_message "Creando backup antes de actualizar"
+    
+    local backup_file="$BACKUP_DIR/pre_update_backup_$(date +%Y%m%d_%H%M%S).tar.gz"
+    
+    # Backup de configuraciones críticas
+    tar -czf "$backup_file" \
+        /etc/webmin \
+        /etc/virtualmin \
+        /etc/nginx \
+        /etc/apache2 \
+        /etc/mysql \
+        /etc/postgresql \
+        /etc/letsencrypt \
+        "$INSTALL_DIR"
+    
+    if [ $? -eq 0 ]; then
+        log_message "Backup pre-actualización creado: $backup_file"
+        return 0
+    else
+        log_message "ERROR: Falló la creación del backup pre-actualización"
+        return 1
+    fi
+}
+
+# Función para actualizar paquetes del sistema
+update_system_packages() {
+    log_message "Actualizando paquetes del sistema"
+    
+    # Detectar distribución
+    if [ -f /etc/debian_version ]; then
+        # Debian/Ubuntu
+        log_message "Actualizando paquetes en Debian/Ubuntu"
+        apt-get update >> "$LOG_FILE" 2>&1
+        apt-get upgrade -y >> "$LOG_FILE" 2>&1
+        apt-get dist-upgrade -y >> "$LOG_FILE" 2>&1
+        apt-get autoremove -y >> "$LOG_FILE" 2>&1
+        apt-get autoclean >> "$LOG_FILE" 2>&1
+    elif [ -f /etc/redhat-release ]; then
+        # RHEL/CentOS/Fedora
+        log_message "Actualizando paquetes en RHEL/CentOS/Fedora"
+        yum update -y >> "$LOG_FILE" 2>&1
+        yum upgrade -y >> "$LOG_FILE" 2>&1
+        yum autoremove -y >> "$LOG_FILE" 2>&1
+        yum clean all >> "$LOG_FILE" 2>&1
+    else
+        log_message "ERROR: Distribución no soportada"
+        return 1
+    fi
+    
+    if [ $? -eq 0 ]; then
+        log_message "Paquetes del sistema actualizados exitosamente"
+        return 0
+    else
+        log_message "ERROR: Falló la actualización de paquetes del sistema"
+        return 1
+    fi
+}
+
+# Función para actualizar Virtualmin
+update_virtualmin() {
+    log_message "Actualizando Virtualmin"
+    
+    # Descargar y ejecutar script de actualización
+    cd /tmp
+    wget http://software.virtualmin.com/gpl/scripts/install.sh >> "$LOG_FILE" 2>&1
+    chmod +x install.sh
+    
+    # Ejecutar actualización
+    ./install.sh --force >> "$LOG_FILE" 2>&1
+    
+    if [ $? -eq 0 ]; then
+        log_message "Virtualmin actualizado exitosamente"
+        return 0
+    else
+        log_message "ERROR: Falló la actualización de Virtualmin"
+        return 1
+    fi
+}
+
+# Función para actualizar módulos de Webmin
+update_webmin_modules() {
+    log_message "Actualizando módulos de Webmin"
+    
+    # Actualizar todos los módulos
+    /usr/libexec/webmin/update-webmin >> "$LOG_FILE" 2>&1
+    
+    if [ $? -eq 0 ]; then
+        log_message "Módulos de Webmin actualizados exitosamente"
+        return 0
+    else
+        log_message "ERROR: Falló la actualización de módulos de Webmin"
+        return 1
+    fi
+}
+
+# Función para actualizar dependencias de Python
+update_python_dependencies() {
+    log_message "Actualizando dependencias de Python"
+    
+    # Activar entorno virtual
+    source "$INSTALL_DIR/venv/bin/activate"
+    
+    # Actualizar pip
+    pip install --upgrade pip >> "$LOG_FILE" 2>&1
+    
+    # Actualizar paquetes
+    pip list --outdated --format=freeze | grep -v '^\-e' | cut -d = -f 1 | xargs -n1 pip install -U >> "$LOG_FILE" 2>&1
+    
+    if [ $? -eq 0 ]; then
+        log_message "Dependencias de Python actualizadas exitosamente"
+        return 0
+    else
+        log_message "ERROR: Falló la actualización de dependencias de Python"
+        return 1
+    fi
+}
+
+# Función para reiniciar servicios
+restart_services() {
+    log_message "Reiniciando servicios"
+    
+    # Lista de servicios a reiniciar
+    local services=("nginx" "apache2" "mysql" "postgresql" "redis-server" "memcached" "prometheus" "grafana-server" "docker")
+    
+    # Para RHEL/CentOS, usar nombres de servicio diferentes
+    if [ -f /etc/redhat-release ]; then
+        services=("nginx" "httpd" "mariadb" "postgresql" "redis" "memcached" "prometheus" "grafana-server" "docker")
+    fi
+    
+    # Reiniciar cada servicio
+    for service in "${services[@]}"; do
+        if systemctl is-active --quiet "$service"; then
+            log_message "Reiniciando $service"
+            systemctl restart "$service" >> "$LOG_FILE" 2>&1
+            
+            if [ $? -eq 0 ]; then
+                log_message "$service reiniciado exitosamente"
+            else
+                log_message "ERROR: Falló el reinicio de $service"
+            fi
+        fi
+    done
+}
+
+# Función para verificar servicios después de actualizar
+verify_services() {
+    log_message "Verificando estado de los servicios después de actualizar"
+    
+    # Lista de servicios a verificar
+    local services=("nginx" "apache2" "mysql" "postgresql" "redis-server" "memcached" "prometheus" "grafana-server" "docker")
+    
+    # Para RHEL/CentOS, usar nombres de servicio diferentes
+    if [ -f /etc/redhat-release ]; then
+        services=("nginx" "httpd" "mariadb" "postgresql" "redis" "memcached" "prometheus" "grafana-server" "docker")
+    fi
+    
+    local failed_services=()
+    
+    # Verificar cada servicio
+    for service in "${services[@]}"; do
+        if systemctl is-active --quiet "$service"; then
+            log_message "✓ $service está activo"
+        else
+            log_message "✗ $service está inactivo"
+            failed_services+=("$service")
+        fi
+    done
+    
+    # Intentar reiniciar servicios fallidos
+    if [ ${#failed_services[@]} -gt 0 ]; then
+        log_message "Intentando reiniciar servicios fallidos"
+        for service in "${failed_services[@]}"; do
+            log_message "Reiniciando $service (segundo intento)"
+            systemctl restart "$service" >> "$LOG_FILE" 2>&1
+            
+            if systemctl is-active --quiet "$service"; then
+                log_message "✓ $service reiniciado exitosamente"
+            else
+                log_message "✗ $service sigue inactivo después del reinicio"
+            fi
+        done
+    fi
+    
+    # Verificar acceso a Webmin
+    if curl -s -k https://localhost:10000/ > /dev/null; then
+        log_message "✓ Webmin es accesible"
+    else
+        log_message "✗ Webmin no es accesible"
+    fi
+    
+    # Verificar acceso a Virtualmin
+    if curl -s -k https://localhost:10000/virtualmin/ > /dev/null; then
+        log_message "✓ Virtualmin es accesible"
+    else
+        log_message "✗ Virtualmin no es accesible"
+    fi
+}
+
+# Función para generar informe de actualización
+generate_update_report() {
+    log_message "Generando informe de actualización"
+    
+    local report_file="$BACKUP_DIR/update_report_$(date +%Y%m%d_%H%M%S).txt"
+    
+    cat > "$report_file" << EOF
+Informe de Actualización de Virtualmin Enterprise
+============================================
+Fecha: $(date)
+Servidor: $(hostname)
+IP: $(hostname -I | awk '{print $1}')
+SO: $(uname -a)
+
+Versión del Kernel: $(uname -r)
+Versión de Webmin: $(cat /etc/webmin/version 2>/dev/null || echo "No disponible")
+Versión de Virtualmin: $(cat /etc/virtualmin/version 2>/dev/null || echo "No disponible")
+
+Servicios Actualizados:
+EOF
+    
+    # Añadir estado de los servicios
+    local services=("nginx" "apache2" "mysql" "postgresql" "redis-server" "memcached" "prometheus" "grafana-server" "docker")
+    
+    if [ -f /etc/redhat-release ]; then
+        services=("nginx" "httpd" "mariadb" "postgresql" "redis" "memcached" "prometheus" "grafana-server" "docker")
+    fi
+    
+    for service in "${services[@]}"; do
+        if systemctl is-active --quiet "$service"; then
+            echo "- $service: Activo" >> "$report_file"
+        else
+            echo "- $service: Inactivo" >> "$report_file"
+        fi
+    done
+    
+    echo "" >> "$report_file"
+    echo "Logs de actualización:" >> "$report_file"
+    echo "Ver archivo: $LOG_FILE" >> "$report_file"
+    
+    log_message "Informe de actualización generado: $report_file"
+}
+
+# Función principal
+main() {
+    log_message "=== Iniciando proceso de actualización ==="
+    
+    # Verificar conectividad
+    if ! check_connectivity; then
+        log_message "ERROR: No se puede continuar sin conectividad a Internet"
+        exit 1
+    fi
+    
+    # Crear backup antes de actualizar
+    if ! create_pre_update_backup; then
+        log_message "ADVERTENCIA: Continuando sin backup pre-actualización"
+    fi
+    
+    # Actualizar paquetes del sistema
+    if ! update_system_packages; then
+        log_message "ERROR: Falló la actualización de paquetes del sistema"
+        exit 1
+    fi
+    
+    # Actualizar Virtualmin
+    if ! update_virtualmin; then
+        log_message "ERROR: Falló la actualización de Virtualmin"
+        exit 1
+    fi
+    
+    # Actualizar módulos de Webmin
+    if ! update_webmin_modules; then
+        log_message "ADVERTENCIA: Falló la actualización de módulos de Webmin"
+    fi
+    
+    # Actualizar dependencias de Python
+    if ! update_python_dependencies; then
+        log_message "ADVERTENCIA: Falló la actualización de dependencias de Python"
+    fi
+    
+    # Reiniciar servicios
+    restart_services
+    
+    # Verificar servicios
+    verify_services
+    
+    # Generar informe de actualización
+    generate_update_report
+    
+    log_message "=== Actualización completada ==="
+    echo "Sistema actualizado exitosamente"
+    echo "Informe de actualización disponible en: $BACKUP_DIR"
+}
+
+# Ejecutar función principal
+main "$@"

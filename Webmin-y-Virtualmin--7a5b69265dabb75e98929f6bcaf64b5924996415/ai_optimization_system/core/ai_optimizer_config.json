@@ -1,0 +1,134 @@
+{
+  "system_name": "AI Optimizer Pro",
+  "version": "1.0.0",
+  "description": "Sistema de Optimización Automática con IA para Webmin/Virtualmin",
+
+  "optimization_settings": {
+    "optimization_interval": 300,
+    "monitoring_interval": 60,
+    "max_concurrent_optimizations": 3,
+    "auto_apply_recommendations": true,
+    "risk_tolerance": "medium",
+    "backup_before_changes": true,
+    "dry_run_mode": false
+  },
+
+  "notification_settings": {
+    "enabled": true,
+    "channels": ["email", "webmin", "slack"],
+    "email_recipients": ["admin@localhost"],
+    "slack_webhook": "",
+    "notification_levels": ["error", "warning", "info"]
+  },
+
+  "performance_thresholds": {
+    "cpu_warning": 80,
+    "cpu_critical": 95,
+    "memory_warning": 85,
+    "memory_critical": 95,
+    "disk_warning": 90,
+    "disk_critical": 98,
+    "response_time_warning": 2000,
+    "response_time_critical": 5000,
+    "error_rate_warning": 5,
+    "error_rate_critical": 15
+  },
+
+  "services": {
+    "apache": {
+      "enabled": true,
+      "auto_optimize": true,
+      "max_clients": 256,
+      "keep_alive_timeout": 5,
+      "max_keep_alive_requests": 1000
+    },
+    "mysql": {
+      "enabled": true,
+      "auto_optimize": true,
+      "innodb_buffer_pool_size": "1G",
+      "max_connections": 200,
+      "query_cache_size": "128M"
+    },
+    "php": {
+      "enabled": true,
+      "auto_optimize": true,
+      "memory_limit": "512M",
+      "max_execution_time": 300,
+      "upload_max_filesize": "100M"
+    },
+    "system": {
+      "enabled": true,
+      "auto_optimize": true,
+      "swappiness": 10,
+      "dirty_ratio": 20,
+      "max_open_files": 65536
+    }
+  },
+
+  "ml_settings": {
+    "model_update_interval": 86400,
+    "prediction_horizon": 3600,
+    "training_data_retention_days": 30,
+    "anomaly_detection_sensitivity": 0.8,
+    "forecast_accuracy_threshold": 0.85
+  },
+
+  "resource_management": {
+    "cpu_allocation_strategy": "dynamic",
+    "memory_allocation_strategy": "predictive",
+    "disk_cleanup_enabled": true,
+    "disk_cleanup_threshold": 85,
+    "auto_scaling_enabled": true,
+    "scaling_cooldown_period": 300
+  },
+
+  "load_balancing": {
+    "algorithm": "least_connections",
+    "health_check_interval": 30,
+    "max_connections_per_server": 1000,
+    "session_stickiness": false,
+    "failover_enabled": true
+  },
+
+  "recommendation_engine": {
+    "min_confidence_threshold": 0.7,
+    "max_recommendations_per_cycle": 10,
+    "recommendation_categories": [
+      "performance",
+      "security",
+      "resource_optimization",
+      "configuration_tuning"
+    ],
+    "auto_implementation_enabled": true
+  },
+
+  "monitoring": {
+    "metrics_retention_days": 90,
+    "alert_history_retention_days": 365,
+    "performance_baseline_period": 168,
+    "anomaly_detection_window": 3600
+  },
+
+  "dashboard": {
+    "port": 8888,
+    "host": "localhost",
+    "auth_required": true,
+    "refresh_interval": 30,
+    "theme": "dark"
+  },
+
+  "logging": {
+    "level": "INFO",
+    "max_log_size": "100M",
+    "max_log_files": 10,
+    "log_format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  },
+
+  "backup": {
+    "enabled": true,
+    "backup_dir": "/var/backups/ai_optimizer",
+    "retention_days": 30,
+    "compression_enabled": true,
+    "encryption_enabled": false
+  }
+}

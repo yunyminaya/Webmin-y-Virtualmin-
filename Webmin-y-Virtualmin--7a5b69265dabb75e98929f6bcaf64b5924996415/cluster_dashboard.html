@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cluster Manager - Servidores Ilimitados</title>
+    <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .header h1 {
+            color: #333;
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+        
+        .stats {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            min-width: 150px;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+        }
+        
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+        
+        .main-container {
+            display: flex;
+            gap: 20px;
+            padding: 20px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        .control-panel {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 15px;
+            width: 350px;
+            height: fit-content;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .visualization-panel {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 15px;
+            flex: 1;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            min-height: 600px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+        }
+        
+        .server-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 10px;
+        }
+        
+        .server-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            margin-bottom: 5px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+        
+        .server-item.selected {
+            background: #e3f2fd;
+            border: 1px solid #2196f3;
+        }
+        
+        .cluster-diagram {
+            width: 100%;
+            height: 600px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            position: relative;
+            background: #fafafa;
+            overflow: hidden;
+        }
+        
+        .node {
+            position: absolute;
+            padding: 10px 15px;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            z-index: 10;
+            min-width: 100px;
+        }
+        
+        .node:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 20;
+        }
+        
+        .connection {
+            position: absolute;
+            background: #666;
+            height: 2px;
+            transform-origin: left center;
+            z-index: 1;
+        }
+        
+        .tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            z-index: 1000;
+            pointer-events: none;
+            display: none;
+            max-width: 300px;
+        }
+        
+        .legend {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            z-index: 100;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+            border-radius: 3px;
+        }
+        
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+        }
+        
+        .status-active {
+            background: #4CAF50;
+        }
+        
+        .status-inactive {
+            background: #f44336;
+        }
+        
+        .status-warning {
+            background: #FF9800;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const CLUSTER_DATA = {"nodes": [], "links": [], "metadata": {"title": "Cluster de Servidores Ilimitados", "isometric": true, "scale": 1.0, "total_servers": 0, "total_connections": 0, "clusters": 0, "last_update": "2025-10-08T09:51:30.908075", "real_time": true}, "clusters": {}};
+        
+        function ClusterManager() {
+            const [servers, setServers] = React.useState(CLUSTER_DATA.nodes || []);
+            const [connections, setConnections] = React.useState(CLUSTER_DATA.links || []);
+            const [selectedServer, setSelectedServer] = React.useState(null);
+            const [selectedServer2, setSelectedServer2] = React.useState(null);
+            const [newServer, setNewServer] = React.useState({
+                id: '',
+                name: '',
+                type: 'web',
+                ip: '',
+                region: 'default'
+            });
+            const [tooltip, setTooltip] = React.useState({ visible: false, content: '', x: 0, y: 0 });
+            
+            const serverTypes = {
+                'web': { color: '#4CAF50', icon: '🌐' },
+                'database': { color: '#2196F3', icon: '🗄️' },
+                'dns': { color: '#FF9800', icon: '🌍' },
+                'cache': { color: '#9C27B0', icon: '⚡' },
+                'load_balancer': { color: '#F44336', icon: '⚖️' },
+                'file_system': { color: '#795548', icon: '📁' },
+                'monitoring': { color: '#607D8B', icon: '📊' },
+                'backup': { color: '#FF5722', icon: '💾' },
+                'security': { color: '#E91E63', icon: '🛡️' }
+            };
+            
+            const addServer = () => {
+                if (!newServer.id || !newServer.name || !newServer.ip) {
+                    alert('Por favor complete todos los campos');
+                    return;
+                }
+                
+                const serverNode = {
+                    id: newServer.id,
+                    label: `${newServer.name}\n(${newServer.ip})`,
+                    type: newServer.type,
+                    color: serverTypes[newServer.type].color,
+                    icon: serverTypes[newServer.type].icon,
+                    data: {
+                        ip: newServer.ip,
+                        status: 'active',
+                        region: newServer.region,
+                        cpu: 0,
+                        memory: 0,
+                        disk: 0,
+                        network: 0,
+                        last_check: new Date().toISOString(),
+                        tooltip: `<strong>${newServer.name}</strong><br/>IP: ${newServer.ip}<br/>Tipo: ${newServer.type}<br/>Estado: Activo`
+                    }
+                };
+                
+                setServers([...servers, serverNode]);
+                setNewServer({ id: '', name: '', type: 'web', ip: '', region: 'default' });
+            };
+            
+            const removeServer = (serverId) => {
+                setServers(servers.filter(s => s.id !== serverId));
+                setConnections(connections.filter(c => c.source !== serverId && c.target !== serverId));
+                setSelectedServer(null);
+            };
+            
+            const connectServers = () => {
+                if (!selectedServer || !selectedServer2 || selectedServer === selectedServer2) {
+                    alert('Seleccione dos servidores diferentes para conectar');
+                    return;
+                }
+                
+                const existingConnection = connections.find(c => 
+                    (c.source === selectedServer && c.target === selectedServer2) ||
+                    (c.source === selectedServer2 && c.target === selectedServer)
+                );
+                
+                if (existingConnection) {
+                    alert('Estos servidores ya están conectados');
+                    return;
+                }
+                
+                const newConnection = {
+                    id: `${selectedServer}_${selectedServer2}_${Date.now()}`,
+                    source: selectedServer,
+                    target: selectedServer2,
+                    type: 'standard',
+                    color: '#666',
+                    data: {
+                        latency: Math.floor(Math.random() * 50) + 1,
+                        status: 'active',
+                        created_at: new Date().toISOString()
+                    }
+                };
+                
+                setConnections([...connections, newConnection]);
+                setSelectedServer2(null);
+            };
+            
+            const disconnectServers = (source, target) => {
+                setConnections(connections.filter(c => 
+                    !(c.source === source && c.target === target) &&
+                    !(c.source === target && c.target === source)
+                ));
+            };
+            
+            const showTooltip = (content, x, y) => {
+                setTooltip({ visible: true, content, x, y });
+            };
+            
+            const hideTooltip = () => {
+                setTooltip({ visible: false, content: '', x: 0, y: 0 });
+            };
+            
+            const calculateNodePosition = (index, total) => {
+                const centerX = 400;
+                const centerY = 300;
+                const radius = Math.min(250, 300 / Math.max(1, total / 8));
+                const angle = (2 * Math.PI * index) / total;
+                return {
+                    x: centerX + radius * Math.cos(angle),
+                    y: centerY + radius * Math.sin(angle)
+                };
+            };
+            
+            return (
+                <div>
+                    <div className="header">
+                        <h1>🚀 Cluster Manager - Servidores Ilimitados</h1>
+                        <div className="stats">
+                            <div className="stat-card">
+                                <div className="stat-number">{servers.length}</div>
+                                <div className="stat-label">Servidores</div>
+                            </div>
+                            <div className="stat-card">
+                                <div className="stat-number">{connections.length}</div>
+                                <div className="stat-label">Conexiones</div>
+                            </div>
+                            <div className="stat-card">
+                                <div className="stat-number">1</div>
+                                <div className="stat-label">Clusters</div>
+                            </div>
+                            <div className="stat-card">
+                                <div className="stat-number">100%</div>
+                                <div className="stat-label">Disponibilidad</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="main-container">
+                        <div className="control-panel">
+                            <h3>🎛️ Panel de Control</h3>
+                            
+                            <div className="form-group">
+                                <label>ID del Servidor</label>
+                                <input
+                                    type="text"
+                                    value={newServer.id}
+                                    onChange={(e) => setNewServer({...newServer, id: e.target.value})}
+                                    placeholder="ej: web-server-1"
+                                />
+                            </div>
+                            
+                            <div className="form-group">
+                                <label>Nombre</label>
+                                <input
+                                    type="text"
+                                    value={newServer.name}
+                                    onChange={(e) => setNewServer({...newServer, name: e.target.value})}
+                                    placeholder="ej: Servidor Web Principal"
+                                />
+                            </div>
+                            
+                            <div className="form-group">
+                                <label>Tipo</label>
+                                <select
+                                    value={newServer.type}
+                                    onChange={(e) => setNewServer({...newServer, type: e.target.value})}
+                                >
+                                    {Object.keys(serverTypes).map(type => (
+                                        <option key={type} value={type}>
+                                            {serverTypes[type].icon} {type}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            
+                            <div className="form-group">
+                                <label>Dirección IP</label>
+                                <input
+                                    type="text"
+                                    value={newServer.ip}
+                                    onChange={(e) => setNewServer({...newServer, ip: e.target.value})}
+                                    placeholder="ej: 192.168.1.100"
+                                />
+                            </div>
+                            
+                            <div className="form-group">
+                                <label>Región</label>
+                                <input
+                                    type="text"
+                                    value={newServer.region}
+                                    onChange={(e) => setNewServer({...newServer, region: e.target.value})}
+                                    placeholder="ej: us-east-1"
+                                />
+                            </div>
+                            
+                            <button className="btn" onClick={addServer}>
+                                ➕ Agregar Servidor
+                            </button>
+                            
+                            {selectedServer && selectedServer2 && (
+                                <button className="btn btn-secondary" onClick={connectServers}>
+                                    🔗 Conectar Servidores
+                                </button>
+                            )}
+                            
+                            <h4>📋 Servidores Actuales</h4>
+                            <div className="server-list">
+                                {servers.map(server => (
+                                    <div 
+                                        key={server.id}
+                                        className={`server-item ${selectedServer === server.id ? 'selected' : ''} ${selectedServer2 === server.id ? 'selected' : ''}`}
+                                        onClick={() => {
+                                            if (!selectedServer) {
+                                                setSelectedServer(server.id);
+                                            } else if (!selectedServer2 && server.id !== selectedServer) {
+                                                setSelectedServer2(server.id);
+                                            } else {
+                                                setSelectedServer(server.id);
+                                                setSelectedServer2(null);
+                                            }
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            const rect = e.target.getBoundingClientRect();
+                                            showTooltip(server.data.tooltip, rect.left, rect.top);
+                                        }}
+                                        onMouseLeave={hideTooltip}
+                                    >
+                                        <span>
+                                            <span className={`status-indicator status-${server.data.status}`}></span>
+                                            {serverTypes[server.type].icon} {server.label.split('\n')[0]}
+                                        </span>
+                                        <button 
+                                            className="btn btn-danger" 
+                                            style={{width: 'auto', padding: '5px 10px', margin: '0'}}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                removeServer(server.id);
+                                            }}
+                                        >
+                                            🗑️
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                            
+                            {selectedServer && (
+                                <div style={{marginTop: '10px', fontSize: '12px', color: '#666'}}>
+                                    Seleccionado: {selectedServer}
+                                    {selectedServer2 && ` ↔ ${selectedServer2}`}
+                                </div>
+                            )}
+                        </div>
+                        
+                        <div className="visualization-panel">
+                            <h3>🌐 Visualización del Cluster</h3>
+                            <div className="cluster-diagram">
+                                {/* Renderizar conexiones */}
+                                {connections.map(conn => {
+                                    const fromNode = servers.find(s => s.id === conn.source);
+                                    const toNode = servers.find(s => s.id === conn.target);
+                                    if (!fromNode || !toNode) return null;
+                                    
+                                    const fromPos = calculateNodePosition(servers.indexOf(fromNode), servers.length);
+                                    const toPos = calculateNodePosition(servers.indexOf(toNode), servers.length);
+                                    
+                                    const dx = toPos.x - fromPos.x;
+                                    const dy = toPos.y - fromPos.y;
+                                    const length = Math.sqrt(dx * dx + dy * dy);
+                                    const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+                                    
+                                    return (
+                                        <div
+                                            key={conn.id}
+                                            className="connection"
+                                            style={{
+                                                width: length + 'px',
+                                                left: fromPos.x + 50 + 'px',
+                                                top: fromPos.y + 25 + 'px',
+                                                transform: `rotate(${angle}deg)`,
+                                                backgroundColor: conn.color
+                                            }}
+                                            onClick={() => disconnectServers(conn.source, conn.target)}
+                                            title={`Conexión: ${conn.source} ↔ ${conn.target}\nLatencia: ${conn.data.latency}ms\nClick para desconectar`}
+                                        />
+                                    );
+                                })}
+                                
+                                {/* Renderizar nodos */}
+                                {servers.map((server, index) => {
+                                    const pos = calculateNodePosition(index, servers.length);
+                                    return (
+                                        <div
+                                            key={server.id}
+                                            className="node"
+                                            style={{
+                                                left: pos.x + 'px',
+                                                top: pos.y + 'px',
+                                                backgroundColor: server.color,
+                                                transform: `translate(-50%, -50%) ${selectedServer === server.id || selectedServer2 === server.id ? 'scale(1.1)' : ''}`
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                const rect = e.target.getBoundingClientRect();
+                                                showTooltip(server.data.tooltip, rect.left, rect.top);
+                                            }}
+                                            onMouseLeave={hideTooltip}
+                                        >
+                                            <div>{server.icon}</div>
+                                            <div style={{fontSize: '10px'}}>{server.label.split('\n')[0]}</div>
+                                        </div>
+                                    );
+                                })}
+                                
+                                {/* Leyenda */}
+                                <div className="legend">
+                                    <h4>Tipos de Servidores</h4>
+                                    {Object.entries(serverTypes).map(([type, config]) => (
+                                        <div key={type} className="legend-item">
+                                            <div className="legend-color" style={{backgroundColor: config.color}}></div>
+                                            <span>{config.icon} {type}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                                
+                                {/* Tooltip */}
+                                {tooltip.visible && (
+                                    <div 
+                                        className="tooltip"
+                                        style={{
+                                            left: tooltip.x + 'px',
+                                            top: (tooltip.y - 60) + 'px',
+                                            display: 'block'
+                                        }}
+                                        dangerouslySetInnerHTML={{__html: tooltip.content}}
+                                    />
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+        
+        ReactDOM.render(<ClusterManager />, document.getElementById('root'));
+    </script>
+</body>
+</html>

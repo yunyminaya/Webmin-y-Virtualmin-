@@ -1,0 +1,23 @@
+access_policies:
+  - name: "admin-access"
+    description: "Access to admin interfaces"
+    rules:
+      - user: "admin-group"
+        resource: "admin-apis"
+        action: "*"
+        effect: "allow"
+  - name: "default-deny"
+    description: "Default deny all rule"
+    rules:
+      - user: "*"
+        resource: "*"
+        action: "*"
+        effect: "deny"
+network_policies:
+  - name: "microservice-communication"
+    description: "Allow only authorized microservice communication"
+    rules:
+      - from: ["auth-service"]
+        to: ["user-service"]
+        port: 5000
+        protocol: "tcp"

@@ -1,0 +1,149 @@
+# Configuración de despliegue para entorno PRODUCTION
+# Este archivo contiene la configuración específica para el entorno de producción
+
+environment:
+  name: production
+  type: production
+  domain: webmin.example.com
+
+webmin:
+  port: 10000
+  ssl_enabled: true
+  theme: authentic-theme
+  log_level: warn
+  allowed_ips: "0.0.0.0/0"  # Restringir en firewall
+
+virtualmin:
+  ssl_enabled: true
+  mysql_enabled: true
+  postgresql_enabled: true
+  default_quota: 2GB
+  max_domains: 1000
+  backup_schedule: "hourly"
+  log_level: warn
+
+database:
+  host: db-production.example.com
+  port: 3306
+  user: virtualmin_prod
+  password: "${DB_PASSWORD_PRODUCTION}"  # Variable de entorno segura
+  name: virtualmin_production
+  backup_enabled: true
+  backup_retention: 30
+  ssl_enabled: true
+  replication_enabled: true
+  read_replicas: 2
+
+services:
+  apache:
+    enabled: true
+    port: 80
+    ssl_port: 443
+    max_clients: 256
+    keep_alive: true
+    compression: true
+  nginx:
+    enabled: true  # Como reverse proxy
+    port: 80
+    ssl_port: 443
+  postfix:
+    enabled: true
+    smtp_port: 25
+    submission_port: 587
+    relayhost: "smtp.gmail.com:587"
+    tls_enabled: true
+  dovecot:
+    enabled: true
+    imap_port: 143
+    imaps_port: 993
+    pop3_port: 110
+    pop3s_port: 995
+    quota_enabled: true
+
+monitoring:
+  enabled: true
+  prometheus_port: 9090
+  grafana_port: 3000
+  alertmanager_enabled: true
+  alerting_rules:
+    - name: HighCPUUsage
+      condition: cpu_usage > 80
+      duration: 5m
+    - name: HighMemoryUsage
+      condition: memory_usage > 90
+      duration: 3m
+    - name: ServiceDown
+      condition: service_status != running
+      duration: 1m
+
+backup:
+  enabled: true
+  retention_days: 90
+  schedule: "0 3 * * *"  # Daily at 3 AM
+  destination: "/var/backups/production"
+  compression: true
+  encryption: true
+  offsite_backup: true
+  cloud_storage: "s3://webmin-backups-production"
+
+security:
+  firewall_enabled: true
+  fail2ban_enabled: true
+  ssl_enforcement: true
+  brute_force_protection: true
+  auto_updates: true
+  intrusion_detection: true
+  log_monitoring: true
+  audit_enabled: true
+
+features:
+  cms_frameworks: true
+  ai_protection: true
+  intelligent_backup: true
+  multi_cloud_integration: true
+  container_orchestration: true
+  load_balancing: true
+  cdn_integration: true
+
+notifications:
+  slack_webhook: "${SLACK_WEBHOOK_PRODUCTION}"
+  email_recipients: "devops@example.com,admin@example.com"
+  pagerduty_integration: "${PAGERDUTY_INTEGRATION_KEY}"
+  on_success: false
+  on_failure: true
+  on_rollback: true
+  on_performance_degradation: true
+
+rollback:
+  enabled: true
+  max_attempts: 5
+  timeout_minutes: 60
+  backup_before_rollback: true
+  automated_testing: true
+  canary_deployment: true
+  blue_green_deployment: true
+
+scaling:
+  auto_scaling_enabled: true
+  min_instances: 2
+  max_instances: 10
+  cpu_threshold: 70
+  memory_threshold: 80
+  cooldown_period: 300
+
+high_availability:
+  enabled: true
+  load_balancer: "nginx"
+  session_stickiness: true
+  health_checks:
+    interval: 30
+    timeout: 10
+    unhealthy_threshold: 3
+    healthy_threshold: 2
+
+compliance:
+  gdpr_compliant: true
+  audit_logs: true
+  data_encryption: true
+  backup_encryption: true
+  access_logging: true

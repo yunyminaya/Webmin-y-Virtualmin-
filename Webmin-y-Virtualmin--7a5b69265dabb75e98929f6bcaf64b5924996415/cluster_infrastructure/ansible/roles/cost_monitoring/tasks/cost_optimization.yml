@@ -1,0 +1,93 @@
+---
+- name: Instalar dependencias para algoritmos de optimización
+  package:
+    name:
+      - python3-pip
+      - python3-dev
+    state: present
+
+- name: Instalar bibliotecas Python para ML y análisis
+  pip:
+    name:
+      - boto3
+      - pandas
+      - numpy
+      - scikit-learn
+      - prometheus_client
+    state: present
+
+- name: Crear directorio para algoritmos de optimización
+  file:
+    path: "/opt/cost_optimization"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Desplegar script de algoritmos de optimización
+  template:
+    src: "cost_optimization_algorithms.py.j2"
+    dest: "/opt/cost_optimization/cost_optimization_algorithms.py"
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Crear script de ejecución de optimización
+  template:
+    src: "run_cost_optimization.sh.j2"
+    dest: "/opt/cost_optimization/run_cost_optimization.sh"
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Crear servicio systemd para optimización automática
+  template:
+    src: "cost_optimization.service.j2"
+    dest: "/etc/systemd/system/cost-optimization.service"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: reload_systemd
+
+- name: Crear timer systemd para optimización diaria
+  template:
+    src: "cost_optimization.timer.j2"
+    dest: "/etc/systemd/system/cost-optimization.timer"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: reload_systemd
+
+- name: Habilitar y iniciar timer de optimización
+  systemd:
+    name: cost-optimization.timer
+    enabled: yes
+    state: started
+    daemon_reload: yes
+
+- name: Ejecutar optimización inicial
+  command: "/opt/cost_optimization/run_cost_optimization.sh"
+  register: optimization_result
+  changed_when: false
+  ignore_errors: yes
+
+- name: Mostrar resultados de optimización inicial
+  debug:
+    msg: "{{ optimization_result.stdout_lines }}"
+  when: optimization_result.stdout_lines is defined
+
+- name: Crear directorio para reportes de optimización
+  file:
+    path: "/var/log/cost_optimization"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Configurar logrotate para logs de optimización
+  template:
+    src: "cost_optimization_logrotate.j2"
+    dest: "/etc/logrotate.d/cost_optimization"
+    owner: root
+    group: root
+    mode: '0644'

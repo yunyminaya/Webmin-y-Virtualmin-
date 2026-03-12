@@ -1,0 +1,110 @@
+# MySQL/MariaDB Configuration Template - Versión Segura
+# Este archivo es una plantilla - NO USAR DIRECTAMENTE
+# Reemplace las variables de entorno antes de usar
+
+[client]
+default-character-set = utf8mb4
+
+[mysql]
+default-character-set = utf8mb4
+
+[mysqld]
+
+# Configuración básica segura
+bind-address = ${DB_BIND_ADDRESS:-127.0.0.1}
+port = ${DB_PORT:-3306}
+socket = ${DB_SOCKET:-/var/run/mysqld/mysqld.sock}
+pid-file = ${DB_PID_FILE:-/var/run/mysqld/mysqld.pid}
+
+# Configuración de memoria optimizada
+innodb_buffer_pool_size = ${INNODB_BUFFER_POOL_SIZE:-1G}
+innodb_log_file_size = ${INNODB_LOG_FILE_SIZE:-256M}
+innodb_log_buffer_size = ${INNODB_LOG_BUFFER_SIZE:-16M}
+innodb_flush_log_at_trx_commit = ${INNODB_FLUSH_LOG_AT_TRX_COMMIT:-2}
+innodb_flush_method = ${INNODB_FLUSH_METHOD:-O_DIRECT}
+
+# Configuración de conexiones
+max_connections = ${DB_MAX_CONNECTIONS:-200}
+max_connect_errors = ${DB_MAX_CONNECT_ERRORS:-100000}
+wait_timeout = ${DB_WAIT_TIMEOUT:-28800}
+interactive_timeout = ${DB_INTERACTIVE_TIMEOUT:-28800}
+connect_timeout = ${DB_CONNECT_TIMEOUT:-10}
+
+# Configuración de cache
+table_open_cache = ${DB_TABLE_OPEN_CACHE:-4096}
+thread_cache_size = ${DB_THREAD_CACHE_SIZE:-16}
+tmp_table_size = ${DB_TMP_TABLE_SIZE:-128M}
+max_heap_table_size = ${DB_MAX_HEAP_TABLE_SIZE:-128M}
+
+# Configuración de logs segura
+slow_query_log = ${SLOW_QUERY_LOG:-ON}
+slow_query_log_file = ${SLOW_QUERY_LOG_FILE:-/var/log/mysql/mysql-slow.log}
+long_query_time = ${LONG_QUERY_TIME:-2}
+log_error = ${DB_ERROR_LOG:-/var/log/mysql/error.log}
+general_log = ${GENERAL_LOG:-OFF}
+general_log_file = ${GENERAL_LOG_FILE:-/var/log/mysql/mysql.log}
+
+# Configuración SSL - Variables de entorno requeridas
+ssl-ca = ${SSL_CA_FILE}
+ssl-cert = ${SSL_CERT_FILE}
+ssl-key = ${SSL_KEY_FILE}
+require_secure_transport = ${REQUIRE_SECURE_TRANSPORT:-ON}
+
+# Configuración de seguridad SQL
+sql_mode = ${SQL_MODE:-STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION}
+skip-name-resolve
+secure-file-priv = ${SECURE_FILE_PRIV:-/var/lib/mysql-files}
+
+# Configuración de InnoDB
+innodb_file_per_table = ${INNODB_FILE_PER_TABLE:-ON}
+innodb_open_files = ${INNODB_OPEN_FILES:-400}
+innodb_io_capacity = ${INNODB_IO_CAPACITY:-400}
+innodb_read_io_threads = ${INNODB_READ_IO_THREADS:-4}
+innodb_write_io_threads = ${INNODB_WRITE_IO_THREADS:-4}
+innodb_purge_threads = ${INNODB_PURGE_THREADS:-4}
+
+# Configuración de MyISAM (compatibilidad)
+key_buffer_size = ${MYISAM_KEY_BUFFER_SIZE:-64M}
+myisam_sort_buffer_size = ${MYISAM_SORT_BUFFER_SIZE:-64M}
+
+# Configuración de red
+net_read_timeout = ${NET_READ_TIMEOUT:-30}
+net_write_timeout = ${NET_WRITE_TIMEOUT:-60}
+net_buffer_length = ${NET_BUFFER_LENGTH:-16384}
+max_allowed_packet = ${MAX_ALLOWED_PACKET:-64M}
+
+# Configuración de caracteres
+character-set-server = ${CHARACTER_SET_SERVER:-utf8mb4}
+collation-server = ${COLLATION_SERVER:-utf8mb4_unicode_ci}
+init_connect = 'SET NAMES utf8mb4'
+
+# Configuración de timezone
+default-time-zone = ${DEFAULT_TIME_ZONE:-SYSTEM}
+log_timestamps = ${LOG_TIMESTAMPS:-SYSTEM}
+
+# Configuración de backup
+[mysqldump]
+quick
+quote-names
+max_allowed_packet = ${DUMP_MAX_ALLOWED_PACKET:-64M}
+default-character-set = ${DUMP_DEFAULT_CHARACTER_SET:-utf8mb4}
+
+[mysqladmin]
+socket = ${DB_SOCKET:-/var/run/mysqld/mysqld.sock}
+
+# Configuración de herramientas
+[myisamchk]
+key_buffer_size = ${MYISAMCHK_KEY_BUFFER_SIZE:-128M}
+sort_buffer_size = ${MYISAMCHK_SORT_BUFFER_SIZE:-128M}
+read_buffer = ${MYISAMCHK_READ_BUFFER:-2M}
+write_buffer = ${MYISAMCHK_WRITE_BUFFER:-2M}
+
+[mysqlhotcopy]
+interactive-timeout = ${MYSQLHOTCOPY_INTERACTIVE_TIMEOUT:-}
+
+# NOTAS DE SEGURIDAD:
+# 1. Asegúrese de que las variables de entorno estén configuradas correctamente
+# 2. Los archivos SSL deben existir y tener permisos restrictivos (600)
+# 3. El directorio de datos debe tener permisos adecuados (700)
+# 4. Considere usar conexión SSL obligatoria en producción
+# 5. Revise regularmente los logs de consultas lentas
