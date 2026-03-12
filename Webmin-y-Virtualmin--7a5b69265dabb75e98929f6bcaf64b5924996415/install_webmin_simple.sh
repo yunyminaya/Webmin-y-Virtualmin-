@@ -1,0 +1,55 @@
+#!/bin/bash
+
+# Instalador Simple de Webmin/Virtualmin
+# Versión: 1.0
+
+echo "Instalando Webmin/Virtualmin..."
+
+# Detectar sistema operativo
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    OS=$ID
+else
+    echo "Error: No se pudo detectar el sistema operativo"
+    exit 1
+fi
+
+# Verificar root
+if [ "$EUID" -ne 0 ]; then
+    echo "Error: Ejecuta como root (sudo)"
+    exit 1
+fi
+
+# Instalar dependencias
+case $OS in
+    ubuntu|debian)
+        apt-get update
+        apt-get install -y curl wget
+        ;;
+    centos|rhel|fedora)
+        if command -v dnf >/dev/null; then
+            dnf install -y curl wget
+        else
+            yum install -y curl wget
+        fi
+        ;;
+esac
+
+# Instalar Webmin
+case $OS in
+    ubuntu|debian)
+        wget -qO /tmp/webmin.deb http://www.webmin.com/download/deb/webmin-current.deb
+        dpkg -i /tmp/webmin.deb
+        ;;
+    centos|rhel|fedora)
+        wget -qO /tmp/webmin.rpm http://www.webmin.com/download/rpm/webmin-current.rpm
+        rpm -U /tmp/webmin.rpm
+        ;;
+esac
+
+# Instalar Virtualmin
+echo "Instalando Virtualmin..."
+curl -sSL https://software.virtualmin.com/gpl/scripts/install.sh | bash
+
+echo "Instalación completada!"
+echo "Accede a: https://$(hostname -I | awk '{print $1}'):10000"
