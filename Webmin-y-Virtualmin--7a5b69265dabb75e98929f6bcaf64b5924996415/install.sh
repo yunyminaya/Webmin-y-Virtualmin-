@@ -1,489 +1,144 @@
 #!/bin/bash
 
 # ============================================================================
-# INSTALADOR MAESTRO WEBMIN/VIRTUALMIN PRO - SIN ERRORES 404
+# INSTALADOR WEBMIN/VIRTUALMIN - VERSIÓN SIMPLE
 # ============================================================================
-# Uso directo desde GitHub:
-# curl -fsSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/install.sh | sudo bash
+# Este script instala Webmin y Virtualmin en tu servidor automáticamente
 # ============================================================================
 
-set -euo pipefail
+set -e
 
-# Colores
+# Colores para mensajes
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-PURPLE='\033[0;35m'
-CYAN='\033[0;36m'
 NC='\033[0m'
 
-# Variables
-GITHUB_USER="yunyminaya"
-REPO_NAME="Webmin-y-Virtualmin-"
-BRANCH="main"
-REPO_URL="https://github.com/${GITHUB_USER}/${REPO_NAME}.git"
-RAW_URL="https://raw.githubusercontent.com/${GITHUB_USER}/${REPO_NAME}/${BRANCH}"
-INSTALL_DIR="/opt/webmin-virtualmin-pro"
-LOG_FILE="/var/log/webmin-virtualmin-install.log"
-TEMP_DIR="/tmp/webmin_install_$$"
-
-# Función de logging mejorada
-log() {
-    local level="$1"
-    shift
-    local message="$*"
-    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-    
-    case "$level" in
-        "INFO")    echo -e "${BLUE}[INFO]${NC}    $message" ;;
-        "SUCCESS") echo -e "${GREEN}[SUCCESS]${NC} $message" ;;
-        "WARN")    echo -e "${YELLOW}[WARN]${NC}    $message" ;;
-        "ERROR")   echo -e "${RED}[ERROR]${NC}   $message" ;;
-    esac
-    
-    echo "[$timestamp] [$level] $message" >> "$LOG_FILE"
-}
-
-# Banner
-clear
-cat << "EOF"
-╔═══════════════════════════════════════════════════════════════╗
-║                                                               ║
-║   🚀 WEBMIN/VIRTUALMIN PRO - INSTALADOR MAESTRO 🚀          ║
-║                                                               ║
-║   ✅ Instalación automática sin errores                      ║
-║   ✅ Funciones PRO activadas                                 ║
-║   ✅ Sin limitaciones GPL                                    ║
-║   ✅ Clustering ilimitado                                    ║
-║                                                               ║
-╚═══════════════════════════════════════════════════════════════╝
-
-EOF
-
-log "INFO" "Iniciando instalación del sistema Webmin/Virtualmin Pro"
-
-# Verificar si se ejecuta como root
-if [[ $EUID -ne 0 ]]; then
-   log "ERROR" "Este script debe ejecutarse como root"
-   echo -e "${RED}Por favor ejecuta: sudo bash $0${NC}"
-   exit 1
-fi
+echo -e "${GREEN}========================================${NC}"
+echo -e "${GREEN}  INSTALADOR WEBMIN/VIRTUALMIN  ${NC}"
+echo -e "${GREEN}========================================${NC}"
+echo ""
 
 # Detectar sistema operativo
-detect_os() {
-    log "INFO" "Detectando sistema operativo..."
-    
-    if [ -f /etc/os-release ]; then
-        . /etc/os-release
-        OS=$ID
-        OS_VERSION=$VERSION_ID
-        log "SUCCESS" "Sistema detectado: $OS $OS_VERSION"
-    else
-        log "ERROR" "No se pudo detectar el sistema operativo"
-        exit 1
-    fi
-}
+echo -e "${YELLOW}Detectando sistema operativo...${NC}"
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    OS=$ID
+    VERSION=$VERSION_ID
+    echo -e "${GREEN}Sistema detectado: $PRETTY_NAME${NC}"
+else
+    echo -e "${RED}Error: No se pudo detectar el sistema operativo${NC}"
+    exit 1
+fi
 
-# Instalar dependencias necesarias
-install_dependencies() {
-    log "INFO" "Instalando dependencias del sistema..."
-    
-    case "$OS" in
-        ubuntu|debian)
-            export DEBIAN_FRONTEND=noninteractive
-            apt-get update -qq
-            apt-get install -y -qq \
-                curl \
-                wget \
-                git \
-                perl \
-                python3 \
-                python3-pip \
-                libnet-ssleay-perl \
-                libauthen-pam-perl \
-                libio-pty-perl \
-                apt-show-versions \
-                libapt-pkg-perl \
-                software-properties-common \
-                gnupg2 \
-                ca-certificates \
-                lsb-release \
-                apt-transport-https \
-                jq \
-                unzip \
-                tar \
-                gzip 2>&1 | tee -a "$LOG_FILE" > /dev/null
-            ;;
-        centos|rhel|rocky|almalinux)
-            yum install -y -q \
-                curl \
-                wget \
-                git \
-                perl \
-                python3 \
-                python3-pip \
-                perl-Net-SSLeay \
-                perl-Authen-PAM \
-                perl-IO-Pty \
-                epel-release \
-                jq \
-                unzip \
-                tar \
-                gzip 2>&1 | tee -a "$LOG_FILE" > /dev/null
-            ;;
-        *)
-            log "ERROR" "Sistema operativo no soportado: $OS"
-            exit 1
-            ;;
-    esac
-    
-    log "SUCCESS" "Dependencias instaladas correctamente"
-}
+# Verificar root
+echo -e "${YELLOW}Verificando permisos de root...${NC}"
+if [ "$EUID" -ne 0 ]; then
+    echo -e "${RED}Error: Este script debe ejecutarse como root (sudo)${NC}"
+    echo -e "${YELLOW}Ejecuta: sudo bash $0${NC}"
+    exit 1
+fi
+echo -e "${GREEN}Permisos de root verificados${NC}"
 
-# Verificar conectividad a GitHub
-check_github_connectivity() {
-    log "INFO" "Verificando conectividad con GitHub..."
-    
-    # Intentar conectar con diferentes métodos
-    local methods=(
-        "curl -fsSL --connect-timeout 10 https://api.github.com/repos/${GITHUB_USER}/${REPO_NAME}"
-        "wget -q --timeout=10 -O- https://api.github.com/repos/${GITHUB_USER}/${REPO_NAME}"
-    )
-    
-    for method in "${methods[@]}"; do
-        if eval "$method" &>/dev/null; then
-            log "SUCCESS" "Conectividad con GitHub verificada"
-            return 0
-        fi
-    done
-    
-    log "ERROR" "No se puede conectar con GitHub"
-    log "INFO" "Verificando DNS y conectividad de red..."
-    
-    # Intentar resolver DNS
-    if ! nslookup github.com &>/dev/null; then
-        log "ERROR" "Error de resolución DNS para github.com"
-        log "INFO" "Intentando configurar DNS alternativo..."
-        echo "nameserver 8.8.8.8" >> /etc/resolv.conf
-        echo "nameserver 1.1.1.1" >> /etc/resolv.conf
-    fi
-    
-    # Reintentar
-    if curl -fsSL --connect-timeout 10 https://api.github.com/repos/${GITHUB_USER}/${REPO_NAME} &>/dev/null; then
-        log "SUCCESS" "Conectividad restaurada"
-        return 0
-    else
-        log "ERROR" "No se pudo establecer conexión con GitHub"
-        exit 1
-    fi
-}
+# Verificar requisitos del sistema
+echo -e "${YELLOW}Verificando requisitos del sistema...${NC}"
+MEM_GB=$(free -g | awk '/^Mem:/ {print $2}')
+DISK_GB=$(df -h / | awk '$NF=="/" {print $4}' | sed 's/G//')
 
-# Descargar repositorio con manejo de errores
-download_repository() {
-    log "INFO" "Descargando repositorio desde GitHub..."
-    
-    # Crear directorio temporal
-    mkdir -p "$TEMP_DIR"
-    cd "$TEMP_DIR"
-    
-    # Intentar clonar con diferentes métodos
-    local clone_success=false
-    
-    # Método 1: Git clone
-    if command -v git &>/dev/null; then
-        log "INFO" "Intentando clonar con Git..."
-        if git clone --depth 1 --branch "$BRANCH" "$REPO_URL" repository 2>&1 | tee -a "$LOG_FILE"; then
-            clone_success=true
-            log "SUCCESS" "Repositorio clonado con Git"
-        fi
-    fi
-    
-    # Método 2: Descargar ZIP si Git falla
-    if [ "$clone_success" = false ]; then
-        log "INFO" "Intentando descargar ZIP del repositorio..."
-        local zip_url="https://github.com/${GITHUB_USER}/${REPO_NAME}/archive/refs/heads/${BRANCH}.zip"
-        
-        if wget -q --show-progress "$zip_url" -O repo.zip 2>&1 | tee -a "$LOG_FILE"; then
-            unzip -q repo.zip
-            mv "${REPO_NAME}-${BRANCH}" repository
-            clone_success=true
-            log "SUCCESS" "Repositorio descargado como ZIP"
-        fi
-    fi
-    
-    # Método 3: Descargar archivos individuales críticos
-    if [ "$clone_success" = false ]; then
-        log "WARN" "Descargando archivos críticos individualmente..."
-        mkdir -p repository
-        
-        local critical_files=(
-            "install_webmin_virtualmin_complete.sh"
-            "install_pro_complete.sh"
-            "install_ultra_simple.sh"
-            "pro_activation_master.sh"
-        )
-        
-        for file in "${critical_files[@]}"; do
-            if wget -q "${RAW_URL}/${file}" -O "repository/${file}" 2>&1 | tee -a "$LOG_FILE"; then
-                chmod +x "repository/${file}"
-                log "SUCCESS" "Descargado: $file"
-            else
-                log "ERROR" "No se pudo descargar: $file"
-            fi
-        done
-        
-        clone_success=true
-    fi
-    
-    if [ "$clone_success" = true ] && [ -d "repository" ]; then
-        log "SUCCESS" "Repositorio descargado correctamente"
-        cd repository
-        return 0
-    else
-        log "ERROR" "No se pudo descargar el repositorio"
-        return 1
-    fi
-}
+if [ "$MEM_GB" -lt 2 ]; then
+    echo -e "${RED}Error: Memoria RAM insuficiente (${MEM_GB}GB). Mínimo requerido: 2GB${NC}"
+    exit 1
+elif [ "$MEM_GB" -lt 4 ]; then
+    echo -e "${YELLOW}Advertencia: Memoria RAM limitada (${MEM_GB}GB). Se recomiendan 4GB o más${NC}"
+fi
 
-# Instalar Webmin oficial
-install_webmin() {
-    log "INFO" "Instalando Webmin oficial..."
-    
-    case "$OS" in
-        ubuntu|debian)
-            # Agregar repositorio oficial de Webmin
-            curl -fsSL https://download.webmin.com/jcameron-key.asc | gpg --dearmor -o /usr/share/keyrings/webmin-archive-keyring.gpg
-            echo "deb [signed-by=/usr/share/keyrings/webmin-archive-keyring.gpg] https://download.webmin.com/download/repository sarge contrib" > /etc/apt/sources.list.d/webmin.list
-            
-            apt-get update -qq
-            DEBIAN_FRONTEND=noninteractive apt-get install -y webmin 2>&1 | tee -a "$LOG_FILE"
-            ;;
-        centos|rhel|rocky|almalinux)
-            # Configurar repositorio oficial de Webmin
-            cat > /etc/yum.repos.d/webmin.repo << 'EOFWEBMIN'
-[Webmin]
-name=Webmin Distribution Neutral
-baseurl=https://download.webmin.com/download/yum
-enabled=1
-gpgcheck=1
-gpgkey=http://www.webmin.com/jcameron-key.asc
-EOFWEBMIN
-            
-            yum install -y webmin 2>&1 | tee -a "$LOG_FILE"
-            ;;
-    esac
-    
-    if systemctl is-active --quiet webmin; then
-        log "SUCCESS" "Webmin instalado y funcionando"
-    else
-        systemctl start webmin
-        log "SUCCESS" "Webmin instalado correctamente"
-    fi
-}
+if [ "$DISK_GB" -lt 20 ]; then
+    echo -e "${RED}Error: Espacio en disco insuficiente (${DISK_GB}GB). Mínimo requerido: 20GB${NC}"
+    exit 1
+elif [ "$DISK_GB" -lt 50 ]; then
+    echo -e "${YELLOW}Advertencia: Espacio en disco limitado (${DISK_GB}GB). Se recomiendan 50GB o más${NC}"
+fi
 
-# Instalar Virtualmin usando script oficial
-install_virtualmin() {
-    log "INFO" "Instalando Virtualmin usando script oficial..."
-    
-    # Descargar e instalar con el script oficial
-    cd /tmp
-    if wget -O virtualmin-install.sh https://software.virtualmin.com/gpl/scripts/install.sh 2>&1 | tee -a "$LOG_FILE"; then
-        chmod +x virtualmin-install.sh
-        
-        # Ejecutar instalación con opciones apropiadas
-        log "INFO" "Ejecutando instalador de Virtualmin (esto puede tomar varios minutos)..."
-        if bash virtualmin-install.sh --bundle LAMP --minimal 2>&1 | tee -a "$LOG_FILE"; then
-            log "SUCCESS" "Virtualmin instalado correctamente"
+echo -e "${GREEN}Requisitos verificados${NC}"
+
+# Instalar dependencias
+echo -e "${YELLOW}Instalando dependencias...${NC}"
+case $OS in
+    ubuntu|debian)
+        apt-get update -qq
+        apt-get install -y curl wget gnupg2
+        ;;
+    centos|rhel|fedora|rocky|almalinux)
+        if command -v dnf >/dev/null; then
+            dnf install -y curl wget gnupg2
         else
-            log "WARN" "Instalación de Virtualmin con advertencias, continuando..."
+            yum install -y curl wget gnupg2
         fi
-    else
-        log "ERROR" "No se pudo descargar el instalador de Virtualmin"
-        return 1
-    fi
-}
+        ;;
+    *)
+        echo -e "${RED}Error: Sistema operativo no soportado: $OS${NC}"
+        exit 1
+        ;;
+esac
+echo -e "${GREEN}Dependencias instaladas${NC}"
 
-# Activar funciones Pro
-activate_pro_features() {
-    log "INFO" "Activando funciones Pro..."
-    
-    # Crear directorio de instalación
-    mkdir -p "$INSTALL_DIR"
-    
-    # Copiar archivos del repositorio
-    if [ -d "$TEMP_DIR/repository" ]; then
-        cp -r "$TEMP_DIR/repository"/* "$INSTALL_DIR/"
-        chmod +x "$INSTALL_DIR"/*.sh 2>/dev/null || true
-    fi
-    
-    # Ejecutar activación de funciones Pro si existe el script
-    if [ -f "$INSTALL_DIR/pro_activation_master.sh" ]; then
-        log "INFO" "Ejecutando activación de funciones Pro..."
-        bash "$INSTALL_DIR/pro_activation_master.sh" 2>&1 | tee -a "$LOG_FILE" || log "WARN" "Activación Pro con advertencias"
-    fi
-    
-    # Crear archivo de estado Pro
-    cat > /etc/webmin/virtualmin-license << EOF
-{
-    "license_type": "GPL_PRO",
-    "license_status": "active",
-    "features": {
-        "reseller_accounts": "unlimited",
-        "clustering": "enabled",
-        "cloud_integration": "enabled",
-        "advanced_backup": "enabled",
-        "enterprise_features": "enabled"
-    },
-    "installation_date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-    "version": "pro-gpl-unlimited"
-}
-EOF
-    
-    log "SUCCESS" "Funciones Pro activadas"
-}
+# Instalar Webmin
+echo -e "${YELLOW}Instalando Webmin...${NC}"
+case $OS in
+    ubuntu|debian)
+        wget -qO /tmp/webmin.deb http://www.webmin.com/download/deb/webmin-current.deb 2>/dev/null
+        dpkg -i /tmp/webmin.deb 2>/dev/null || apt-get install -f -y
+        ;;
+    centos|rhel|fedora|rocky|almalinux)
+        wget -qO /tmp/webmin.rpm http://www.webmin.com/download/rpm/webmin-current.rpm 2>/dev/null
+        rpm -U /tmp/webmin.rpm 2>/dev/null
+        ;;
+esac
+echo -e "${GREEN}Webmin instalado${NC}"
+
+# Instalar Virtualmin
+echo -e "${YELLOW}Instalando Virtualmin...${NC}"
+echo -e "${YELLOW}Esto puede tomar varios minutos...${NC}"
+curl -sSL https://software.virtualmin.com/gpl/scripts/install.sh | bash
+echo -e "${GREEN}Virtualmin instalado${NC}"
 
 # Configurar firewall
-configure_firewall() {
-    log "INFO" "Configurando firewall..."
-    
-    local ports=(80 443 10000 20000)
-    
-    if command -v ufw &>/dev/null; then
-        ufw --force enable
-        for port in "${ports[@]}"; do
-            ufw allow "$port"/tcp
-        done
-        log "SUCCESS" "Firewall configurado (UFW)"
-    elif command -v firewall-cmd &>/dev/null; then
-        systemctl start firewalld
-        systemctl enable firewalld
-        for port in "${ports[@]}"; do
-            firewall-cmd --permanent --add-port="$port"/tcp
-        done
-        firewall-cmd --reload
-        log "SUCCESS" "Firewall configurado (firewalld)"
-    fi
-}
+echo -e "${YELLOW}Configurando firewall...${NC}"
+if command -v ufw >/dev/null; then
+    ufw allow 10000/tcp 2>/dev/null
+    ufw reload 2>/dev/null
+    echo -e "${GREEN}Firewall UFW configurado${NC}"
+elif command -v firewall-cmd >/dev/null; then
+    firewall-cmd --permanent --add-port=10000/tcp 2>/dev/null
+    firewall-cmd --reload 2>/dev/null
+    echo -e "${GREEN}Firewall Firewalld configurado${NC}"
+fi
 
-# Verificar instalación
-verify_installation() {
-    log "INFO" "Verificando instalación..."
-    
-    local all_ok=true
-    
-    # Verificar Webmin
-    if systemctl is-active --quiet webmin; then
-        log "SUCCESS" "✓ Webmin está funcionando"
-    else
-        log "ERROR" "✗ Webmin no está funcionando"
-        all_ok=false
-    fi
-    
-    # Verificar puertos
-    if netstat -tuln | grep -q ":10000"; then
-        log "SUCCESS" "✓ Puerto Webmin (10000) activo"
-    else
-        log "WARN" "⚠ Puerto Webmin (10000) no detectado"
-    fi
-    
-    if [ "$all_ok" = true ]; then
-        return 0
-    else
-        return 1
-    fi
-}
+# Obtener IP del servidor
+SERVER_IP=$(hostname -I | awk '{print $1}')
 
-# Mostrar información final
-show_final_info() {
-    local ip_address=$(curl -s ifconfig.me || hostname -I | awk '{print $1}')
-    
-    cat << EOF
-
-╔═══════════════════════════════════════════════════════════════╗
-║                                                               ║
-║   ✅ INSTALACIÓN COMPLETADA EXITOSAMENTE                     ║
-║                                                               ║
-╚═══════════════════════════════════════════════════════════════╝
-
-📍 INFORMACIÓN DE ACCESO:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-🌐 URL de Webmin:     https://${ip_address}:10000
-🌐 URL de Virtualmin: https://${ip_address}:10000
-
-👤 Usuario: root
-🔑 Contraseña: [Contraseña de root del servidor]
-
-📁 Directorio de instalación: $INSTALL_DIR
-📄 Log de instalación: $LOG_FILE
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-✨ FUNCIONES PRO ACTIVADAS:
-   ✅ Cuentas de revendedor ilimitadas
-   ✅ Clustering sin restricciones
-   ✅ Integración cloud
-   ✅ Backup avanzado
-   ✅ Todas las funciones empresariales
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-📚 DOCUMENTACIÓN:
-   GitHub: https://github.com/${GITHUB_USER}/${REPO_NAME}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-EOF
-}
-
-# Limpieza
-cleanup() {
-    log "INFO" "Limpiando archivos temporales..."
-    rm -rf "$TEMP_DIR"
-    log "SUCCESS" "Limpieza completada"
-}
-
-# Manejador de errores
-error_handler() {
-    local line_num=$1
-    log "ERROR" "Error en línea $line_num"
-    log "INFO" "Revisa el log completo: $LOG_FILE"
-    cleanup
-    exit 1
-}
-
-trap 'error_handler $LINENO' ERR
-
-# FLUJO PRINCIPAL
-main() {
-    log "INFO" "═══════════════════════════════════════════════════════"
-    log "INFO" "Iniciando instalación Webmin/Virtualmin Pro"
-    log "INFO" "═══════════════════════════════════════════════════════"
-    
-    detect_os
-    install_dependencies
-    check_github_connectivity
-    download_repository
-    install_webmin
-    install_virtualmin
-    activate_pro_features
-    configure_firewall
-    
-    if verify_installation; then
-        show_final_info
-        cleanup
-        log "SUCCESS" "═══════════════════════════════════════════════════════"
-        log "SUCCESS" "¡Instalación completada exitosamente!"
-        log "SUCCESS" "═══════════════════════════════════════════════════════"
-        exit 0
-    else
-        log "ERROR" "La instalación se completó con errores"
-        log "INFO" "Revisa el log: $LOG_FILE"
-        cleanup
-        exit 1
-    fi
-}
-
-# Ejecutar instalación
-main "$@"
+# Mostrar resultados
+echo ""
+echo -e "${GREEN}========================================${NC}"
+echo -e "${GREEN}        INSTALACIÓN COMPLETADA       ${NC}"
+echo -e "${GREEN}========================================${NC}"
+echo ""
+echo -e "${GREEN}Webmin instalado correctamente${NC}"
+echo -e "${GREEN}Virtualmin instalado correctamente${NC}"
+echo -e "${GREEN}Firewall configurado correctamente${NC}"
+echo ""
+echo -e "${YELLOW}ACCESO A WEBMIN:${NC}"
+echo -e "${GREEN}https://${SERVER_IP}:10000${NC}"
+echo ""
+echo -e "${YELLOW}ACCESO A VIRTUALMIN:${NC}"
+echo -e "${GREEN}https://${SERVER_IP}:10000/virtualmin${NC}"
+echo ""
+echo -e "${YELLOW}USUARIO: root${NC}"
+echo -e "${YELLOW}CONTRASEÑA: Tu contraseña de root${NC}"
+echo ""
+echo -e "${GREEN}========================================${NC}"
+echo -e "${YELLOW}NOTAS IMPORTANTES:${NC}"
+echo -e "${YELLOW}1. Cambia la contraseña de root después del primer inicio${NC}"
+echo -e "${YELLOW}2. El firewall ya está configurado para el puerto 10000${NC}"
+echo -e "${YELLOW}3. Webmin y Virtualmin se iniciarán automáticamente${NC}"
+echo -e "${GREEN}========================================${NC}"
