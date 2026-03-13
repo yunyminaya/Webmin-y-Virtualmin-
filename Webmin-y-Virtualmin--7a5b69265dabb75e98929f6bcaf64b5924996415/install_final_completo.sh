@@ -42,7 +42,7 @@ echo -e "${GREEN}Permisos de root verificados${NC}"
 
 # Verificar requisitos del sistema
 echo -e "${YELLOW}Verificando requisitos del sistema...${NC}"
-MEM_GB=$(free -g | awk '/^Mem:/ {print $2}')
+MEM_GB=$(free -g | awk '/^Mem:/ {print $2}' | awk '{printf "%.0f", $2/1024/1024}')
 DISK_GB=$(df -h / | awk '$NF=="/" {print $4}' | sed 's/G//')
 
 if [ "$MEM_GB" -lt 2 ]; then
