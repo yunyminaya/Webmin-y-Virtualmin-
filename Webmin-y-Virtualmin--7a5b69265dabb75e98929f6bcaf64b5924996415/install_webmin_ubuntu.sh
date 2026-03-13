@@ -44,19 +44,25 @@ echo -e "${GREEN}Permisos de root verificados${NC}"
 # Verificar requisitos del sistema
 echo -e "${YELLOW}Verificando requisitos del sistema...${NC}"
 MEM_GB=$(free -g | awk '/^Mem:/ {print $2}' | awk '{printf "%.0f", $2/1024/1024}')
-DISK_GB=$(df -h / | awk '$NF=="/" {print $4}')
+DISK_GB=$(df -h / | awk '$NF=="/" {print $4}' | sed 's/G//')
 
-if (( $(echo "$MEM_GB < 2" | bc) )); then
+# Comparación segura usando awk
+MEM_OK=$(awk -v mem="$MEM_GB" 'BEGIN { if (mem >= 2) print "OK"; else print "FAIL" }')
+MEM_WARN=$(awk -v mem="$MEM_GB" 'BEGIN { if (mem >= 4) print "OK"; else print "WARN" }')
+DISK_OK=$(awk -v disk="$DISK_GB" 'BEGIN { if (disk >= 20) print "OK"; else print "FAIL" }')
+DISK_WARN=$(awk -v disk="$DISK_GB" 'BEGIN { if (disk >= 50) print "OK"; else print "WARN" }')
+
+if [ "$MEM_OK" = "FAIL" ]; then
     echo -e "${RED}Error: Memoria RAM insuficiente (${MEM_GB}GB). Mínimo requerido: 2GB${NC}"
     exit 1
-elif (( $(echo "$MEM_GB < 4" | bc) )); then
+elif [ "$MEM_WARN" = "WARN" ]; then
     echo -e "${YELLOW}Advertencia: Memoria RAM limitada (${MEM_GB}GB). Se recomiendan 4GB o más${NC}"
 fi
 
-if (( $(echo "$DISK_GB < 20" | bc) )); then
+if [ "$DISK_OK" = "FAIL" ]; then
     echo -e "${RED}Error: Espacio en disco insuficiente (${DISK_GB}GB). Mínimo requerido: 20GB${NC}"
     exit 1
-elif (( $(echo "$DISK_GB < 50" | bc) )); then
+elif [ "$DISK_WARN" = "WARN" ]; then
     echo -e "${YELLOW}Advertencia: Espacio en disco limitado (${DISK_GB}GB). Se recomiendan 50GB o más${NC}"
 fi
 

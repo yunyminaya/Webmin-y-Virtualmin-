@@ -11,7 +11,7 @@ NC='\033[0m' # No Color
 
 # Función para verificar root
 check_root() {
-    if [[ $EUID -ne 0 ]]; then
+    if [ "$EUID" -ne 0 ]; then
         echo -e "${RED}Error: Este script debe ejecutarse como root${NC}" >&2
         exit 1
     fi
