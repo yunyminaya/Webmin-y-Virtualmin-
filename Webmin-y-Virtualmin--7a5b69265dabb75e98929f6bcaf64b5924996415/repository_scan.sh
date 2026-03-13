@@ -3,7 +3,7 @@
 # Escaneo completo del repositorio
 
 # Configuración
-REPO_DIR="/Users/yunyminaya/Wedmin Y Virtualmin/Webmin-y-Virtualmin--7a5b69265dabb75e98929f6bcaf64b5924996415"
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Funciones de escaneo
 check_shell_scripts() {

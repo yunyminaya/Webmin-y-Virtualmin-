@@ -3,7 +3,7 @@
 # Actualizar repositorio con todos los cambios
 
 # Configuración
-REPO_DIR="/Users/yunyminaya/Wedmin Y Virtualmin/Webmin-y-Virtualmin--7a5b69265dabb75e98929f6bcaf64b5924996415"
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 COMMIT_MESSAGE="Actualización mayor: sistema profesional, seguridad mejorada y script de instalación"
 
 # Navegar al directorio del repositorio
