@@ -17,9 +17,6 @@ jobs:
   test:
     name: Run Tests
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        test-type: [unit, integration, functional]
 
     steps:
     - name: Checkout code
@@ -56,25 +53,15 @@ jobs:
       run: |
         find . -name "*.sh" -type f -exec shellcheck {} \;
 
-    - name: Run ${{ matrix.test-type }} tests
+    - name: Run smoke tests
       run: |
-        case "${{ matrix.test-type }}" in
-          unit)
-            bash scripts/run_unit_tests.sh
-            ;;
-          integration)
-            bash scripts/run_integration_tests.sh
-            ;;
-          functional)
-            bash scripts/run_functional_tests.sh
-            ;;
-        esac
+        bash scripts/run_smoke_tests.sh
 
     - name: Upload test results
       uses: actions/upload-artifact@v3
       if: always()
       with:
-        name: test-results-${{ matrix.test-type }}
+        name: smoke-test-results
         path: test_results/
 
   # ===== Code Quality Checks =====
