@@ -15,11 +15,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install shellcheck
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y shellcheck
-
       - name: Run smoke suite
         run: |
           set -e
