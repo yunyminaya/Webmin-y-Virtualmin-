@@ -33,6 +33,10 @@ jobs:
               exit 1
             fi
             REPO_DIR=$(dirname "$(dirname "$SMOKE_SCRIPT")")
+            if [ ! -d "$REPO_DIR/lib" ] && [ -d "lib" ]; then
+              echo "ℹ️ Creando enlace de lib para compatibilidad: $REPO_DIR/lib -> $(pwd)/lib"
+              ln -s "$(pwd)/lib" "$REPO_DIR/lib"
+            fi
             chmod +x "$REPO_DIR/install_webmin_ubuntu.sh" "$REPO_DIR/instalar_webmin_virtualmin.sh" 2>/dev/null || true
             echo "✅ Ejecutando suite detectada en: $SMOKE_SCRIPT"
             bash "$SMOKE_SCRIPT"
