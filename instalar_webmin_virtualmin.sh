@@ -129,6 +129,35 @@ configure_security() {
     fi
 }
 
+# Función para instalar túnel automático (modo autónomo)
+install_auto_tunnel() {
+    local enable_auto_tunnel="${ENABLE_AUTO_TUNNEL:-true}"
+
+    if [[ "$enable_auto_tunnel" != "true" ]]; then
+        echo -e "${YELLOW}Túnel automático deshabilitado por configuración (ENABLE_AUTO_TUNNEL=false)${NC}"
+        return 0
+    fi
+
+    echo -e "${GREEN}Instalando sistema de túnel automático...${NC}"
+
+    local tunnel_installer_url="https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/install_auto_tunnel_system.sh"
+    local tunnel_installer_tmp="/tmp/install_auto_tunnel_system.sh"
+
+    if ! curl -fsSL "$tunnel_installer_url" -o "$tunnel_installer_tmp"; then
+        echo -e "${YELLOW}Advertencia: No se pudo descargar el instalador de túnel automático${NC}"
+        return 0
+    fi
+
+    chmod +x "$tunnel_installer_tmp"
+
+    if ! bash "$tunnel_installer_tmp" auto; then
+        echo -e "${YELLOW}Advertencia: La instalación del túnel automático falló, continuando instalación principal${NC}"
+        return 0
+    fi
+
+    echo -e "${GREEN}Túnel automático instalado y configurado${NC}"
+}
+
 # Función principal
 main() {
     check_root
@@ -138,6 +167,7 @@ main() {
     install_webmin
     install_virtualmin
     configure_security
+    install_auto_tunnel
 
     # Determinar IP de acceso del servidor (priorizar IP real sobre hostname)
     local server_ip=""
@@ -153,6 +183,7 @@ main() {
     
     echo -e "${GREEN}Instalación completada con éxito!${NC}"
     echo -e "Accede a la interfaz en: https://${server_ip}:10000"
+    echo -e "Estado túnel automático: systemctl status auto-tunnel"
 }
 
 # Ejecutar función principal
