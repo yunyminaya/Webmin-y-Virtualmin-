@@ -24,6 +24,7 @@ jobs:
         run: |
           set -e
           if [ -f scripts/run_smoke_tests.sh ]; then
+            chmod +x install_webmin_ubuntu.sh instalar_webmin_virtualmin.sh 2>/dev/null || true
             bash scripts/run_smoke_tests.sh
           else
             SMOKE_SCRIPT=$(find . -type f -path "*/scripts/run_smoke_tests.sh" | head -n 1)
@@ -31,6 +32,8 @@ jobs:
               echo "❌ No se encontró scripts/run_smoke_tests.sh en el repositorio"
               exit 1
             fi
+            REPO_DIR=$(dirname "$(dirname "$SMOKE_SCRIPT")")
+            chmod +x "$REPO_DIR/install_webmin_ubuntu.sh" "$REPO_DIR/instalar_webmin_virtualmin.sh" 2>/dev/null || true
             echo "✅ Ejecutando suite detectada en: $SMOKE_SCRIPT"
             bash "$SMOKE_SCRIPT"
           fi
