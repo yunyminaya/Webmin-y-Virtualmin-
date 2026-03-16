@@ -138,9 +138,21 @@ main() {
     install_webmin
     install_virtualmin
     configure_security
+
+    # Determinar IP de acceso del servidor (priorizar IP real sobre hostname)
+    local server_ip=""
+    server_ip=$(hostname -I 2>/dev/null | awk '{print $1}')
+
+    if [[ -z "$server_ip" ]]; then
+        server_ip=$(ip route get 1.1.1.1 2>/dev/null | awk '/src/ {for (i=1; i<=NF; i++) if ($i=="src") {print $(i+1); exit}}')
+    fi
+
+    if [[ -z "$server_ip" ]]; then
+        server_ip=$(hostname -f 2>/dev/null || hostname)
+    fi
     
     echo -e "${GREEN}Instalación completada con éxito!${NC}"
-    echo -e "Accede a la interfaz en: https://$(hostname -f):10000"
+    echo -e "Accede a la interfaz en: https://${server_ip}:10000"
 }
 
 # Ejecutar función principal
