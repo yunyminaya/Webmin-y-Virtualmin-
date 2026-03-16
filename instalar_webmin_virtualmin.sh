@@ -12,7 +12,14 @@ NC='\033[0m' # No Color
 # Función para verificar root
 check_root() {
     if [[ $EUID -ne 0 ]]; then
-        echo -e "${RED}Error: Este script debe ejecutarse como root${NC}" >&2
+        echo -e "${YELLOW}Re-ejecutando instalador con sudo...${NC}"
+
+        if command -v sudo >/dev/null 2>&1; then
+            curl -fsSL "https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/instalar_webmin_virtualmin.sh" | sudo bash
+            exit $?
+        fi
+
+        echo -e "${RED}Error: Este script debe ejecutarse como root (sudo no disponible)${NC}" >&2
         exit 1
     fi
 }
