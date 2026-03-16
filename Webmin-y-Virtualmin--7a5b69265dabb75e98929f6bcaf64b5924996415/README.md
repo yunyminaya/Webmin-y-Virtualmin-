@@ -48,6 +48,12 @@ curl -fsSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/mai
 curl -fsSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/instalar_webmin_virtualmin.sh | sudo bash
 ```
 
+> ⚠️ **Importante:** El instalador funciona en **Linux** (Ubuntu/Debian/CentOS/RHEL/Fedora/Rocky/Alma). No se puede instalar directamente en macOS.
+
+> ✅ **URL oficial válida:** `https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/instalar_webmin_virtualmin.sh`
+
+> ❌ **URL incorrecta (404):** `https://raw.githubusercontent.com/yunyminaya/Wedmin-Y-Virtualmin/main/instalar_webmin_virtualmin.sh`
+
 ### Instalación Paso a Paso (Opcional)
 
 ```bash
