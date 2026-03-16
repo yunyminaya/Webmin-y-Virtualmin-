@@ -1,17 +1,17 @@
 # 🚀 Webmin + Virtualmin - Instalación Automática
 
-[![Test Installation](https://github.com/yunyminaya/Wedmin-Y-Virtualmin/actions/workflows/test-installation.yml/badge.svg)](https://github.com/yunyminaya/Wedmin-Y-Virtualmin/actions/workflows/test-installation.yml)
+[![Test Installation](https://github.com/yunyminaya/Webmin-y-Virtualmin-/actions/workflows/test-installation.yml/badge.svg)](https://github.com/yunyminaya/Webmin-y-Virtualmin-/actions/workflows/test-installation.yml)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Webmin](https://img.shields.io/badge/Webmin-2.111-green.svg)](https://webmin.com)
 [![Virtualmin](https://img.shields.io/badge/Virtualmin-GPL-orange.svg)](https://virtualmin.com)
-[![Platform](https://img.shields.io/badge/Platform-Linux%20%7C%20macOS-lightgrey.svg)](#sistemas-compatibles)
+[![Platform](https://img.shields.io/badge/Platform-Linux-lightgrey.svg)](#sistemas-soportados)
 
 > **Panel de administración web completo** con instalación automática en un solo comando
 
 ## ⚡ Instalación Instantánea
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/yunyminaya/Wedmin-Y-Virtualmin/main/instalar_webmin_virtualmin.sh | bash
+curl -fsSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/instalar_webmin_virtualmin.sh | sudo bash
 ```
 
 ## 🎯 Características
@@ -21,7 +21,7 @@ curl -sSL https://raw.githubusercontent.com/yunyminaya/Wedmin-Y-Virtualmin/main/
 - ✅ **Virtualmin GPL** - Gestión de hosting completa
 - ✅ **MySQL + Apache + PHP** - Stack completo
 - ✅ **SSL automático** - Seguridad incluida
-- ✅ **Multi-plataforma** - Linux y macOS
+- ✅ **Multi-distro Linux** - Ubuntu, Debian, CentOS y RHEL
 
 ## 🖥️ Sistemas Soportados
 
@@ -31,7 +31,7 @@ curl -sSL https://raw.githubusercontent.com/yunyminaya/Wedmin-Y-Virtualmin/main/
 | 🐧 Debian | 9+ | ✅ Soportado |
 | 🎩 CentOS | 7+ | ✅ Soportado |
 | 🎩 RHEL | 7+ | ✅ Soportado |
-| 🍎 macOS | 10.15+ | ✅ Soportado |
+| 🍎 macOS | 10.15+ | ❌ No soportado por instalador |
 
 ## 📚 Documentación
 
@@ -44,7 +44,7 @@ curl -sSL https://raw.githubusercontent.com/yunyminaya/Wedmin-Y-Virtualmin/main/
 
 ### 1. Instalar
 ```bash
-curl -sSL https://raw.githubusercontent.com/yunyminaya/Wedmin-Y-Virtualmin/main/instalar_webmin_virtualmin.sh | bash
+curl -fsSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/instalar_webmin_virtualmin.sh | sudo bash
 ```
 
 ### 2. Acceder
@@ -88,8 +88,8 @@ Este proyecto está bajo la licencia GPL v3. Ver [LICENSE](../LICENSE) para más
 
 ## 🆘 Soporte
 
-- 🐛 [Reportar Bug](https://github.com/yunyminaya/Wedmin-Y-Virtualmin/issues)
-- 💡 [Solicitar Feature](https://github.com/yunyminaya/Wedmin-Y-Virtualmin/issues)
+- 🐛 [Reportar Bug](https://github.com/yunyminaya/Webmin-y-Virtualmin-/issues)
+- 💡 [Solicitar Feature](https://github.com/yunyminaya/Webmin-y-Virtualmin-/issues)
 - 📧 Email: soporte@webmin-virtualmin.com
 
 ---
