@@ -22,4 +22,15 @@ jobs:
 
       - name: Run smoke suite
         run: |
-          bash scripts/run_smoke_tests.sh
+          set -e
+          if [ -f scripts/run_smoke_tests.sh ]; then
+            bash scripts/run_smoke_tests.sh
+          else
+            SMOKE_SCRIPT=$(find . -type f -path "*/scripts/run_smoke_tests.sh" | head -n 1)
+            if [ -z "$SMOKE_SCRIPT" ]; then
+              echo "❌ No se encontró scripts/run_smoke_tests.sh en el repositorio"
+              exit 1
+            fi
+            echo "✅ Ejecutando suite detectada en: $SMOKE_SCRIPT"
+            bash "$SMOKE_SCRIPT"
+          fi
