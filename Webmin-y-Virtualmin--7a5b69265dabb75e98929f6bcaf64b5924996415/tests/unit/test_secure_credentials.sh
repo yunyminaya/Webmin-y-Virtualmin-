@@ -169,7 +169,8 @@ test_retrieve_wrong_password() {
     fi
     
     # Intentar recuperar con contraseña incorrecta
-    local result=$(retrieve_credential "$test_service" "$wrong_password" 2>/dev/null)
+    local result=""
+    result=$(retrieve_credential "$test_service" "$wrong_password" 2>/dev/null)
     if [ $? -eq 0 ]; then
         echo "Error: Se recuperó credencial con contraseña incorrecta"
         return 1

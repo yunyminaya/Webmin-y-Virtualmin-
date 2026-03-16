@@ -16,6 +16,7 @@
 *.key
 *.pem
 *.crt
+*.passwd
 credentials.txt
 passwords.txt
 api_keys.txt

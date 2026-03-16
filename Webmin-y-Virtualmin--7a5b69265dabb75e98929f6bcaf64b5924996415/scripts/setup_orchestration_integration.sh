@@ -559,30 +559,202 @@ EOF
 # Crear roles de Ansible
 create_ansible_roles() {
     log "Creando roles de Ansible..."
-    
-    # Rol para configuración de Webmin/Virtualmin
-    cat > /opt/virtualmin/orchestration/ansible/roles/webmin/tasks/main.yml << 'EOF'
+
+    mkdir -p /opt/virtualmin/orchestration/ansible/roles/webmin/tasks
+    mkdir -p /opt/virtualmin/orchestration/ansible/roles/security/tasks
+    mkdir -p /opt/virtualmin/orchestration/ansible/roles/monitoring/tasks
+
+    cat > /opt/virtualmin/orchestration/ansible/roles/webmin/tasks/main.yml << 'WEBMIN_ROLE_EOF'
 ---
-- name: Actualizar paquetes del sistema
+- name: Actualizar cache de paquetes en Debian
   apt:
     update_cache: yes
-    upgrade: dist
   when: ansible_os_family == "Debian"
 
-- name: Instalar dependencias necesarias
+- name: Instalar dependencias base
   package:
     name:
       - wget
       - curl
       - gnupg
-      - lsb-release
       - ca-certificates
-      - apt-transport-https
-      - software-properties-common
+      - python3
       - python3-pip
-      - python3-dev
-      - build-essential
     state: present
 
-- name: Agregar repositorio de Webmin
-  apt_repositoryEOF
+- name: Descargar instalador de Webmin para Debian
+  get_url:
+    url: https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/install_webmin_ubuntu.sh
+    dest: /tmp/install_webmin_ubuntu.sh
+    mode: "0755"
+  when: ansible_os_family == "Debian"
+
+- name: Ejecutar instalador de Webmin en Debian
+  command: /tmp/install_webmin_ubuntu.sh
+  args:
+    creates: /etc/webmin/miniserv.conf
+  when: ansible_os_family == "Debian"
+WEBMIN_ROLE_EOF
+
+    cat > /opt/virtualmin/orchestration/ansible/roles/security/tasks/main.yml << 'SECURITY_ROLE_EOF'
+---
+- name: Instalar herramientas de seguridad basicas
+  package:
+    name:
+      - fail2ban
+      - ufw
+    state: present
+  ignore_errors: yes
+
+- name: Asegurar directorio de configuraciones de seguridad
+  file:
+    path: /opt/virtualmin/orchestration/configs/security
+    state: directory
+    mode: "0755"
+SECURITY_ROLE_EOF
+
+    cat > /opt/virtualmin/orchestration/ansible/roles/monitoring/tasks/main.yml << 'MONITORING_ROLE_EOF'
+---
+- name: Instalar herramientas de monitoreo basicas
+  package:
+    name:
+      - htop
+      - jq
+    state: present
+  ignore_errors: yes
+
+- name: Asegurar directorio de reportes de monitoreo
+  file:
+    path: /opt/virtualmin/orchestration/docs/testing
+    state: directory
+    mode: "0755"
+MONITORING_ROLE_EOF
+
+    success "Roles de Ansible creados"
+}
+
+create_ansible_playbooks() {
+    log "Creando playbooks e inventarios de Ansible..."
+
+    mkdir -p /opt/virtualmin/orchestration/ansible/playbooks
+    mkdir -p /opt/virtualmin/orchestration/ansible/inventories
+    mkdir -p /opt/virtualmin/orchestration/ansible/group_vars/all
+
+    cat > /opt/virtualmin/orchestration/ansible/playbooks/site.yml << 'SITE_PLAYBOOK_EOF'
+---
+- name: Configurar nodos Virtualmin
+  hosts: virtualmin
+  become: true
+  roles:
+    - webmin
+    - security
+    - monitoring
+SITE_PLAYBOOK_EOF
+
+    cat > /opt/virtualmin/orchestration/ansible/inventories/hosts.ini << 'HOSTS_INI_EOF'
+[virtualmin]
+# Reemplace con los hosts administrados
+# server1 ansible_host=192.0.2.10 ansible_user=root
+HOSTS_INI_EOF
+
+    cat > /opt/virtualmin/orchestration/ansible/group_vars/all/main.yml << 'GROUP_VARS_EOF'
+---
+virtualmin_install_mode: standard
+virtualmin_enable_monitoring: true
+virtualmin_enable_security: true
+GROUP_VARS_EOF
+
+    success "Playbooks e inventarios creados"
+}
+
+create_helper_scripts() {
+    log "Creando scripts auxiliares de orquestacion..."
+
+    cat > /opt/virtualmin/orchestration/scripts/integration/run_ansible.sh << 'RUN_ANSIBLE_EOF'
+#!/bin/bash
+set -euo pipefail
+
+INVENTORY=${1:-/opt/virtualmin/orchestration/ansible/inventories/hosts.ini}
+PLAYBOOK=${2:-/opt/virtualmin/orchestration/ansible/playbooks/site.yml}
+
+ansible-playbook -i "$INVENTORY" "$PLAYBOOK"
+RUN_ANSIBLE_EOF
+
+    cat > /opt/virtualmin/orchestration/scripts/validation/validate_orchestration.sh << 'VALIDATE_ORCHESTRATION_EOF'
+#!/bin/bash
+set -euo pipefail
+
+BASE_DIR="/opt/virtualmin/orchestration"
+
+required_files=(
+    "$BASE_DIR/terraform/modules/vpc/main.tf"
+    "$BASE_DIR/terraform/modules/security_groups/main.tf"
+    "$BASE_DIR/ansible/playbooks/site.yml"
+    "$BASE_DIR/ansible/inventories/hosts.ini"
+)
+
+for file in "${required_files[@]}"; do
+    if [[ ! -f "$file" ]]; then
+        echo "Falta archivo requerido: $file"
+        exit 1
+    fi
+done
+
+echo "Configuracion de orquestacion valida"
+VALIDATE_ORCHESTRATION_EOF
+
+    chmod +x /opt/virtualmin/orchestration/scripts/integration/run_ansible.sh
+    chmod +x /opt/virtualmin/orchestration/scripts/validation/validate_orchestration.sh
+
+    success "Scripts auxiliares creados"
+}
+
+create_documentation() {
+    log "Creando documentacion basica..."
+
+    cat > /opt/virtualmin/orchestration/docs/README.md << 'ORCHESTRATION_README_EOF'
+# Orquestacion Virtualmin
+
+Este directorio contiene artefactos base para Terraform y Ansible.
+
+## Componentes
+- `terraform/modules`: modulos reutilizables de infraestructura.
+- `ansible/roles`: roles para Webmin, seguridad y monitoreo.
+- `ansible/playbooks/site.yml`: playbook principal.
+- `scripts/integration/run_ansible.sh`: ejecuta el playbook principal.
+- `scripts/validation/validate_orchestration.sh`: valida la estructura creada.
+
+## Uso rapido
+1. Ajuste `ansible/inventories/hosts.ini`.
+2. Revise variables en `ansible/group_vars/all/main.yml`.
+3. Ejecute `scripts/integration/run_ansible.sh`.
+ORCHESTRATION_README_EOF
+
+    success "Documentacion creada"
+}
+
+main() {
+    log "Iniciando configuracion de integracion con orquestacion..."
+
+    if [[ $EUID -ne 0 ]]; then
+        error "Este script debe ejecutarse como root"
+        exit 1
+    fi
+
+    check_dependencies
+    create_directory_structure
+    install_terraform_modules
+    create_ansible_roles
+    create_ansible_playbooks
+    create_helper_scripts
+    create_documentation
+
+    success "Integracion con herramientas de orquestacion completada"
+    echo ""
+    echo "Terraform: /opt/virtualmin/orchestration/terraform"
+    echo "Ansible: /opt/virtualmin/orchestration/ansible"
+    echo "Scripts: /opt/virtualmin/orchestration/scripts"
+    echo "Documentacion: /opt/virtualmin/orchestration/docs/README.md"
+}
+
+main "$@"

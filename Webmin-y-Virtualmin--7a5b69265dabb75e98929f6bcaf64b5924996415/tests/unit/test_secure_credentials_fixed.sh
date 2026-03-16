@@ -3,7 +3,9 @@
 # Pruebas unitarias para el sistema de gestión segura de credenciales - Versión corregida
 
 # Importar el sistema de credenciales de prueba
-source ../lib/secure_credentials_test.sh
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TEST_BASE_DIR="/tmp/webmin_secure_credentials_fixed_$$"
+source "$SCRIPT_DIR/../../lib/secure_credentials_test.sh"
 
 # Contador de pruebas
 TOTAL_TESTS=0
@@ -31,6 +33,8 @@ run_test() {
 # Función para configurar entorno de prueba
 setup_test_env() {
     echo "Configurando entorno de prueba..."
+    CREDENTIALS_DIR="$TEST_BASE_DIR/credentials"
+    LOG_FILE="$TEST_BASE_DIR/test_credentials.log"
     # Limpiar cualquier prueba anterior
     cleanup_test_system >/dev/null 2>&1
     # Inicializar sistema
@@ -42,6 +46,7 @@ setup_test_env() {
 cleanup_test_env() {
     echo "Limpiando entorno de prueba..."
     cleanup_test_system >/dev/null 2>&1
+    rm -rf "$TEST_BASE_DIR"
     echo "Entorno de prueba limpiado"
 }
 
@@ -99,7 +104,8 @@ test_wrong_password() {
     MASTER_PASSWORD="wrong_password"
     
     # Intentar recuperar
-    local result=$(retrieve_credential "test_service2")
+    local result=""
+    result=$(retrieve_credential "test_service2" 2>/dev/null)
     local exit_code=$?
     
     # Restaurar contraseña

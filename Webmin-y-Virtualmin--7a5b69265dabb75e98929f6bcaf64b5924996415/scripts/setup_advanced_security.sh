@@ -634,7 +634,7 @@ auth required pam_google_authenticator.so nullok
 EOF
 
     # Crear script para configurar MFA para usuarios
-    cat > /opt/virtualmin/security/scripts/setup_mfa_user.sh << 'EOF'
+    cat > /opt/virtualmin/security/scripts/setup_mfa_user.sh << 'SETUP_MFA_USER_SCRIPT'
 #!/bin/bash
 
 # Script para configurar MFA para un usuario
@@ -667,12 +667,12 @@ echo "Configurando PAM para Webmin..."
 if [ -f "/etc/pam.d/webmin" ]; then
     cp /etc/pam.d/webmin /etc/pam.d/webmin.bak
     
-    cat > /etc/pam.d/webmin << 'EOF'
+    cat > /etc/pam.d/webmin << 'WEBMIN_PAM_EOF'
 # Configuración PAM para Webmin con MFA
 auth requisite pam_succeed_if.so uid >= 1000 quiet
 auth required pam_unix.so nullok_secure
 auth required pam_google_authenticator.so nullok
-EOF
+WEBMIN_PAM_EOF
 fi
 
 # Configurar PAM para SSH
@@ -680,12 +680,12 @@ echo "Configurando PAM para SSH..."
 if [ -f "/etc/pam.d/sshd" ]; then
     cp /etc/pam.d/sshd /etc/pam.d/sshd.bak
     
-    cat > /etc/pam.d/sshd << 'EOF'
+    cat > /etc/pam.d/sshd << 'SSHD_PAM_EOF'
 # Configuración PAM para SSH con MFA
 auth requisite pam_succeed_if.so uid >= 1000 quiet
 auth required pam_unix.so nullok_secure
 auth required pam_google_authenticator.so nullok
-EOF
+SSHD_PAM_EOF
 fi
 
 # Configurar SSH para requerir autenticación multifactor
@@ -706,12 +706,12 @@ if [ -f "/etc/ssh/sshd_config" ]; then
 fi
 
 echo "Configuración de MFA completada para el usuario $USERNAME"
-EOF
+SETUP_MFA_USER_SCRIPT
 
     chmod +x /opt/virtualmin/security/scripts/setup_mfa_user.sh
     
     # Crear script para habilitar/deshabilitar MFA
-    cat > /opt/virtualmin/security/scripts/manage_mfa.sh << 'EOF'
+    cat > /opt/virtualmin/security/scripts/manage_mfa.sh << 'MANAGE_MFA_SCRIPT'
 #!/bin/bash
 
 # Script para gestionar MFA
@@ -769,24 +769,24 @@ enable_global() {
     if [ -f "/etc/pam.d/webmin" ]; then
         cp /etc/pam.d/webmin /etc/pam.d/webmin.bak
         
-        cat > /etc/pam.d/webmin << 'EOF'
+        cat > /etc/pam.d/webmin << 'WEBMIN_GLOBAL_PAM_EOF'
 # Configuración PAM para Webmin con MFA
 auth requisite pam_succeed_if.so uid >= 1000 quiet
 auth required pam_unix.so nullok_secure
 auth required pam_google_authenticator.so nullok
-EOF
+WEBMIN_GLOBAL_PAM_EOF
     fi
     
     # Configurar PAM para SSH
     if [ -f "/etc/pam.d/sshd" ]; then
         cp /etc/pam.d/sshd /etc/pam.d/sshd.bak
         
-        cat > /etc/pam.d/sshd << 'EOF'
+        cat > /etc/pam.d/sshd << 'SSHD_GLOBAL_PAM_EOF'
 # Configuración PAM para SSH con MFA
 auth requisite pam_succeed_if.so uid >= 1000 quiet
 auth required pam_unix.so nullok_secure
 auth required pam_google_authenticator.so nullok
-EOF
+SSHD_GLOBAL_PAM_EOF
     fi
     
     # Configurar SSH para requerir autenticación multifactor
@@ -913,7 +913,7 @@ case "$1" in
         exit 1
         ;;
 esac
-EOF
+MANAGE_MFA_SCRIPT
 
     chmod +x /opt/virtualmin/security/scripts/manage_mfa.sh
     
