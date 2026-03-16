@@ -7,6 +7,7 @@ SCRIPT_VERSION="2.0.0"
 SCRIPT_NAME="Auto Tunnel System Installer"
 LOG_FILE="/var/log/auto_tunnel_install.log"
 BACKUP_DIR="/root/auto-tunnel-backup-$(date +%Y%m%d_%H%M%S)"
+REPO_RAW_BASE="https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main"
 
 # Colores para output
 RED='\033[0;31m'
@@ -156,24 +157,45 @@ backup_existing_files() {
 install_files() {
     log "INFO" "Instalando archivos del sistema..."
 
+    local script_dir
+    script_dir="$(cd "$(dirname "$0")" && pwd)"
+
+    fetch_required_file() {
+        local file_name="$1"
+        local target_path="$2"
+
+        if [[ -f "$script_dir/$file_name" ]]; then
+            cp "$script_dir/$file_name" "$target_path"
+            return 0
+        fi
+
+        log "WARNING" "Archivo local no encontrado: $file_name. Descargando desde GitHub..."
+        if curl -fsSL "$REPO_RAW_BASE/$file_name" -o "$target_path"; then
+            return 0
+        fi
+
+        log "ERROR" "No se pudo obtener $file_name"
+        return 1
+    }
+
     # Copiar script principal
-    cp auto_tunnel_system.sh /usr/local/bin/
+    fetch_required_file "auto_tunnel_system.sh" "/usr/local/bin/auto_tunnel_system.sh" || return 1
     chmod +x /usr/local/bin/auto_tunnel_system.sh
 
     # Crear enlace simbólico
     ln -sf /usr/local/bin/auto_tunnel_system.sh /usr/local/bin/auto-tunnel
 
     # Instalar servicio systemd
-    cp auto-tunnel.service /etc/systemd/system/
+    fetch_required_file "auto-tunnel.service" "/etc/systemd/system/auto-tunnel.service" || return 1
     systemctl daemon-reload
 
     # Instalar CGI script
-    cp tunnel_status.cgi /usr/lib/cgi-bin/
+    fetch_required_file "tunnel_status.cgi" "/usr/lib/cgi-bin/tunnel_status.cgi" || return 1
     chmod +x /usr/lib/cgi-bin/tunnel_status.cgi
 
     # Instalar dashboard
     mkdir -p /var/www/html/tunnel-monitor
-    cp tunnel_monitor_dashboard.html /var/www/html/tunnel-monitor/index.html
+    fetch_required_file "tunnel_monitor_dashboard.html" "/var/www/html/tunnel-monitor/index.html" || return 1
 
     log "SUCCESS" "Archivos instalados correctamente"
 }
