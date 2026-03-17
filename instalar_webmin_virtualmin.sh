@@ -104,12 +104,49 @@ install_webmin() {
             fi
             ;;
     esac
+    
+    # Iniciar Webmin automáticamente después de la instalación
+    echo -e "${GREEN}Iniciando Webmin...${NC}"
+    if command -v systemctl >/dev/null; then
+        systemctl start webmin
+        systemctl enable webmin
+        sleep 2
+        
+        # Verificar que Webmin esté corriendo
+        if systemctl is-active --quiet webmin; then
+            echo -e "${GREEN}✅ Webmin iniciado y habilitado correctamente${NC}"
+        else
+            echo -e "${YELLOW}⚠️  Webmin no pudo iniciarse automáticamente${NC}"
+            echo -e "${YELLOW}   Ejecute: systemctl start webmin${NC}"
+        fi
+    else
+        service webmin start
+        echo -e "${GREEN}✅ Webmin iniciado${NC}"
+    fi
 }
 
 # Función para instalar Virtualmin
 install_virtualmin() {
     echo -e "${GREEN}Instalando Virtualmin...${NC}"
     curl -sSL https://raw.githubusercontent.com/virtualmin/virtualmin-installer/master/install.sh | bash
+    
+    # Iniciar Virtualmin automáticamente después de la instalación
+    echo -e "${GREEN}Iniciando Virtualmin...${NC}"
+    if command -v systemctl >/dev/null; then
+        systemctl restart webmin 2>/dev/null || systemctl start webmin
+        sleep 3
+        
+        # Verificar que Virtualmin esté corriendo
+        if systemctl is-active --quiet webmin; then
+            echo -e "${GREEN}✅ Virtualmin iniciado correctamente${NC}"
+        else
+            echo -e "${YELLOW}⚠️  Virtualmin no pudo iniciarse automáticamente${NC}"
+            echo -e "${YELLOW}   Ejecute: systemctl restart webmin${NC}"
+        fi
+    else
+        service webmin restart 2>/dev/null || service webmin start
+        echo -e "${GREEN}✅ Virtualmin iniciado${NC}"
+    fi
 }
 
 # Función para configurar seguridad
