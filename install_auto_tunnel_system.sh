@@ -813,6 +813,33 @@ install_auto() {
         echo
     done
 
+    # Iniciar y habilitar el servicio automáticamente
+    echo -e "${CYAN}Iniciando servicio de túnel automático...${NC}"
+    systemctl daemon-reload 2>/dev/null || true
+    systemctl enable auto-tunnel 2>/dev/null || true
+    systemctl start auto-tunnel 2>/dev/null || true
+    
+    # Esperar un momento para que el servicio inicie
+    sleep 2
+    
+    # Verificar estado del servicio
+    if systemctl is-active --quiet auto-tunnel 2>/dev/null; then
+        echo -e "${GREEN}✅ Servicio de túnel iniciado correctamente${NC}"
+        
+        # Intentar obtener URL del túnel
+        if [[ -f "/var/log/auto_tunnel_system.log" ]]; then
+            local tunnel_url=$(grep -oE 'https?://[^[:space:]]+' /var/log/auto_tunnel_system.log | tail -n 1)
+            if [[ -n "$tunnel_url" ]]; then
+                echo -e "${GREEN}🌐 URL del túnel: ${tunnel_url}${NC}"
+            fi
+        fi
+    else
+        echo -e "${YELLOW}⚠️  El servicio no pudo iniciarse automáticamente${NC}"
+        echo -e "${YELLOW}   Ejecute: systemctl start auto-tunnel${NC}"
+    fi
+    
+    echo
+
     # Mostrar información final
     show_post_install_info
 
