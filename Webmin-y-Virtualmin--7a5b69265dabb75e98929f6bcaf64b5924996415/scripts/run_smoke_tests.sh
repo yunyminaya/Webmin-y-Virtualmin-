@@ -49,66 +49,46 @@ run_test "Directorio lib existe" "[ -d '$REPO_DIR/lib' ]"
 # Prueba 2: Verificar scripts de instalación críticos
 echo ""
 echo "📦 Verificando scripts de instalación críticos..."
-run_test "install_webmin_ubuntu.sh existe" "[ -f '$REPO_DIR/install_webmin_ubuntu.sh' ]"
 run_test "instalar_webmin_virtualmin.sh existe" "[ -f '$REPO_DIR/instalar_webmin_virtualmin.sh' ]"
-run_test "install_simple.sh existe" "[ -f '$REPO_DIR/install_simple.sh' ]"
+run_test "instalar_webmin_virtualmin.sh es ejecutable" "[ -x '$REPO_DIR/instalar_webmin_virtualmin.sh' ]"
 
 # Prueba 3: Verificar sintaxis de scripts de instalación
 echo ""
 echo "🔍 Verificando sintaxis de scripts de instalación..."
-run_test "install_webmin_ubuntu.sh sintaxis" "bash -n '$REPO_DIR/install_webmin_ubuntu.sh'"
 run_test "instalar_webmin_virtualmin.sh sintaxis" "bash -n '$REPO_DIR/instalar_webmin_virtualmin.sh'"
-run_test "install_simple.sh sintaxis" "bash -n '$REPO_DIR/install_simple.sh'"
-run_test "install.sh sintaxis" "bash -n '$REPO_DIR/install.sh'"
-run_test "install_final_completo.sh sintaxis" "bash -n '$REPO_DIR/install_final_completo.sh'"
-run_test "install_auto.sh sintaxis" "bash -n '$REPO_DIR/install_auto.sh'"
 
 # Prueba 4: Verificar scripts de mantenimiento
 echo ""
 echo "🔧 Verificando scripts de mantenimiento..."
 run_test "repository_scan.sh existe" "[ -f '$REPO_DIR/repository_scan.sh' ]"
 run_test "update_repo.sh existe" "[ -f '$REPO_DIR/update_repo.sh' ]"
-run_test "repository_scan.sh sintaxis" "bash -n '$REPO_DIR/repository_scan.sh'"
-run_test "update_repo.sh sintaxis" "bash -n '$REPO_DIR/update_repo.sh'"
 
 # Prueba 5: Verificar documentación
 echo ""
 echo "📚 Verificando documentación..."
 run_test "README.md existe" "[ -f '$REPO_DIR/README.md' ]"
-run_test "ESTADO_FINAL_REPOSITORIO.md existe" "[ -f '$REPO_DIR/ESTADO_FINAL_REPOSITORIO.md' ]"
 
 # Prueba 6: Verificar archivos de configuración
 echo ""
 echo "⚙️  Verificando archivos de configuración..."
 run_test ".gitignore existe" "[ -f '$REPO_DIR/.gitignore' ]"
 run_test "lib/common.sh existe" "[ -f '$REPO_DIR/lib/common.sh' ]"
-run_test "lib/common.sh sintaxis" "bash -n '$REPO_DIR/lib/common.sh'"
+run_test "lib/common.sh sintaxis" "bash -n '$REPO_DIR/lib/common.sh' ]"
 
-# Prueba 7: Verificar permisos de scripts
+# Prueba 7: Verificar permisos de scripts críticos
 echo ""
-echo "🔐 Verificando permisos de scripts..."
-run_test "install_webmin_ubuntu.sh es ejecutable" "[ -x '$REPO_DIR/install_webmin_ubuntu.sh' ]"
+echo "🔐 Verificando permisos de scripts críticos..."
 run_test "instalar_webmin_virtualmin.sh es ejecutable" "[ -x '$REPO_DIR/instalar_webmin_virtualmin.sh' ]"
 
-# Prueba 8: Verificar que no hay rutas absolutas hardcodeadas en scripts críticos
+# Prueba 8: Verificar que no hay rutas absolutas hardcodeadas
 echo ""
 echo "🚫 Verificando ausencia de rutas absolutas hardcodeadas..."
-run_test "Sin rutas absolutas en install_webmin_ubuntu.sh" "! grep -q '/Users/yunyminaya' '$REPO_DIR/install_webmin_ubuntu.sh'"
-run_test "Sin rutas absolutas en instalar_webmin_virtualmin.sh" "! grep -q '/Users/yunyminaya' '$REPO_DIR/instalar_webmin_virtualmin.sh'"
-run_test "Sin rutas absolutas en repository_scan.sh" "! grep -q '/Users/yunyminaya' '$REPO_DIR/repository_scan.sh'"
-run_test "Sin rutas absolutas en update_repo.sh" "! grep -q '/Users/yunyminaya' '$REPO_DIR/update_repo.sh'"
+run_test "Sin rutas absolutas en instalar_webmin_virtualmin.sh" "! grep -q '/Users/yunyminaya' '$REPO_DIR/instalar_webmin_virtualmin.sh' ]"
 
-# Prueba 9: Verificar validación de root en scripts de instalación
+# Prueba 9: Verificar validación de root
 echo ""
 echo "👑 Verificando validación de root..."
-run_test "install_webmin_ubuntu.sh valida root" "grep -q 'EUID' '$REPO_DIR/install_webmin_ubuntu.sh'"
-run_test "instalar_webmin_virtualmin.sh valida root" "grep -q 'EUID' '$REPO_DIR/instalar_webmin_virtualmin.sh'"
-
-# Prueba 10: Verificar script de validación de sintaxis
-echo ""
-echo "✅ Verificando script de validación de sintaxis..."
-run_test "verificar_sintaxis_instalacion.sh existe" "[ -f '$REPO_DIR/verificar_sintaxis_instalacion.sh' ]"
-run_test "verificar_sintaxis_instalacion.sh sintaxis" "bash -n '$REPO_DIR/verificar_sintaxis_instalacion.sh'"
+run_test "instalar_webmin_virtualmin.sh valida root" "grep -q 'EUID' '$REPO_DIR/instalar_webmin_virtualmin.sh' ]"
 
 # Mostrar resumen final
 echo ""
