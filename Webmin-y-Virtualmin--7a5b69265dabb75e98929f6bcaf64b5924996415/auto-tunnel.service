@@ -6,9 +6,9 @@ Requires=network.target
 
 [Service]
 Type=simple
-ExecStart=/bin/bash /root/auto_tunnel_system.sh start
-ExecStop=/bin/bash /root/auto_tunnel_system.sh stop
-ExecReload=/bin/bash /root/auto_tunnel_system.sh restart
+ExecStart=/bin/bash /usr/local/bin/auto_tunnel_system.sh start
+ExecStop=/bin/bash /usr/local/bin/auto_tunnel_system.sh stop
+ExecReload=/bin/bash /usr/local/bin/auto_tunnel_system.sh restart
 Restart=always
 RestartSec=10
 User=root
