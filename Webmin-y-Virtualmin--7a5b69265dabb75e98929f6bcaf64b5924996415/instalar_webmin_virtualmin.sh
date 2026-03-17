@@ -346,6 +346,41 @@ install_virtualmin() {
     curl -sSL https://raw.githubusercontent.com/virtualmin/virtualmin-installer/master/install.sh | bash
 }
 
+# Función para configurar Webmin para escuchar en todas las interfaces
+configure_webmin_listen() {
+    echo -e "${GREEN}Configurando Webmin para escuchar en todas las interfaces...${NC}"
+    
+    local miniserv_conf="/etc/webmin/miniserv.conf"
+    
+    if [ ! -f "$miniserv_conf" ]; then
+        echo -e "${YELLOW}⚠️  El archivo $miniserv_conf no existe${NC}"
+        return 1
+    fi
+    
+    # Verificar si ya está configurado para escuchar en todas las interfaces
+    if grep -q "^listen=10000$" "$miniserv_conf" 2>/dev/null; then
+        echo -e "${GREEN}✅ Webmin ya está configurado para escuchar en todas las interfaces${NC}"
+        return 0
+    fi
+    
+    # Backup del archivo original
+    cp "$miniserv_conf" "${miniserv_conf}.backup.$(date +%s)"
+    
+    # Configurar Webmin para escuchar en todas las interfaces (0.0.0.0)
+    # Primero eliminar cualquier línea listen existente
+    sed -i '/^listen=/d' "$miniserv_conf"
+    
+    # Agregar configuración para escuchar en todas las interfaces
+    echo "listen=10000" >> "$miniserv_conf"
+    
+    # También configurar bind para asegurar que escuche en 0.0.0.0
+    if ! grep -q "^bind=" "$miniserv_conf"; then
+        echo "bind=0.0.0.0" >> "$miniserv_conf"
+    fi
+    
+    echo -e "${GREEN}✅ Webmin configurado para escuchar en 0.0.0.0:10000 (todas las interfaces)${NC}"
+}
+
 # Función para configurar seguridad
 configure_security() {
     echo -e "${GREEN}Configurando seguridad...${NC}"
@@ -361,11 +396,8 @@ configure_security() {
 
     # Configurar autenticación de dos factores
     if [ -f /etc/webmin/miniserv.conf ]; then
-        echo "twofactor=1" >> /etc/webmin/miniserv.conf
-        if command -v systemctl >/dev/null; then
-            systemctl restart webmin
-        else
-            service webmin restart
+        if ! grep -q "^twofactor=" /etc/webmin/miniserv.conf; then
+            echo "twofactor=1" >> /etc/webmin/miniserv.conf
         fi
     fi
 }
@@ -416,6 +448,18 @@ main() {
     else
         service webmin restart 2>/dev/null || service webmin start
         echo -e "${GREEN}✅ Virtualmin iniciado${NC}"
+    fi
+    
+    # Configurar Webmin para escuchar en todas las interfaces (0.0.0.0)
+    configure_webmin_listen
+    
+    # Reiniciar Webmin para aplicar la configuración
+    echo -e "${GREEN}Reiniciando Webmin para aplicar configuración...${NC}"
+    if command -v systemctl >/dev/null; then
+        systemctl restart webmin
+        sleep 2
+    else
+        service webmin restart
     fi
     
     configure_security
