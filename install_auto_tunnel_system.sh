@@ -7,7 +7,12 @@ SCRIPT_VERSION="2.0.0"
 SCRIPT_NAME="Auto Tunnel System Installer"
 LOG_FILE="/var/log/auto_tunnel_install.log"
 BACKUP_DIR="/root/auto-tunnel-backup-$(date +%Y%m%d_%H%M%S)"
-REPO_RAW_BASE="https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main"
+REPO_OWNER="yunyminaya"
+REPO_NAME="Webmin-y-Virtualmin-"
+REPO_BRANCH="main"
+REPO_RAW_BASE="https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/${REPO_BRANCH}"
+REPO_API_CONTENTS="https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents"
+REPO_NESTED_DIR=""
 
 # Colores para output
 RED='\033[0;31m'
@@ -153,6 +158,34 @@ backup_existing_files() {
     log "SUCCESS" "Backup completado en: $BACKUP_DIR"
 }
 
+# Función para detectar directorio anidado en el repositorio remoto
+detect_nested_repo_dir() {
+    if [[ -n "$REPO_NESTED_DIR" ]]; then
+        return 0
+    fi
+
+    local nested_dir=""
+    local api_response=""
+
+    if ! api_response=$(curl -fsSL --connect-timeout 10 --max-time 20 "$REPO_API_CONTENTS" 2>/dev/null); then
+        return 1
+    fi
+
+    if command -v jq >/dev/null 2>&1; then
+        nested_dir=$(echo "$api_response" | jq -r '.[] | select(.type=="dir" and (.name | startswith("Webmin-y-Virtualmin--"))) | .name' | head -n1)
+    else
+        nested_dir=$(echo "$api_response" | grep -oE '"name"\s*:\s*"Webmin-y-Virtualmin--[^"]+"' | head -n1 | sed -E 's/.*"name"\s*:\s*"([^"]+)"/\1/')
+    fi
+
+    if [[ -n "$nested_dir" && "$nested_dir" != "null" ]]; then
+        REPO_NESTED_DIR="$nested_dir"
+        log "INFO" "Directorio anidado detectado en GitHub: $REPO_NESTED_DIR"
+        return 0
+    fi
+
+    return 1
+}
+
 # Función para instalar archivos del sistema
 install_files() {
     log "INFO" "Instalando archivos del sistema..."
@@ -163,6 +196,8 @@ install_files() {
     fetch_required_file() {
         local file_name="$1"
         local target_path="$2"
+        local primary_url="${REPO_RAW_BASE}/${file_name}"
+        local nested_url=""
 
         if [[ -f "$script_dir/$file_name" ]]; then
             cp "$script_dir/$file_name" "$target_path"
@@ -170,11 +205,25 @@ install_files() {
         fi
 
         log "WARNING" "Archivo local no encontrado: $file_name. Descargando desde GitHub..."
-        if curl -fsSL "$REPO_RAW_BASE/$file_name" -o "$target_path"; then
+        if curl -fsSL --retry 3 --retry-delay 2 "$primary_url" -o "$target_path"; then
             return 0
         fi
 
-        log "ERROR" "No se pudo obtener $file_name"
+        if detect_nested_repo_dir; then
+            nested_url="${REPO_RAW_BASE}/${REPO_NESTED_DIR}/${file_name}"
+            log "WARNING" "Intentando ruta anidada: ${REPO_NESTED_DIR}/${file_name}"
+            if curl -fsSL --retry 3 --retry-delay 2 "$nested_url" -o "$target_path"; then
+                return 0
+            fi
+        fi
+
+        if [[ -n "$nested_url" ]]; then
+            log "ERROR" "No se pudo obtener $file_name (rutas probadas: $primary_url y $nested_url)"
+        else
+            log "ERROR" "No se pudo obtener $file_name (ruta probada: $primary_url)"
+        fi
+
+        rm -f "$target_path"
         return 1
     }
 
