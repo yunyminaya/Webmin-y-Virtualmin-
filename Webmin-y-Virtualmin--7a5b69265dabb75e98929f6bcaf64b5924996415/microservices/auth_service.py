@@ -7,20 +7,37 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 
 app = Flask(__name__)
-app.config['AUTH_SECRET_KEY'] = os.getenv('AUTH_SECRET_KEY', 'change-this-development-key')
+APP_ENV = os.getenv('APP_ENV', 'development').lower()
+IS_PRODUCTION = APP_ENV == 'production'
+
+
+def _required_env(name, default=None):
+    value = os.getenv(name)
+    if value:
+        return value
+    if IS_PRODUCTION and default is None:
+        raise RuntimeError(f'{name} es obligatorio cuando APP_ENV=production')
+    return default
+
+
+app.config['AUTH_SECRET_KEY'] = _required_env(
+    'AUTH_SECRET_KEY',
+    default=None,
+)
 app.config['AUTH_TOKEN_TTL'] = int(os.getenv('AUTH_TOKEN_TTL', '3600'))
 
-DEFAULT_USERNAME = os.getenv('AUTH_ADMIN_USERNAME', 'admin')
-DEFAULT_PASSWORD_HASH = generate_password_hash(
-    os.getenv('AUTH_ADMIN_PASSWORD', 'change-me-now-please')
-)
+DEFAULT_USERNAME = os.getenv('AUTH_ADMIN_USERNAME', '').strip()
+DEFAULT_PASSWORD = os.getenv('AUTH_ADMIN_PASSWORD', '')
 
-USERS = {
-    DEFAULT_USERNAME: {
-        'password_hash': DEFAULT_PASSWORD_HASH,
+if IS_PRODUCTION and (not DEFAULT_USERNAME or not DEFAULT_PASSWORD):
+    raise RuntimeError('AUTH_ADMIN_USERNAME y AUTH_ADMIN_PASSWORD son obligatorios cuando APP_ENV=production')
+
+USERS = {}
+if DEFAULT_USERNAME and DEFAULT_PASSWORD:
+    USERS[DEFAULT_USERNAME] = {
+        'password_hash': generate_password_hash(DEFAULT_PASSWORD),
         'role': 'admin',
     }
-}
 
 
 def _serializer() -> URLSafeTimedSerializer:
@@ -45,6 +62,9 @@ def health():
 
 @app.route('/login', methods=['POST'])
 def login():
+    if not USERS:
+        return jsonify({'error': 'Servicio de autenticación no configurado'}), 503
+
     data = request.get_json(silent=True) or {}
     username = (data.get('username') or '').strip()
     password = data.get('password') or ''

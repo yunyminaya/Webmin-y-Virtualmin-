@@ -39,6 +39,10 @@ def seed_roles():
 
 
 def bootstrap_admin(app):
+    if not app.config.get("ENABLE_BOOTSTRAP_ADMIN", False):
+        app.logger.info("Bootstrap admin deshabilitado")
+        return
+
     username = app.config.get("BOOTSTRAP_ADMIN_USERNAME")
     password = app.config.get("BOOTSTRAP_ADMIN_PASSWORD")
     if not username or not password:
@@ -84,7 +88,7 @@ def create_app():
 
     @app.get("/health")
     def health_check():
-        return jsonify({"status": "ok", "environment": app.config["ENV"]}), 200
+        return jsonify({"status": "ok"}), 200
 
     with app.app_context():
         db.create_all()

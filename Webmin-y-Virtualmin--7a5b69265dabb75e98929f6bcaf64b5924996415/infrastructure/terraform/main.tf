@@ -29,6 +29,28 @@ variable "vpc_cidr" {
   default = "10.20.0.0/16"
 }
 
+variable "cluster_endpoint_public_access" {
+  type    = bool
+  default = false
+}
+
+variable "cluster_endpoint_public_access_cidrs" {
+  type    = list(string)
+  default = []
+}
+
+variable "allowed_ingress_cidr" {
+  type = string
+}
+
+variable "acm_certificate_arn" {
+  type = string
+}
+
+variable "allowed_ingress_cidrs" {
+  type = list(string)
+}
+
 provider "aws" {
   region = var.aws_region
 }
@@ -73,7 +95,9 @@ module "webmin_cluster" {
   cluster_name    = var.cluster_name
   cluster_version = var.cluster_version
 
-  cluster_endpoint_public_access = true
+  cluster_endpoint_public_access       = var.cluster_endpoint_public_access
+  cluster_endpoint_private_access      = true
+  cluster_endpoint_public_access_cidrs = var.cluster_endpoint_public_access_cidrs
 
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnets
@@ -103,20 +127,20 @@ module "global_load_balancer" {
       from_port   = 80
       to_port     = 80
       ip_protocol = "tcp"
-      cidr_ipv4   = "0.0.0.0/0"
+      cidr_ipv4   = var.allowed_ingress_cidr
     }
     https = {
       from_port   = 443
       to_port     = 443
       ip_protocol = "tcp"
-      cidr_ipv4   = "0.0.0.0/0"
+      cidr_ipv4   = var.allowed_ingress_cidr
     }
   }
 
   security_group_egress_rules = {
     all = {
       ip_protocol = "-1"
-      cidr_ipv4   = "0.0.0.0/0"
+      cidr_ipv4   = var.vpc_cidr
     }
   }
 
@@ -124,6 +148,16 @@ module "global_load_balancer" {
     http = {
       port     = 80
       protocol = "HTTP"
+      redirect = {
+        port        = "443"
+        protocol    = "HTTPS"
+        status_code = "HTTP_301"
+      }
+    }
+    https = {
+      port            = 443
+      protocol        = "HTTPS"
+      certificate_arn = var.acm_certificate_arn
       forward = {
         target_group_key = "webmin"
       }

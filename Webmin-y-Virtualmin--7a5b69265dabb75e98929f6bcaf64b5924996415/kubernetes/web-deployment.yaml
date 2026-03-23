@@ -27,7 +27,7 @@ spec:
           type: RuntimeDefault
       containers:
       - name: web-service
-        image: ghcr.io/yunyminaya/webmin-y-virtualmin:latest
+        image: ghcr.io/yunyminaya/webmin-y-virtualmin:1.0.0
         imagePullPolicy: IfNotPresent
         env:
         - name: APP_ENV

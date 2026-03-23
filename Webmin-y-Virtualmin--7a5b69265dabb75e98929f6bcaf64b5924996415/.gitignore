@@ -20,16 +20,44 @@
 credentials.txt
 passwords.txt
 api_keys.txt
+*.pfx
+*.p12
+*.kubeconfig
+
+# Secretos de infraestructura y backups
+*.tfstate
+*.tfstate.*
+.terraform/
+terraform.tfvars
+terraform.tfvars.json
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+kubeconfig
+enterprise_backups/.backup_key
+*.db
+*.sqlite
+*.sqlite3
 
 # LOGS DE INSTALACIÓN Y VALIDACIÓN
 /tmp/webmin_*.log
 /tmp/installation_*.log
 /tmp/validation_*.log
+*.log
+test_results/
+integration_test_results.txt
 
 # ARCHIVOS TEMPORALES
 /tmp/
 temp/
 *.temp
+*.bak
+*.swp
+__pycache__/
+*.py[cod]
+venv/
+.venv/
 
 # NOTA: Los scripts de instalación deben estar en el repositorio
 # para que los usuarios puedan descargarlos directamente desde GitHub

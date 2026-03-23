@@ -323,12 +323,18 @@ EOF
     # Crear usuario admin con contraseña segura si no existe
     if ! id "webminadmin" &>/dev/null; then
         local password=$(openssl rand -base64 32)
+        local password_file="/root/.webminadmin_credentials"
         useradd -m -s /bin/bash webminadmin
         echo "webminadmin:$password" | chpasswd
         usermod -aG sudo webminadmin
+        umask 077
+        cat > "$password_file" <<EOF
+WEBMIN_ADMIN_USER=webminadmin
+WEBMIN_ADMIN_PASSWORD=$password
+EOF
         
-        log "INFO" "Usuario 'webminadmin' creado con contraseña: $password"
-        log "WARN" "GUARDA ESTA CONTRASEÑA: $password"
+        log "INFO" "Usuario 'webminadmin' creado correctamente"
+        log "WARN" "Credenciales guardadas en $password_file con permisos restringidos"
     fi
     
     log "SUCCESS" "Configuración de seguridad completada"

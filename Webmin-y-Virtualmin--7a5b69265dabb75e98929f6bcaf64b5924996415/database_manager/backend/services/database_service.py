@@ -1,17 +1,35 @@
+import logging
 import re
 
 from sqlalchemy import inspect, text
 from sqlalchemy.engine import URL, create_engine
 
+
+logger = logging.getLogger(__name__)
+
 class DatabaseService:
     IDENTIFIER_PATTERN = re.compile(r'^[A-Za-z_][A-Za-z0-9_]*$')
 
-    def __init__(self, db_type, connection_params):
+    def __init__(self, db_type, connection_params, allowed_hosts=None):
         self.db_type = db_type
         self.connection_params = connection_params
+        self.allowed_hosts = {host.strip() for host in (allowed_hosts or []) if host.strip()}
         self.engine = self._create_engine()
+
+    def _validate_host(self):
+        if self.db_type not in {'mysql', 'postgresql'}:
+            return
+
+        host = (self.connection_params.get('host') or '').strip()
+        if not host:
+            raise ValueError('El host de base de datos es obligatorio')
+
+        if self.allowed_hosts and host not in self.allowed_hosts:
+            raise ValueError('El host solicitado no está permitido')
         
     def _create_engine(self):
+        self._validate_host()
+
         if self.db_type == 'mysql':
             conn_string = URL.create(
                 drivername='mysql+pymysql',
@@ -60,7 +78,7 @@ class DatabaseService:
                 result = connection.execute(text('SELECT 1'))
                 return result.scalar() == 1
         except Exception as e:
-            print(f"Connection test failed: {e}")
+            logger.warning("Connection test failed: %s", e)
             return False
         
     def list_databases(self):
