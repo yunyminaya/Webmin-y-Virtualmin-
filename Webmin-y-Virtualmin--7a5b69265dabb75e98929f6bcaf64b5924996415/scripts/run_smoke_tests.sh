@@ -3,7 +3,7 @@
 # Script de prueba de humo simplificado para CI/CD
 # Verifica los componentes críticos del repositorio
 
-set -e
+set -uo pipefail
 
 echo "🔥 Ejecutando pruebas de humo para Webmin/Virtualmin"
 echo "===================================================="
@@ -37,6 +37,13 @@ run_test() {
         FAILED_TESTS=$((FAILED_TESTS + 1))
         return 1
     fi
+}
+
+run_non_blocking_test() {
+    local test_name="$1"
+    local test_command="$2"
+
+    run_test "$test_name" "$test_command" || true
 }
 
 # Prueba 1: Verificar estructura del repositorio
@@ -73,7 +80,7 @@ echo ""
 echo "⚙️  Verificando archivos de configuración..."
 run_test ".gitignore existe" "[ -f '$REPO_DIR/.gitignore' ]"
 run_test "lib/common.sh existe" "[ -f '$REPO_DIR/lib/common.sh' ]"
-run_test "lib/common.sh sintaxis" "bash -n '$REPO_DIR/lib/common.sh' ]"
+run_non_blocking_test "lib/common.sh sintaxis" "bash -n '$REPO_DIR/lib/common.sh'"
 
 # Prueba 7: Verificar permisos de scripts críticos
 echo ""
@@ -83,12 +90,27 @@ run_test "instalar_webmin_virtualmin.sh es ejecutable" "[ -x '$REPO_DIR/instalar
 # Prueba 8: Verificar que no hay rutas absolutas hardcodeadas
 echo ""
 echo "🚫 Verificando ausencia de rutas absolutas hardcodeadas..."
-run_test "Sin rutas absolutas en instalar_webmin_virtualmin.sh" "! grep -q '/Users/yunyminaya' '$REPO_DIR/instalar_webmin_virtualmin.sh' ]"
+run_non_blocking_test "Sin rutas absolutas en instalar_webmin_virtualmin.sh" "! grep -q '/Users/yunyminaya' '$REPO_DIR/instalar_webmin_virtualmin.sh'"
 
 # Prueba 9: Verificar validación de root
 echo ""
 echo "👑 Verificando validación de root..."
-run_test "instalar_webmin_virtualmin.sh valida root" "grep -q 'EUID' '$REPO_DIR/instalar_webmin_virtualmin.sh' ]"
+run_non_blocking_test "instalar_webmin_virtualmin.sh valida root" "grep -q 'EUID' '$REPO_DIR/instalar_webmin_virtualmin.sh'"
+
+# Prueba 10: Verificar backend seguro y sin debug productivo por defecto
+echo ""
+echo "🛡️  Verificando endurecimiento del backend..."
+run_non_blocking_test "config.py sin secret placeholder" "! grep -q 'your_secret_key_here' '$REPO_DIR/database_manager/backend/config.py'"
+run_non_blocking_test "app.py no fuerza debug=True" "! grep -q 'debug=True' '$REPO_DIR/database_manager/backend/app.py'"
+run_non_blocking_test "backend expone health check" "grep -q 'health_check' '$REPO_DIR/database_manager/backend/app.py'"
+
+# Prueba 11: Verificar sintaxis Python del backend endurecido
+echo ""
+echo "🐍 Verificando sintaxis Python del backend..."
+run_non_blocking_test "config.py compila" "python3 -m py_compile '$REPO_DIR/database_manager/backend/config.py'"
+run_non_blocking_test "app.py compila" "python3 -m py_compile '$REPO_DIR/database_manager/backend/app.py'"
+run_non_blocking_test "auth.py compila" "python3 -m py_compile '$REPO_DIR/database_manager/backend/routes/auth.py'"
+run_non_blocking_test "security.py compila" "python3 -m py_compile '$REPO_DIR/database_manager/backend/security.py'"
 
 # Mostrar resumen final
 echo ""

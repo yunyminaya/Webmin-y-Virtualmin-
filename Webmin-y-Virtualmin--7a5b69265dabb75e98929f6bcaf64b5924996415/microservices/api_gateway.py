@@ -1,7 +1,10 @@
+import os
+
 from flask import Flask, jsonify, request
 import requests
 
 app = Flask(__name__)
+REQUEST_TIMEOUT = int(os.getenv('GATEWAY_REQUEST_TIMEOUT', '10'))
 
 SERVICES = {
     'auth': 'http://auth-service:5000',
@@ -14,18 +17,45 @@ SERVICES = {
 def gateway(service_name, path):
     if service_name not in SERVICES:
         return jsonify({'error': 'Service not found'}), 404
+
+    auth_header = request.headers.get('Authorization')
+    if service_name != 'auth' and not auth_header:
+        return jsonify({'error': 'Authorization header required'}), 401
     
     url = f"{SERVICES[service_name]}/{path}"
-    response = requests.request(
-        method=request.method,
-        url=url,
-        headers=request.headers,
-        data=request.get_data(),
-        cookies=request.cookies,
-        allow_redirects=False
-    )
+
+    forwarded_headers = {
+        key: value
+        for key, value in request.headers.items()
+        if key.lower() not in {'host', 'content-length'}
+    }
+
+    try:
+        response = requests.request(
+            method=request.method,
+            url=url,
+            headers=forwarded_headers,
+            data=request.get_data(),
+            cookies=request.cookies,
+            allow_redirects=False,
+            timeout=REQUEST_TIMEOUT,
+        )
+    except requests.RequestException as exc:
+        return jsonify({'error': f'Upstream request failed: {exc}'}), 502
     
-    return (response.content, response.status_code, response.headers.items())
+    excluded_headers = {'content-encoding', 'content-length', 'transfer-encoding', 'connection'}
+    response_headers = [
+        (name, value)
+        for name, value in response.headers.items()
+        if name.lower() not in excluded_headers
+    ]
+
+    return (response.content, response.status_code, response_headers)
+
+
+@app.route('/health', methods=['GET'])
+def health():
+    return jsonify({'status': 'ok', 'services': list(SERVICES.keys())}), 200
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080)
+    app.run(host='0.0.0.0', port=8080, debug=False)

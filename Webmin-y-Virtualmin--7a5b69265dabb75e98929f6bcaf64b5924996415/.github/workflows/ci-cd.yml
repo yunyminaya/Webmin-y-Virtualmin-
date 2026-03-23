@@ -47,7 +47,10 @@ jobs:
 
     - name: Install Python dependencies
       run: |
+        python -m pip install --upgrade pip
         pip install pytest pytest-cov
+        if [ -f database_manager/backend/requirements.txt ]; then pip install -r database_manager/backend/requirements.txt; fi
+        if [ -f microservices/requirements.txt ]; then pip install -r microservices/requirements.txt; fi
 
     - name: Validate shell scripts
       run: |
@@ -56,6 +59,16 @@ jobs:
     - name: Run smoke tests
       run: |
         bash scripts/run_smoke_tests.sh
+
+    - name: Compile production Python services
+      run: |
+        python -m py_compile database_manager/backend/app.py
+        python -m py_compile database_manager/backend/routes/auth.py
+        python -m py_compile database_manager/backend/routes/databases.py
+        python -m py_compile database_manager/backend/routes/tables.py
+        python -m py_compile database_manager/backend/security.py
+        python -m py_compile microservices/auth_service.py
+        python -m py_compile microservices/api_gateway.py
 
     - name: Upload test results
       uses: actions/upload-artifact@v3
@@ -83,6 +96,11 @@ jobs:
       run: |
         pip install flake8 black isort mypy
 
+    - name: Install app dependencies for static analysis
+      run: |
+        if [ -f database_manager/backend/requirements.txt ]; then pip install -r database_manager/backend/requirements.txt; fi
+        if [ -f microservices/requirements.txt ]; then pip install -r microservices/requirements.txt; fi
+
     - name: Run flake8
       run: |
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
@@ -99,6 +117,15 @@ jobs:
     - name: Run mypy
       run: |
         mypy . --ignore-missing-imports || true
+
+    - name: Validate Kubernetes manifest
+      run: |
+        python - <<'PY'
+        import yaml
+        with open('kubernetes/web-deployment.yaml', 'r', encoding='utf-8') as fh:
+            list(yaml.safe_load_all(fh))
+        print('Kubernetes manifest válido')
+        PY
 
   # ===== Security Scanning =====
   security:
@@ -185,20 +212,29 @@ jobs:
 
     - name: Deploy to staging environment
       run: |
-        echo "🚀 Deploying to staging environment..."
-        # Aquí irían los comandos de despliegue específicos
-        echo "✅ Staging deployment completed"
+        test -n "${{ secrets.STAGING_KUBE_CONFIG_B64 }}"
+        echo "${{ secrets.STAGING_KUBE_CONFIG_B64 }}" | base64 -d > kubeconfig
+        export KUBECONFIG=$PWD/kubeconfig
+        curl -fsSL -o kubectl https://dl.k8s.io/release/v1.29.3/bin/linux/amd64/kubectl
+        chmod +x kubectl
+        sudo mv kubectl /usr/local/bin/kubectl
+        kubectl create namespace webmin --dry-run=client -o yaml | kubectl apply -f -
+        kubectl apply -n webmin -f kubernetes/web-deployment.yaml
+        kubectl set image deployment/web-service web-service=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:develop -n webmin
+        kubectl rollout status deployment/web-service -n webmin --timeout=180s
+        rm -f kubeconfig
 
     - name: Run smoke tests on staging
       run: |
-        echo "🧪 Running smoke tests on staging..."
-        # Aquí irían las pruebas de humo
-        echo "✅ Smoke tests passed"
+        echo "${{ secrets.STAGING_KUBE_CONFIG_B64 }}" | base64 -d > kubeconfig
+        export KUBECONFIG=$PWD/kubeconfig
+        kubectl get pods -n webmin
+        kubectl get svc web-service -n webmin
+        rm -f kubeconfig
 
     - name: Notify deployment
       run: |
-        echo "📢 Notifying stakeholders about staging deployment..."
-        # Aquí iría la lógica de notificación
+        echo "📢 Staging deployment completed"
 
   deploy-production:
     name: Deploy to Production
@@ -213,20 +249,29 @@ jobs:
 
     - name: Deploy to production environment
       run: |
-        echo "🚀 Deploying to production environment..."
-        # Aquí irían los comandos de despliegue específicos
-        echo "✅ Production deployment completed"
+        test -n "${{ secrets.PRODUCTION_KUBE_CONFIG_B64 }}"
+        echo "${{ secrets.PRODUCTION_KUBE_CONFIG_B64 }}" | base64 -d > kubeconfig
+        export KUBECONFIG=$PWD/kubeconfig
+        curl -fsSL -o kubectl https://dl.k8s.io/release/v1.29.3/bin/linux/amd64/kubectl
+        chmod +x kubectl
+        sudo mv kubectl /usr/local/bin/kubectl
+        kubectl create namespace webmin --dry-run=client -o yaml | kubectl apply -f -
+        kubectl apply -n webmin -f kubernetes/web-deployment.yaml
+        kubectl set image deployment/web-service web-service=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest -n webmin
+        kubectl rollout status deployment/web-service -n webmin --timeout=180s
+        rm -f kubeconfig
 
     - name: Run smoke tests on production
       run: |
-        echo "🧪 Running smoke tests on production..."
-        # Aquí irían las pruebas de humo
-        echo "✅ Smoke tests passed"
+        echo "${{ secrets.PRODUCTION_KUBE_CONFIG_B64 }}" | base64 -d > kubeconfig
+        export KUBECONFIG=$PWD/kubeconfig
+        kubectl get pods -n webmin
+        kubectl get svc web-service -n webmin
+        rm -f kubeconfig
 
     - name: Create deployment notification
       run: |
-        echo "📢 Creating deployment notification..."
-        # Aquí iría la lógica de notificación
+        echo "📢 Production deployment completed"
 
   # ===== Release Management =====
   release:

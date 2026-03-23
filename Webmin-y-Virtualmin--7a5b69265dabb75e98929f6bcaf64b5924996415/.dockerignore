@@ -1,0 +1,15 @@
+.git
+.github
+.pytest_cache
+.roo
+.kilocode
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/*.db
+**/node_modules
+**/venv
+test_results
+alerts.log
+backup.log
+monitoring.log
