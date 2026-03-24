@@ -23,8 +23,12 @@ spec:
       automountServiceAccountToken: false
       terminationGracePeriodSeconds: 30
       securityContext:
+        fsGroup: 10001
         seccompProfile:
           type: RuntimeDefault
+      volumes:
+      - name: tmp
+        emptyDir: {}
       containers:
       - name: web-service
         image: ghcr.io/yunyminaya/webmin-y-virtualmin:1.0.0
@@ -34,6 +38,48 @@ spec:
           value: production
         - name: APP_DEBUG
           value: "false"
+        - name: APP_PORT
+          value: "5000"
+        - name: APP_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: web-service-secrets
+              key: app-secret-key
+        - name: JWT_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: web-service-secrets
+              key: jwt-secret-key
+        - name: JWT_SALT
+          valueFrom:
+            secretKeyRef:
+              name: web-service-secrets
+              key: jwt-salt
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: web-service-secrets
+              key: database-url
+        - name: CORS_ALLOWED_ORIGINS
+          valueFrom:
+            configMapKeyRef:
+              name: web-service-config
+              key: cors-allowed-origins
+        - name: LOGIN_RATE_LIMIT_ATTEMPTS
+          valueFrom:
+            configMapKeyRef:
+              name: web-service-config
+              key: login-rate-limit-attempts
+        - name: LOGIN_RATE_LIMIT_WINDOW_SECONDS
+          valueFrom:
+            configMapKeyRef:
+              name: web-service-config
+              key: login-rate-limit-window-seconds
+        - name: LOGIN_LOCKOUT_SECONDS
+          valueFrom:
+            configMapKeyRef:
+              name: web-service-config
+              key: login-lockout-seconds
         resources:
           limits:
             cpu: 1000m
@@ -45,10 +91,14 @@ spec:
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: true
           runAsNonRoot: true
+          runAsGroup: 10001
           runAsUser: 10001
           capabilities:
             drop:
             - ALL
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
         ports:
         - containerPort: 5000
           name: http

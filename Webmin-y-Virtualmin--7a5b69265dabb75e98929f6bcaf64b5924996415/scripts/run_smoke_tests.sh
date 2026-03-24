@@ -112,6 +112,23 @@ run_non_blocking_test "app.py compila" "python3 -m py_compile '$REPO_DIR/databas
 run_non_blocking_test "auth.py compila" "python3 -m py_compile '$REPO_DIR/database_manager/backend/routes/auth.py'"
 run_non_blocking_test "security.py compila" "python3 -m py_compile '$REPO_DIR/database_manager/backend/security.py'"
 
+# Prueba 12: Verificar endurecimiento de contenedor y despliegue Kubernetes
+echo ""
+echo "🚢 Verificando contenedor y despliegue Kubernetes..."
+run_non_blocking_test "Dockerfile usa usuario no root" "grep -q '^USER 10001$' '$REPO_DIR/Dockerfile'"
+run_non_blocking_test "Dockerfile define healthcheck" "grep -q '^HEALTHCHECK ' '$REPO_DIR/Dockerfile'"
+run_non_blocking_test "Kubernetes referencia secretos obligatorios" "grep -q 'name: web-service-secrets' '$REPO_DIR/kubernetes/web-deployment.yaml'"
+run_non_blocking_test "Kubernetes monta /tmp para readOnlyRootFilesystem" "grep -q 'mountPath: /tmp' '$REPO_DIR/kubernetes/web-deployment.yaml'"
+run_non_blocking_test "ConfigMap de despliegue existe" "[ -f '$REPO_DIR/kubernetes/web-service-config.yaml' ]"
+run_non_blocking_test "Plantilla de secretos existe" "[ -f '$REPO_DIR/kubernetes/web-service-secret.example.yaml' ]"
+
+# Prueba 13: Verificar pipeline CI/CD endurecido
+echo ""
+echo "🔄 Verificando pipeline CI/CD..."
+run_non_blocking_test "CI instala PyYAML" "grep -q 'PyYAML' '$REPO_DIR/.github/workflows/ci-cd.yml'"
+run_non_blocking_test "CI valida arranque productivo del backend" "grep -q 'Backend production boot smoke test OK' '$REPO_DIR/.github/workflows/ci-cd.yml'"
+run_non_blocking_test "CI exige secreto Kubernetes antes de desplegar" "grep -q 'kubectl get secret web-service-secrets' '$REPO_DIR/.github/workflows/ci-cd.yml'"
+
 # Mostrar resumen final
 echo ""
 echo "===================================================="

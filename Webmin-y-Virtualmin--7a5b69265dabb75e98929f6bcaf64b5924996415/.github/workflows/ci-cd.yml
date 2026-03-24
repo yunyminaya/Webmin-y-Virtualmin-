@@ -62,6 +62,30 @@ jobs:
         if [ -f database_manager/backend/requirements.txt ]; then pip install -r database_manager/backend/requirements.txt; fi
         if [ -f microservices/requirements.txt ]; then pip install -r microservices/requirements.txt; fi
 
+    - name: Boot backend with production configuration
+      env:
+        APP_ENV: production
+        APP_DEBUG: "false"
+        APP_SECRET_KEY: ci-app-secret-key
+        JWT_SECRET_KEY: ci-jwt-secret-key
+        JWT_SALT: ci-jwt-salt
+        DATABASE_URL: sqlite:///:memory:
+      run: |
+        python - <<'PY'
+        import os
+        import sys
+
+        sys.path.insert(0, os.path.abspath('database_manager/backend'))
+
+        from app import create_app
+
+        app = create_app()
+        client = app.test_client()
+        response = client.get('/health')
+        assert response.status_code == 200, response.get_data(as_text=True)
+        print('Backend production boot smoke test OK')
+        PY
+
     - name: Validate shell scripts
       run: |
         find . -name "*.sh" -type f -exec shellcheck {} \;
@@ -104,7 +128,7 @@ jobs:
 
     - name: Install quality tools
       run: |
-        pip install flake8 black isort mypy
+        pip install flake8 black isort mypy PyYAML
 
     - name: Install app dependencies for static analysis
       run: |
@@ -232,6 +256,8 @@ jobs:
         chmod +x kubectl
         sudo mv kubectl /usr/local/bin/kubectl
         kubectl create namespace webmin --dry-run=client -o yaml | kubectl apply -f -
+        kubectl apply -n webmin -f kubernetes/web-service-config.yaml
+        kubectl get secret web-service-secrets -n webmin >/dev/null
         kubectl apply -n webmin -f kubernetes/web-deployment.yaml
         kubectl set image deployment/web-service web-service=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG} -n webmin
         kubectl rollout status deployment/web-service -n webmin --timeout=180s
@@ -272,6 +298,8 @@ jobs:
         chmod +x kubectl
         sudo mv kubectl /usr/local/bin/kubectl
         kubectl create namespace webmin --dry-run=client -o yaml | kubectl apply -f -
+        kubectl apply -n webmin -f kubernetes/web-service-config.yaml
+        kubectl get secret web-service-secrets -n webmin >/dev/null
         kubectl apply -n webmin -f kubernetes/web-deployment.yaml
         kubectl set image deployment/web-service web-service=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG} -n webmin
         kubectl rollout status deployment/web-service -n webmin --timeout=180s
@@ -312,14 +340,9 @@ jobs:
         zip -r release-artifacts.zip Dockerfile .github/workflows/ci-cd.yml kubernetes/web-deployment.yaml infrastructure/terraform/main.tf database_manager/backend microservices
 
     - name: Upload release assets
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v2
       with:
-        upload_url: ${{ github.event.release.upload_url }}
-        asset_path: ./release-artifacts.zip
-        asset_name: webmin-virtualmin-${{ github.event.release.tag_name }}.zip
-        asset_content_type: application/zip
+        files: ./release-artifacts.zip
 
   # ===== Notification =====
   notify:

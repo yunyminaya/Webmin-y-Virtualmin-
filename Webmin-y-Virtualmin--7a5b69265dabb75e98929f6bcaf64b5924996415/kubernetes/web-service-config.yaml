@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: web-service-config
+data:
+  cors-allowed-origins: "https://admin.example.com"
+  login-rate-limit-attempts: "5"
+  login-rate-limit-window-seconds: "900"
+  login-lockout-seconds: "900"
