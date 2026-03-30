@@ -21,6 +21,7 @@
 #   [13] Custom Links               - Enlaces personalizados en menu Webmin
 #   [14] SSL Providers              - ZeroSSL + BuyPass ademas de Let's Encrypt
 #   [15] Edit Web Pages             - Editor web integrado habilitado
+#   [16] Email Server Owners        - Notificaciones masivas a propietarios
 # =============================================================================
 
 set +e  # No abortar en errores - continuar siempre
@@ -103,8 +104,9 @@ setup_web_apps_installer() {
 
     # Drush (Drupal) via Composer
     if ! command -v drush &>/dev/null && command -v composer &>/dev/null; then
-        composer global require drush/drush 2>/dev/null | tail -2 || true
-        ln -sf ~/.config/composer/vendor/bin/drush /usr/local/bin/drush 2>/dev/null || true
+        COMPOSER_HOME="/root/.config/composer"
+        COMPOSER_ALLOW_SUPERUSER=1 composer global require drush/drush 2>/dev/null | tail -2 || true
+        ln -sf "${COMPOSER_HOME}/vendor/bin/drush" /usr/local/bin/drush 2>/dev/null || true
     fi
 
     # Crear script instalador de apps integrado con Virtualmin
@@ -169,13 +171,11 @@ setup_ssh_key_management() {
     local cfg="$WEBMIN_VSERVER/config"
 
     # Habilitar generacion de claves SSH en Virtualmin
-    for key in gen_ssh_key ssh_auth_type; do
-        if grep -q "^${key}=" "$cfg" 2>/dev/null; then
-            sed -i "s/^gen_ssh_key=.*/gen_ssh_key=1/" "$cfg"
-        else
-            echo "gen_ssh_key=1" >> "$cfg"
-        fi
-    done
+    if grep -q "^gen_ssh_key=" "$cfg" 2>/dev/null; then
+        sed -i "s/^gen_ssh_key=.*/gen_ssh_key=1/" "$cfg"
+    else
+        echo "gen_ssh_key=1" >> "$cfg"
+    fi
 
     # Herramienta CLI para gestionar SSH keys por dominio
     cat > /usr/local/bin/vmin-ssh-keys << 'SSHSCRIPT'
@@ -392,18 +392,19 @@ setup_resource_limits() {
     info "[7/15] Configurando Resource Limits..."
     log "Iniciando resource limits"
 
-    apt-get install -y cgroup-tools libpam-cgroup 2>/dev/null | tail -2
+    # cgroup-tools solo (sin libpam-cgroup para no romper SSH exec)
+    apt-get install -y cgroup-tools 2>/dev/null | tail -2
 
-    # Configurar limites base en PAM
-    cat >> /etc/security/limits.conf << 'LIMITS'
+    # Configurar limites base en PAM (solo si no existen ya)
+    if ! grep -q "Virtualmin - Limites" /etc/security/limits.conf 2>/dev/null; then
+        cat >> /etc/security/limits.conf << 'LIMITS'
 # Virtualmin - Limites por usuario virtual
-@users          soft    nproc           256
-@users          hard    nproc           512
+@users          soft    nproc           512
+@users          hard    nproc           1024
 @users          soft    nofile          4096
 @users          hard    nofile          8192
-@users          soft    fsize           1048576
-@users          hard    fsize           2097152
 LIMITS
+    fi
 
     cat > /usr/local/bin/vmin-resource-limits << 'LIMSCRIPT'
 #!/bin/bash
@@ -628,6 +629,9 @@ setup_resource_graphs() {
 
     apt-get install -y collectd rrdtool librrds-perl 2>/dev/null | tail -3
 
+    # Crear directorio de configuracion si no existe (Ubuntu 24.04 puede no tenerlo)
+    mkdir -p /etc/collectd/collectd.conf.d
+
     # Configurar collectd para Virtualmin
     cat > /etc/collectd/collectd.conf.d/virtualmin.conf << 'COLLECTD'
 LoadPlugin cpu
@@ -645,25 +649,33 @@ LoadPlugin rrdtool
 </Plugin>
 COLLECTD
 
-    systemctl enable collectd 2>/dev/null || true
-    systemctl start collectd 2>/dev/null || true
+    # En Ubuntu 24.04 collectd puede estar en collectd o collectd-core
+    systemctl enable collectd 2>/dev/null || systemctl enable collectd-core 2>/dev/null || true
+    systemctl start  collectd 2>/dev/null || systemctl start  collectd-core 2>/dev/null || true
 
     cat > /usr/local/bin/vmin-graphs << 'GRAPHSCRIPT'
 #!/bin/bash
 # Generar graficos de uso de recursos para Virtualmin
 PERIOD="${1:-day}"; OUTPUT="/var/www/html/vmin-graphs"
 mkdir -p "$OUTPUT"
+HOST=$(hostname)
+RRD_BASE="/var/lib/collectd/rrd/${HOST}"
 
 # Grafico de CPU
-rrdtool graph "$OUTPUT/cpu-${PERIOD}.png" \
-    --start "-1${PERIOD}" --title "CPU Usage" \
-    --vertical-label "%" --width 600 --height 200 \
-    DEF:user=/var/lib/collectd/rrd/$(hostname)/cpu-0/cpu-user.rrd:value:AVERAGE \
-    AREA:user#FF0000:"CPU User" \
-    2>/dev/null || echo "RRD data aun no disponible (ejecutar despues de 5 min)"
+CPU_RRD="${RRD_BASE}/cpu-0/cpu-user.rrd"
+if [[ -f "$CPU_RRD" ]]; then
+    rrdtool graph "$OUTPUT/cpu-${PERIOD}.png" \
+        --start "-1${PERIOD}" --title "CPU Usage" \
+        --vertical-label "%" --width 600 --height 200 \
+        "DEF:user=${CPU_RRD}:value:AVERAGE" \
+        "AREA:user#FF0000:CPU User" \
+        2>/dev/null && echo "Grafico CPU generado" || echo "Error generando grafico CPU"
+else
+    echo "RRD data no disponible aun. Esperar 5 minutos tras iniciar collectd."
+fi
 
-echo "Graficos generados en: $OUTPUT"
-echo "Acceder en: http://$(hostname)/vmin-graphs/"
+echo "Graficos en: $OUTPUT"
+echo "URL: http://${HOST}/vmin-graphs/"
 GRAPHSCRIPT
     chmod +x /usr/local/bin/vmin-graphs
 
@@ -790,7 +802,7 @@ echo "Reiniciar Webmin para ver el cambio: systemctl restart webmin"
 LINKSCRIPT
     chmod +x /usr/local/bin/vmin-add-link
 
-    ok "[13/15] Custom Links configurado"
+    ok "[13/16] Custom Links configurado"
     ((PASS_COUNT++)); log "custom links: OK"
 }
 
@@ -798,7 +810,7 @@ LINKSCRIPT
 # [14] SSL PROVIDERS - ZeroSSL + BuyPass + Let's Encrypt
 # =============================================================================
 setup_ssl_providers() {
-    info "[14/15] Configurando multiples SSL Providers..."
+    info "[14/16] Configurando multiples SSL Providers..."
     log "Iniciando ssl providers"
 
     apt-get install -y certbot python3-certbot-apache 2>/dev/null | tail -2
@@ -873,7 +885,7 @@ certbot renew --quiet --deploy-hook "systemctl reload apache2" >> /var/log/vmin-
 CRON
     chmod +x /etc/cron.daily/vmin-ssl-renew
 
-    ok "[14/15] SSL Providers configurado (Let's Encrypt + ZeroSSL + BuyPass)"
+    ok "[14/16] SSL Providers configurado (Let's Encrypt + ZeroSSL + BuyPass)"
     ((PASS_COUNT++)); log "ssl providers: OK"
 }
 
@@ -881,7 +893,7 @@ CRON
 # [15] EDIT WEB PAGES - Habilitar editor HTML en Virtualmin
 # =============================================================================
 setup_edit_web_pages() {
-    info "[15/15] Habilitando Edit Web Pages en Virtualmin..."
+    info "[15/16] Habilitando Edit Web Pages en Virtualmin..."
     log "Iniciando edit web pages"
 
     local cfg="$WEBMIN_VSERVER/config"
@@ -907,15 +919,15 @@ echo "Archivo guardado: $FILEPATH"
 EDITSCRIPT
     chmod +x /usr/local/bin/vmin-edit-file
 
-    ok "[15/15] Edit Web Pages habilitado"
+    ok "[15/16] Edit Web Pages habilitado"
     ((PASS_COUNT++)); log "edit web pages: OK"
 }
 
 # =============================================================================
-# EXTRA: Email Server Owners - Notificaciones masivas a propietarios
+# [16] Email Server Owners - Notificaciones masivas a propietarios
 # =============================================================================
 setup_email_server_owners() {
-    info "[Extra] Configurando Email Server Owners..."
+    info "[16/16] Configurando Email Server Owners..."
 
     cat > /usr/local/bin/vmin-email-owners << 'EMAILSCRIPT'
 #!/bin/bash
@@ -946,7 +958,7 @@ echo "Total enviados: $COUNT"
 EMAILSCRIPT
     chmod +x /usr/local/bin/vmin-email-owners
 
-    ok "[Extra] Email Server Owners configurado"
+    ok "[16/16] Email Server Owners configurado"
     ((PASS_COUNT++)); log "email server owners: OK"
 }
 
