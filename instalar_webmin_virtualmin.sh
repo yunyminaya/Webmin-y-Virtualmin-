@@ -93,14 +93,21 @@ install_webmin() {
     
     case $OS in
         ubuntu|debian)
-            install -d /usr/share/keyrings
+            local webmin_setup_repo_url="https://raw.githubusercontent.com/webmin/webmin/master/webmin-setup-repo.sh"
+            local webmin_setup_repo_tmp="/tmp/webmin-setup-repo.sh"
 
-            if ! curl -fsSL https://download.webmin.com/jcameron-key.asc | gpg --dearmor -o /usr/share/keyrings/webmin.gpg; then
-                echo -e "${RED}Error: No se pudo instalar la clave GPG de Webmin${NC}"
+            if ! curl -fsSL "$webmin_setup_repo_url" -o "$webmin_setup_repo_tmp"; then
+                echo -e "${RED}Error: No se pudo descargar el configurador oficial del repositorio de Webmin${NC}"
                 exit 1
             fi
 
-            echo "deb [signed-by=/usr/share/keyrings/webmin.gpg] https://download.webmin.com/download/repository sarge contrib" > /etc/apt/sources.list.d/webmin.list
+            chmod +x "$webmin_setup_repo_tmp"
+
+            if ! sh "$webmin_setup_repo_tmp" -f; then
+                echo -e "${RED}Error: No se pudo configurar el repositorio oficial de Webmin${NC}"
+                exit 1
+            fi
+
             apt-get update
             apt-get install -y webmin
             ;;
@@ -140,6 +147,9 @@ install_virtualmin() {
 
     local virtualmin_installer_url="https://software.virtualmin.com/gpl/scripts/install.sh"
     local virtualmin_installer_tmp="/tmp/virtualmin-install.sh"
+    local mem_kb
+    local mem_gb
+    local -a virtualmin_installer_args=(--force)
 
     if ! curl -fsSL "$virtualmin_installer_url" -o "$virtualmin_installer_tmp"; then
         echo -e "${RED}Error: No se pudo descargar el instalador oficial de Virtualmin${NC}"
@@ -148,7 +158,15 @@ install_virtualmin() {
 
     chmod +x "$virtualmin_installer_tmp"
 
-    if ! bash "$virtualmin_installer_tmp"; then
+    mem_kb=$(grep MemTotal /proc/meminfo | awk '{print $2}')
+    mem_gb=$((mem_kb / 1024 / 1024))
+
+    if [[ "${VIRTUALMIN_MINIMAL:-auto}" == "true" ]] || { [[ "${VIRTUALMIN_MINIMAL:-auto}" == "auto" ]] && [ "$mem_gb" -lt 4 ]; }; then
+        echo -e "${YELLOW}Memoria limitada detectada (${mem_gb}GB). Instalando Virtualmin en modo minimal${NC}"
+        virtualmin_installer_args+=(--minimal)
+    fi
+
+    if ! bash "$virtualmin_installer_tmp" "${virtualmin_installer_args[@]}"; then
         echo -e "${RED}Error: La instalación de Virtualmin falló${NC}"
         exit 1
     fi
