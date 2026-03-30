@@ -67,8 +67,11 @@ install_dependencies() {
     
     case $OS in
         ubuntu|debian)
+            rm -f /etc/apt/sources.list.d/webmin.list
+            rm -f /etc/apt/trusted.gpg.d/webmin.gpg
+            rm -f /usr/share/keyrings/webmin.gpg
             apt-get update
-            apt-get install -y curl software-properties-common apt-transport-https
+            apt-get install -y curl software-properties-common apt-transport-https ca-certificates gnupg
             ;;
         centos|rhel|fedora)
             if command -v dnf >/dev/null; then
@@ -90,8 +93,14 @@ install_webmin() {
     
     case $OS in
         ubuntu|debian)
-            curl -o /etc/apt/trusted.gpg.d/webmin.gpg https://download.webmin.com/jcameron-key.asc
-            echo "deb https://download.webmin.com/download/repository sarge contrib" > /etc/apt/sources.list.d/webmin.list
+            install -d /usr/share/keyrings
+
+            if ! curl -fsSL https://download.webmin.com/jcameron-key.asc | gpg --dearmor -o /usr/share/keyrings/webmin.gpg; then
+                echo -e "${RED}Error: No se pudo instalar la clave GPG de Webmin${NC}"
+                exit 1
+            fi
+
+            echo "deb [signed-by=/usr/share/keyrings/webmin.gpg] https://download.webmin.com/download/repository sarge contrib" > /etc/apt/sources.list.d/webmin.list
             apt-get update
             apt-get install -y webmin
             ;;
@@ -128,7 +137,26 @@ install_webmin() {
 # Función para instalar Virtualmin
 install_virtualmin() {
     echo -e "${GREEN}Instalando Virtualmin...${NC}"
-    curl -sSL https://raw.githubusercontent.com/virtualmin/virtualmin-installer/master/install.sh | bash
+
+    local virtualmin_installer_url="https://software.virtualmin.com/gpl/scripts/install.sh"
+    local virtualmin_installer_tmp="/tmp/virtualmin-install.sh"
+
+    if ! curl -fsSL "$virtualmin_installer_url" -o "$virtualmin_installer_tmp"; then
+        echo -e "${RED}Error: No se pudo descargar el instalador oficial de Virtualmin${NC}"
+        exit 1
+    fi
+
+    chmod +x "$virtualmin_installer_tmp"
+
+    if ! bash "$virtualmin_installer_tmp"; then
+        echo -e "${RED}Error: La instalación de Virtualmin falló${NC}"
+        exit 1
+    fi
+
+    if ! command -v virtualmin >/dev/null 2>&1 && [ ! -d /usr/share/webmin/virtual-server ]; then
+        echo -e "${RED}Error: Virtualmin no quedó instalado correctamente${NC}"
+        exit 1
+    fi
     
     # Iniciar Virtualmin automáticamente después de la instalación
     echo -e "${GREEN}Iniciando Virtualmin...${NC}"
