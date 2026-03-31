@@ -59,6 +59,12 @@
       "api_export": true
     }
   },
+  "official_virtualmin_pro_parity": {
+    "status": "AUDIT_REQUIRED",
+    "source_reference": "https://www.virtualmin.com/docs/professional-features/",
+    "coverage_verified": false,
+    "note": "Este archivo refleja activaciones locales y no prueba paridad total con Virtualmin Professional oficial. Ejecuta ./verificar_funciones_pro.sh para validar cobertura real."
+  },
   "restrictions": {
     "domain_limit": "UNLIMITED",
     "user_limit": "UNLIMITED",

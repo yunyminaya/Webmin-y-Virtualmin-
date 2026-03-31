@@ -755,6 +755,12 @@ create_pro_status_file() {
       "api_export": true
     }
   },
+  "official_virtualmin_pro_parity": {
+    "status": "AUDIT_REQUIRED",
+    "source_reference": "https://www.virtualmin.com/docs/professional-features/",
+    "coverage_verified": false,
+    "note": "Este archivo refleja activaciones y overlays locales del repositorio, no una verificación automática de paridad con Virtualmin Professional oficial. Ejecuta ./verificar_funciones_pro.sh para auditar cobertura real."
+  },
   "restrictions": {
     "domain_limit": "UNLIMITED",
     "user_limit": "UNLIMITED",
@@ -821,14 +827,14 @@ show_activation_summary() {
     echo
 
     echo "🎉 RESULTADO:"
-    echo "🔓 TODAS las restricciones han sido ELIMINADAS"
-    echo "🆓 TODAS las funciones Pro están disponibles GRATIS"
-    echo "♾️ RECURSOS ILIMITADOS en todas las categorías"
-    echo "🏆 NIVEL EMPRESARIAL completo activado"
+    echo "🔓 Configuración local Pro aplicada"
+    echo "🧪 Paridad con Virtualmin Professional oficial: REQUIERE AUDITORÍA"
+    echo "📋 Ejecuta: ./verificar_funciones_pro.sh"
+    echo "🏆 Usa el reporte antes de afirmar cobertura completa"
     echo
 
     echo "============================================================================"
-    echo "🚀 ¡VIRTUALMIN PRO COMPLETAMENTE ACTIVADO Y FUNCIONAL!"
+    echo "🚀 ACTIVACIÓN LOCAL PRO COMPLETADA"
     echo "============================================================================"
 }
 

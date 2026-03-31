@@ -13,6 +13,56 @@ IFS=$'\n\t'
 # Directorio del script
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# ===== DEFINIR FUNCIÓN DE LOG ANTES DE USARLA =====
+# Colores para salida
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+# Variables de configuración (definidas antes de usarlas)
+REPAIR_LOG="${REPAIR_LOG:-./logs/auto_repair.log}"
+REPAIR_REPORT="${REPAIR_REPORT:-./logs/repair_report.html}"
+START_TIME=$(date +%s)
+
+# Contadores de reparaciones
+REPAIRS_TOTAL=0
+REPAIRS_SUCCESSFUL=0
+REPAIRS_FAILED=0
+ISSUES_FOUND=0
+
+# Función de logging (definida ANTES de cualquier llamada)
+log_repair() {
+    local level="$1"
+    local message="$2"
+    local timestamp
+    timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+
+    # Crear directorio de logs si no existe
+    mkdir -p "$(dirname "$REPAIR_LOG")" 2>/dev/null || true
+
+    # Escribir en log
+    echo "[$timestamp] [$level] $message" >> "$REPAIR_LOG" 2>/dev/null || true
+
+    # Mostrar en pantalla
+    case "$level" in
+        "REPAIR")  echo -e "${BLUE}[$timestamp REPAIR]${NC} 🔧 $message" ;;
+        "SUCCESS") echo -e "${GREEN}[$timestamp SUCCESS]${NC} ✅ $message" ;;
+        "WARNING") echo -e "${YELLOW}[$timestamp WARNING]${NC} ⚠️  $message" ;;
+        "ERROR")   echo -e "${RED}[$timestamp ERROR]${NC} ❌ $message" ;;
+        "INFO")    echo -e "${BLUE}[$timestamp INFO]${NC} ℹ️  $message" ;;
+        *)         echo -e "[$timestamp $level] $message" ;;
+    esac
+}
+
+handle_interrupt() {
+    log_repair "WARNING" "Interrupción recibida. Finalizando de forma segura..."
+    exit 130
+}
+
+trap handle_interrupt INT TERM
+
 # ===== VERIFICACIÓN DE DEPENDENCIAS =====
 log_repair "INFO" "Verificando dependencias críticas del sistema..."
 
@@ -23,25 +73,32 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 # Verificar biblioteca común antes de cargarla
-if [[ ! -f "${SCRIPT_DIR}/lib/common.sh" ]]; then
+if [[ -f "${SCRIPT_DIR}/lib/common.sh" ]]; then
+    # Verificar sintaxis de la biblioteca común
+    if bash -n "${SCRIPT_DIR}/lib/common.sh" 2>/dev/null; then
+        # ===== INCLUIR BIBLIOTECA COMÚN =====
+        # shellcheck disable=SC1090
+        source "${SCRIPT_DIR}/lib/common.sh"
+        log_repair "SUCCESS" "Biblioteca común cargada correctamente"
+    else
+        log_repair "ERROR" "Errores de sintaxis en lib/common.sh"
+        exit 1
+    fi
+else
     log_repair "ERROR" "Biblioteca común no encontrada: ${SCRIPT_DIR}/lib/common.sh"
-    log_repair "INFO" "Ejecuta primero: ./install_pro_complete.sh"
     exit 1
 fi
 
-# Verificar sintaxis de la biblioteca común
-if ! bash -n "${SCRIPT_DIR}/lib/common.sh" 2>/dev/null; then
-    log_repair "ERROR" "Errores de sintaxis en lib/common.sh"
-    exit 1
+# ===== INCLUIR MÓDULO LARAVEL REPAIR (opcional) =====
+HAVE_LARAVEL_REPAIR=0
+if [[ -f "${SCRIPT_DIR}/scripts/laravel_repair.sh" ]]; then
+    # shellcheck disable=SC1090
+    source "${SCRIPT_DIR}/scripts/laravel_repair.sh"
+    HAVE_LARAVEL_REPAIR=1
+    log_repair "SUCCESS" "Módulo de reparación Laravel cargado correctamente"
+else
+    log_repair "INFO" "Módulo de reparación Laravel no encontrado - se omitirá la reparación de Laravel"
 fi
-
-# ===== INCLUIR BIBLIOTECA COMÚN =====
-source "${SCRIPT_DIR}/lib/common.sh"
-log_repair "SUCCESS" "Biblioteca común cargada correctamente"
-
-# ===== INCLUIR MÓDULO LARAVEL REPAIR =====
-source "${SCRIPT_DIR}/scripts/laravel_repair.sh"
-log_repair "SUCCESS" "Módulo de reparación Laravel cargado correctamente"
 
 # Redefinir funciones de logging del módulo Laravel para integración
 log() {
@@ -60,43 +117,9 @@ info_log() { log "INFO" "$1"; }
 success_log() { log "SUCCESS" "$1"; }
 warning_log() { log "WARNING" "$1"; }
 
-# Variables de configuración
-REPAIR_LOG="${REPAIR_LOG:-./logs/auto_repair.log}"
-REPAIR_REPORT="${REPAIR_REPORT:-./logs/repair_report.html}"
-START_TIME=$(date +%s)
-
-# Contadores de reparaciones
-REPAIRS_TOTAL=0
-REPAIRS_SUCCESSFUL=0
-REPAIRS_FAILED=0
-ISSUES_FOUND=0
-
 # ============================================================================
 # FUNCIONES DE AUTO-REPARACIÓN
 # ============================================================================
-
-log_repair() {
-    local level="$1"
-    local message="$2"
-    local timestamp
-    timestamp=$(get_timestamp)
-
-    # Crear directorio de logs si no existe
-    ensure_directory "$(dirname "$REPAIR_LOG")"
-
-    # Escribir en log
-    echo "[$timestamp] [$level] $message" >> "$REPAIR_LOG"
-
-    # Mostrar en pantalla
-    case "$level" in
-        "REPAIR")  echo -e "${BLUE}[$timestamp REPAIR]${NC} 🔧 $message" ;;
-        "SUCCESS") echo -e "${GREEN}[$timestamp SUCCESS]${NC} ✅ $message" ;;
-        "WARNING") echo -e "${YELLOW}[$timestamp WARNING]${NC} ⚠️  $message" ;;
-        "ERROR")   echo -e "${RED}[$timestamp ERROR]${NC} ❌ $message" ;;
-        "INFO")    echo -e "${BLUE}[$timestamp INFO]${NC} ℹ️  $message" ;;
-        *)         echo -e "[$timestamp $level] $message" ;;
-    esac
-}
 
 # Función para verificar y reparar biblioteca común
 repair_common_library() {
@@ -283,22 +306,25 @@ repair_logging_config() {
 
     ((REPAIRS_TOTAL++))
 
+    local repair_log_dir
+    repair_log_dir="$(dirname "$REPAIR_LOG")"
+
     # Verificar que el directorio de logs existe y tiene permisos correctos
-    if [[ ! -d "$(dirname "$LOG_FILE")" ]]; then
-        ensure_directory "$(dirname "$LOG_FILE")"
+    if [[ ! -d "$repair_log_dir" ]]; then
+        mkdir -p "$repair_log_dir"
         ((ISSUES_FOUND++))
     fi
 
     # Verificar permisos del directorio de logs
-    if [[ ! -w "$(dirname "$LOG_FILE")" ]]; then
+    if [[ ! -w "$repair_log_dir" ]]; then
         log_repair "WARNING" "Reparando permisos del directorio de logs"
-        chmod 755 "$(dirname "$LOG_FILE")" 2>/dev/null || true
+        chmod 755 "$repair_log_dir" 2>/dev/null || true
         ((ISSUES_FOUND++))
     fi
 
     # Verificar que podemos escribir en el archivo de log
-    if ! echo "$(get_timestamp) [TEST] Auto-repair test" >> "$LOG_FILE" 2>/dev/null; then
-        log_repair "ERROR" "No se puede escribir en el archivo de log: $LOG_FILE"
+    if ! echo "$(date '+%Y-%m-%d %H:%M:%S') [TEST] Auto-repair test" >> "$REPAIR_LOG" 2>/dev/null; then
+        log_repair "ERROR" "No se puede escribir en el archivo de log: $REPAIR_LOG"
         ((ISSUES_FOUND++))
         ((REPAIRS_FAILED++))
     else
@@ -695,13 +721,22 @@ repair_system_complete() {
     ((REPAIRS_TOTAL++))
     log_repair "INFO" "Verificando configuración de red del sistema..."
 
-    if [[ -f "/etc/resolv.conf" ]]; then
-        if [[ ! -s "/etc/resolv.conf" ]]; then
-            log_repair "WARNING" "resolv.conf vacío, configurando DNS básico"
-            echo "nameserver 8.8.8.8" > /etc/resolv.conf
-            echo "nameserver 8.8.4.4" >> /etc/resolv.conf
+    if [[ -f "/etc/resolv.conf" && ! -s "/etc/resolv.conf" ]]; then
+        log_repair "WARNING" "resolv.conf vacío detectado"
+        if [[ -L "/etc/resolv.conf" ]] || systemctl is-active --quiet systemd-resolved 2>/dev/null; then
+            log_repair "INFO" "DNS gestionado automáticamente detectado; no se modifica /etc/resolv.conf de forma automática"
+            log_repair "INFO" "Revise systemd-resolved o resolvconf manualmente"
+        elif [[ "${AUTO_REPAIR_FIX_DNS:-0}" == "1" ]]; then
+            cp /etc/resolv.conf "/etc/resolv.conf.bak.$(date +%s)" 2>/dev/null || true
+            {
+                echo "# Configuración temporal generada por auto_repair.sh"
+                echo "nameserver 1.1.1.1"
+                echo "nameserver 8.8.8.8"
+            } > /etc/resolv.conf
             ((system_repairs++))
             ((ISSUES_FOUND++))
+        else
+            log_repair "INFO" "No se aplicó corrección automática de DNS. Use AUTO_REPAIR_FIX_DNS=1 para permitirlo explícitamente"
         fi
     fi
 
@@ -1047,450 +1082,91 @@ generate_repair_report() {
         success_rate=$((REPAIRS_SUCCESSFUL * 100 / REPAIRS_TOTAL))
     fi
 
-    cat > "$REPAIR_REPORT" << 'EOF'
+    local now os_info arch_info memory_info disk_info cpu_info overall_status
+    now=$(date '+%Y-%m-%d %H:%M:%S')
+    os_info=$(get_system_info os 2>/dev/null || uname -s)
+    arch_info=$(get_system_info arch 2>/dev/null || uname -m)
+    memory_info=$(get_system_info memory 2>/dev/null || echo 'N/D')
+    disk_info=$(get_system_info disk 2>/dev/null || echo 'N/D')
+    cpu_info=$(get_system_info cpu 2>/dev/null || echo 'N/D')
+
+    if [[ $REPAIRS_FAILED -eq 0 ]]; then
+        overall_status="Sistema funcionando correctamente"
+    else
+        overall_status="Sistema con incidencias pendientes"
+    fi
+
+    cat > "$REPAIR_REPORT" <<EOF
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-<title>Auto-Reparación - Virtualmin</title>
 <meta charset="utf-8">
+<title>Auto-Reparación - Virtualmin</title>
 <style>
-/* Estilos exactos de Webmin/Virtualmin */
-body {
-    font-family: "Lucida Grande", "Lucida Sans Unicode", Tahoma, sans-serif;
-    font-size: 13px;
-    background-color: #ffffff;
-    margin: 0;
-    padding: 0;
-    color: #333333;
-}
-
-/* Header principal */
-.main_header {
-    background: linear-gradient(to bottom, #6fa8dc, #3c78d8);
-    border-bottom: 1px solid #2e5ea7;
-    color: white;
-    padding: 12px 15px;
-    font-size: 18px;
-    font-weight: bold;
-}
-
-.main_header a {
-    color: white;
-    text-decoration: none;
-}
-
-.main_header a:hover {
-    text-decoration: underline;
-}
-
-/* Barra de navegación */
-.nav {
-    background-color: #f0f0f0;
-    border-bottom: 1px solid #cccccc;
-    padding: 8px 15px;
-}
-
-.nav_links {
-    margin: 0;
-    padding: 0;
-}
-
-.nav_links li {
-    display: inline;
-    margin-right: 20px;
-}
-
-.nav_links a {
-    color: #333333;
-    text-decoration: none;
-    font-weight: bold;
-}
-
-.nav_links a:hover {
-    color: #0066cc;
-}
-
-/* Contenedor principal */
-.main {
-    margin: 20px;
-    max-width: 1200px;
-}
-
-/* Títulos de secciones */
-.section_title {
-    background-color: #dddddd;
-    border: 1px solid #cccccc;
-    border-bottom: none;
-    color: #333333;
-    font-size: 14px;
-    font-weight: bold;
-    margin: 0;
-    padding: 10px 15px;
-}
-
-.section_content {
-    background-color: #ffffff;
-    border: 1px solid #cccccc;
-    border-top: none;
-    padding: 15px;
-}
-
-/* Tablas */
-.table {
-    border-collapse: collapse;
-    width: 100%;
-    margin: 10px 0;
-}
-
-.table th,
-.table td {
-    border: 1px solid #cccccc;
-    padding: 8px 12px;
-    text-align: left;
-    vertical-align: top;
-}
-
-.table th {
-    background-color: #f0f0f0;
-    font-weight: bold;
-    color: #333333;
-}
-
-/* Botones */
-.btn {
-    background: linear-gradient(to bottom, #ffffff, #e0e0e0);
-    border: 1px solid #cccccc;
-    color: #333333;
-    cursor: pointer;
-    font-size: 12px;
-    padding: 6px 12px;
-    text-decoration: none;
-    display: inline-block;
-    margin: 2px;
-}
-
-.btn:hover {
-    background: linear-gradient(to bottom, #f0f0f0, #d0d0d0);
-    border-color: #999999;
-}
-
-/* Estados */
-.ok {
-    color: #008000;
-    font-weight: bold;
-}
-
-.warning {
-    color: #ff8800;
-    font-weight: bold;
-}
-
-.error {
-    color: #ff0000;
-    font-weight: bold;
-}
-
-/* Formularios */
-.form {
-    background-color: #f8f8f8;
-    border: 1px solid #cccccc;
-    padding: 15px;
-    margin: 10px 0;
-}
-
-/* Información del sistema */
-.system_info {
-    background-color: #f8f8f8;
-    border: 1px solid #cccccc;
-    padding: 15px;
-    margin: 15px 0;
-}
-
-/* Footer */
-.footer {
-    background-color: #f0f0f0;
-    border-top: 1px solid #cccccc;
-    color: #666666;
-    font-size: 11px;
-    margin-top: 30px;
-    padding: 15px;
-    text-align: center;
-}
-
-/* Barra de progreso */
-.progress_bar {
-    background-color: #e0e0e0;
-    border: 1px solid #cccccc;
-    height: 20px;
-    margin: 10px 0;
-    position: relative;
-}
-
-.progress_fill {
-    background-color: #80ff80;
-    height: 100%;
-    position: absolute;
-    left: 0;
-    top: 0;
-}
-
-/* Estadísticas */
-.stats {
-    background-color: #f0f0f0;
-    border: 1px solid #cccccc;
-    padding: 10px;
-    margin: 10px 0;
-    text-align: center;
-}
-
-.stat_item {
-    display: inline-block;
-    margin: 0 15px;
-}
-
-.stat_value {
-    font-size: 24px;
-    font-weight: bold;
-    color: #333333;
-    display: block;
-}
-
-.stat_label {
-    font-size: 11px;
-    color: #666666;
-    text-transform: uppercase;
-}
+body { font-family: Arial, sans-serif; background:#f5f7fa; color:#1f2937; margin:0; }
+.header { background:#2563eb; color:white; padding:18px 24px; }
+.container { max-width:1100px; margin:20px auto; padding:0 20px 30px; }
+.card { background:white; border:1px solid #d1d5db; border-radius:8px; padding:18px; margin-bottom:18px; }
+.grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; }
+.metric { background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; padding:12px; }
+.metric .value { font-size:24px; font-weight:bold; }
+.ok { color:#15803d; }
+.warn { color:#b45309; }
+.err { color:#b91c1c; }
+table { width:100%; border-collapse:collapse; }
+th, td { border:1px solid #d1d5db; padding:10px; text-align:left; }
+th { background:#f3f4f6; }
+code { background:#f3f4f6; padding:2px 6px; border-radius:4px; }
 </style>
 </head>
 <body>
-<div class="main_header">
-    <a href="#">Virtualmin</a> › Auto-Reparación del Sistema
-</div>
-
-<div class="nav">
-    <ul class="nav_links">
-        <li><a href="#">Sistema</a></li>
-        <li><a href="#">Servidores</a></li>
-        <li><a href="#">Configuración</a></li>
-        <li><a href="#">Herramientas</a></li>
-    </ul>
-</div>
-
-<div class="main">
-    <h2>🔧 Auto-Reparación del Sistema</h2>
-
-    <div class="section_title">📊 Resumen de Reparaciones</div>
-    <div class="section_content">
-        <div class="stats">
-            <div class="stat_item">
-                <span class="stat_value">EOF
-echo "$success_rate%" >> "$REPAIR_REPORT"
-cat >> "$REPAIR_REPORT" << 'EOF'
-</span>
-                <span class="stat_label">Tasa de Éxito</span>
-            </div>
-            <div class="stat_item">
-                <span class="stat_value">EOF
-echo "$REPAIRS_TOTAL" >> "$REPAIR_REPORT"
-cat >> "$REPAIR_REPORT" << 'EOF'
-</span>
-                <span class="stat_label">Reparaciones</span>
-            </div>
-            <div class="stat_item">
-                <span class="stat_value">EOF
-echo "$REPAIRS_SUCCESSFUL" >> "$REPAIR_REPORT"
-cat >> "$REPAIR_REPORT" << 'EOF'
-</span>
-                <span class="stat_label">Exitosas</span>
-            </div>
-            <div class="stat_item">
-                <span class="stat_value">EOF
-echo "$ISSUES_FOUND" >> "$REPAIR_REPORT"
-cat >> "$REPAIR_REPORT" << 'EOF'
-</span>
-                <span class="stat_label">Problemas</span>
-            </div>
-        </div>
-
-        <div class="progress_bar">
-            <div class="progress_fill" style="width: EOF
-echo "${success_rate}%" >> "$REPAIR_REPORT"
-cat >> "$REPAIR_REPORT" << 'EOF'
-"></div>
-        </div>
-
-        <p><strong>Tiempo de ejecución:</strong> EOF
-echo "${minutes} minutos y ${seconds} segundos" >> "$REPAIR_REPORT"
-cat >> "$REPAIR_REPORT" << 'EOF'
-</p>
-
-        <div class="form">
-            <h3>Estado del Sistema</h3>
-            <p>El sistema de auto-reparación ha completado la verificación y reparación automática de todos los componentes de Virtualmin/Webmin.</p>
-
-            <table class="table">
-                <tr>
-                    <td width="150"><strong>Estado General:</strong></td>
-                    <td><span class="ok">Sistema funcionando correctamente</span></td>
-                </tr>
-                <tr>
-                    <td><strong>Última Reparación:</strong></td>
-                    <td>EOF
-get_timestamp >> "$REPAIR_REPORT"
-cat >> "$REPAIR_REPORT" << 'EOF'
-</td>
-                </tr>
-                <tr>
-                    <td><strong>Próxima Verificación:</strong></td>
-                    <td>Automática (cada ejecución)</td>
-                </tr>
-            </table>
-        </div>
+  <div class="header">
+    <h1>🔧 Auto-Reparación del Sistema</h1>
+    <div>Generado: ${now}</div>
+  </div>
+  <div class="container">
+    <div class="card">
+      <h2>Resumen</h2>
+      <div class="grid">
+        <div class="metric"><div class="value ok">${success_rate}%</div><div>Tasa de éxito</div></div>
+        <div class="metric"><div class="value">${REPAIRS_TOTAL}</div><div>Reparaciones evaluadas</div></div>
+        <div class="metric"><div class="value ok">${REPAIRS_SUCCESSFUL}</div><div>Exitosas</div></div>
+        <div class="metric"><div class="value warn">${ISSUES_FOUND}</div><div>Problemas encontrados</div></div>
+        <div class="metric"><div class="value err">${REPAIRS_FAILED}</div><div>Fallidas</div></div>
+      </div>
+      <p><strong>Tiempo de ejecución:</strong> ${minutes} minutos y ${seconds} segundos</p>
+      <p><strong>Estado general:</strong> ${overall_status}</p>
     </div>
 
-    <div class="section_title">🔍 Verificación de Componentes</div>
-    <div class="section_content">
-        <table class="table">
-            <tr>
-                <th>Componente</th>
-                <th>Estado</th>
-                <th>Detalles</th>
-                <th>Acciones</th>
-            </tr>
-            <tr>
-                <td>Biblioteca Común</td>
-                <td><span class="ok">Funcionando</span></td>
-                <td>lib/common.sh verificada correctamente</td>
-                <td><a href="#" class="btn">Verificar</a></td>
-            </tr>
-            <tr>
-                <td>Scripts Principales</td>
-                <td><span class="ok">Funcionando</span></td>
-                <td>6 scripts principales verificados</td>
-                <td><a href="#" class="btn">Verificar</a></td>
-            </tr>
-            <tr>
-                <td>Directorios del Sistema</td>
-                <td><span class="ok">Funcionando</span></td>
-                <td>logs, backups, test_results creados</td>
-                <td><a href="#" class="btn">Verificar</a></td>
-            </tr>
-            <tr>
-                <td>Dependencias del Sistema</td>
-                <td><span class="ok">Funcionando</span></td>
-                <td>curl, wget, tar, bash disponibles</td>
-                <td><a href="#" class="btn">Verificar</a></td>
-            </tr>
-            <tr>
-                <td>Configuración de Red</td>
-                <td><span class="ok">Funcionando</span></td>
-                <td>Conectividad a internet verificada</td>
-                <td><a href="#" class="btn">Verificar</a></td>
-            </tr>
-            <tr>
-                <td>Recursos del Sistema</td>
-                <td><span class="ok">Funcionando</span></td>
-                <td>CPU, memoria y disco OK</td>
-                <td><a href="#" class="btn">Verificar</a></td>
-            </tr>
-        </table>
+    <div class="card">
+      <h2>Información del sistema</h2>
+      <table>
+        <tr><th>Campo</th><th>Valor</th></tr>
+        <tr><td>Sistema Operativo</td><td>${os_info}</td></tr>
+        <tr><td>Arquitectura</td><td>${arch_info}</td></tr>
+        <tr><td>Memoria RAM</td><td>${memory_info}</td></tr>
+        <tr><td>Espacio en Disco</td><td>${disk_info}</td></tr>
+        <tr><td>CPU</td><td>${cpu_info}</td></tr>
+        <tr><td>Directorio del Proyecto</td><td>${SCRIPT_DIR}</td></tr>
+      </table>
     </div>
 
-    <div class="section_title">🖥️ Información del Sistema</div>
-    <div class="section_content">
-        <div class="system_info">
-            <table class="table">
-                <tr>
-                    <td width="200"><strong>Sistema Operativo:</strong></td>
-                    <td>EOF
-get_system_info os >> "$REPAIR_REPORT"
-cat >> "$REPAIR_REPORT" << 'EOF'
-</td>
-                </tr>
-                <tr>
-                    <td><strong>Arquitectura:</strong></td>
-                    <td>EOF
-get_system_info arch >> "$REPAIR_REPORT"
-cat >> "$REPAIR_REPORT" << 'EOF'
-</td>
-                </tr>
-                <tr>
-                    <td><strong>Memoria RAM:</strong></td>
-                    <td>EOF
-get_system_info memory >> "$REPAIR_REPORT"
-cat >> "$REPAIR_REPORT" << 'EOF'
-</td>
-                </tr>
-                <tr>
-                    <td><strong>Espacio en Disco:</strong></td>
-                    <td>EOF
-get_system_info disk >> "$REPAIR_REPORT"
-cat >> "$REPAIR_REPORT" << 'EOF'
- libres</td>
-                </tr>
-                <tr>
-                    <td><strong>Núcleos de CPU:</strong></td>
-                    <td>EOF
-get_system_info cpu >> "$REPAIR_REPORT"
-cat >> "$REPAIR_REPORT" << 'EOF'
-</td>
-                </tr>
-                <tr>
-                    <td><strong>Directorio del Proyecto:</strong></td>
-                    <td>EOF
-echo "$SCRIPT_DIR" >> "$REPAIR_REPORT"
-cat >> "$REPAIR_REPORT" << 'EOF'
-</td>
-                </tr>
-            </table>
-        </div>
+    <div class="card">
+      <h2>Archivos generados</h2>
+      <table>
+        <tr><th>Tipo</th><th>Ruta</th></tr>
+        <tr><td>Log de reparaciones</td><td><code>${REPAIR_LOG}</code></td></tr>
+        <tr><td>Reporte HTML</td><td><code>${REPAIR_REPORT}</code></td></tr>
+      </table>
     </div>
 
-    <div class="section_title">📝 Registro de Reparaciones</div>
-    <div class="section_content">
-        <div class="form">
-            <h3>Archivos Generados</h3>
-            <table class="table">
-                <tr>
-                    <td><strong>Log de reparaciones:</strong></td>
-                    <td><code>EOF
-echo "$REPAIR_LOG" >> "$REPAIR_REPORT"
-cat >> "$REPAIR_REPORT" << 'EOF'
-</code></td>
-                    <td><a href="#" class="btn">Ver</a></td>
-                </tr>
-                <tr>
-                    <td><strong>Reporte HTML:</strong></td>
-                    <td><code>EOF
-echo "$REPAIR_REPORT" >> "$REPAIR_REPORT"
-cat >> "$REPAIR_REPORT" << 'EOF'
-</code></td>
-                    <td><a href="#" class="btn">Ver</a></td>
-                </tr>
-            </table>
-        </div>
-
-        <div class="form">
-            <h3>Comandos Disponibles</h3>
-            <p><strong>Ejecutar reparación completa:</strong></p>
-            <code>./auto_repair.sh</code>
-
-            <p><strong>Ver logs en tiempo real:</strong></p>
-            <code>tail -f logs/auto_repair.log</code>
-
-            <p><strong>Ver reporte en navegador:</strong></p>
-            <code>open logs/repair_report.html</code>
-        </div>
+    <div class="card">
+      <h2>Comandos útiles</h2>
+      <p><code>./auto_repair.sh</code></p>
+      <p><code>tail -f logs/auto_repair.log</code></p>
+      <p><code>open logs/repair_report.html</code></p>
     </div>
-</div>
-
-<div class="footer">
-    <p>Reporte generado por Auto-Reparación de Virtualmin<br>
-    Fecha: EOF
-get_timestamp >> "$REPAIR_REPORT"
-cat >> "$REPAIR_REPORT" << 'EOF'
- | Versión: 2.0.0 - CON REPARACIÓN AUTOMÁTICA DE APACHE</p>
-</div>
+  </div>
 </body>
 </html>
 EOF
@@ -1504,11 +1180,18 @@ laravel_auto_repair() {
 
     ((REPAIRS_TOTAL++))
 
+    if [[ "$HAVE_LARAVEL_REPAIR" -ne 1 ]]; then
+        log_repair "INFO" "Módulo Laravel no disponible; omitiendo reparación de Laravel"
+        ((REPAIRS_SUCCESSFUL++))
+        return 0
+    fi
+
     # Create log directory if it doesn't exist
-    mkdir -p "$(dirname "$LOG_FILE")"
+    mkdir -p "$(dirname "$REPAIR_LOG")"
 
     # Detect Laravel applications
-    local apps=($(detect_laravel_apps))
+    local apps=()
+    mapfile -t apps < <(detect_laravel_apps)
 
     if [[ ${#apps[@]} -eq 0 ]]; then
         log_repair "WARNING" "No se encontraron aplicaciones Laravel"

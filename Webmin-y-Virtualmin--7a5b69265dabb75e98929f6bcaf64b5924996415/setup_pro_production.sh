@@ -93,8 +93,7 @@ setup_web_apps_installer() {
 
     # Composer (PHP packages / Drupal / Laravel)
     if ! command -v composer &>/dev/null; then
-        curl -sS https://getcomposer.org/installer 2>/dev/null | php -- \
-            --install-dir=/usr/local/bin --filename=composer 2>/dev/null || true
+        apt-get install -y composer 2>/dev/null | tail -2 || true
     fi
 
     # Node.js + npm para apps JavaScript
@@ -300,12 +299,24 @@ echo ""
 # Filtrar por fecha
 SINCE=$(date -d "${HOURS} hours ago" '+%b %e %H:%M' 2>/dev/null || date -v-${HOURS}H '+%b %e %H:%M' 2>/dev/null)
 
-CMD="cat $LOG"
-[[ -n "$TERM" ]] && CMD="$CMD | grep -i '$TERM'"
-[[ -n "$FROM" ]] && CMD="$CMD | grep -i 'from=<$FROM'"
-[[ -n "$TO"   ]] && CMD="$CMD | grep -i 'to=<$TO'"
+RESULT_FILE=$(mktemp)
+cp "$LOG" "$RESULT_FILE"
 
-eval "$CMD" | tail -100
+if [[ -n "$TERM" ]]; then
+    grep -i -- "$TERM" "$RESULT_FILE" > "${RESULT_FILE}.tmp" 2>/dev/null || true
+    mv "${RESULT_FILE}.tmp" "$RESULT_FILE"
+fi
+if [[ -n "$FROM" ]]; then
+    grep -i -- "from=<$FROM" "$RESULT_FILE" > "${RESULT_FILE}.tmp" 2>/dev/null || true
+    mv "${RESULT_FILE}.tmp" "$RESULT_FILE"
+fi
+if [[ -n "$TO" ]]; then
+    grep -i -- "to=<$TO" "$RESULT_FILE" > "${RESULT_FILE}.tmp" 2>/dev/null || true
+    mv "${RESULT_FILE}.tmp" "$RESULT_FILE"
+fi
+
+tail -100 "$RESULT_FILE"
+rm -f "$RESULT_FILE"
 
 echo ""
 echo "=== Resumen ==="
@@ -815,10 +826,15 @@ setup_ssl_providers() {
 
     apt-get install -y certbot python3-certbot-apache 2>/dev/null | tail -2
 
-    # Instalar acme.sh para soporte multi-CA
+    # Instalar acme.sh para soporte multi-CA sin pipe directo a shell
     if [[ ! -f /root/.acme.sh/acme.sh ]]; then
-        curl -sS https://get.acme.sh 2>/dev/null | bash -s email=admin@localhost 2>/dev/null || \
-        wget -qO- https://get.acme.sh 2>/dev/null | bash -s email=admin@localhost 2>/dev/null || true
+        tmp_acme_installer="/tmp/acme-install-$$.sh"
+        curl -fsSL -o "$tmp_acme_installer" https://get.acme.sh 2>/dev/null || \
+        wget -qO "$tmp_acme_installer" https://get.acme.sh 2>/dev/null || true
+        if [[ -s "$tmp_acme_installer" ]] && head -1 "$tmp_acme_installer" | grep -qE '^#!/'; then
+            bash "$tmp_acme_installer" email=admin@localhost 2>/dev/null || true
+        fi
+        rm -f "$tmp_acme_installer"
     fi
 
     cat > /usr/local/bin/vmin-ssl-cert << 'SSLSCRIPT'
@@ -1005,7 +1021,7 @@ main() {
     echo "============================================================"
     echo ""
 
-    mkdir -p "$(dirname $LOG)"
+    mkdir -p "$(dirname "$LOG")"
     log "Iniciando setup_pro_production.sh"
 
     setup_reseller_accounts

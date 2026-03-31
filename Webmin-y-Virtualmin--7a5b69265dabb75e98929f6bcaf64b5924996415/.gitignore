@@ -58,6 +58,28 @@ __pycache__/
 *.py[cod]
 venv/
 .venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage/
+htmlcov/
+
+# CONFIGURACIÓN LOCAL DE HERRAMIENTAS / IDE
+.vscode/
+.roo/
+.kilocode/
+.kilocodemodes
+
+# ARCHIVOS DE ESTADO / BLOQUEO LOCALES
+.pro_environment
+.update_security_lock
+
+# METADATOS DEL SISTEMA
+.DS_Store
+
+# LOGS LOCALES DE DIAGNÓSTICO/REMOTO
+remote_*.log
 
 # NOTA: Los scripts de instalación deben estar en el repositorio
 # para que los usuarios puedan descargarlos directamente desde GitHub

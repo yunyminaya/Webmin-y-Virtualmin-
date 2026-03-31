@@ -83,14 +83,12 @@ create_backup_directories() {
     mkdir -p "$BACKUP_DIR"/archives
     mkdir -p "$BACKUP_DIR"/temp
 
-    # Configurar permisos (sin root si es necesario)
+    # Configurar permisos seguros: los backups contienen datos sensibles
     if [[ $EUID -eq 0 ]]; then
         chown root:root "$BACKUP_DIR" 2>/dev/null || true
-        chmod 700 "$BACKUP_DIR"
-    else
-        chmod 755 "$BACKUP_DIR"
     fi
-    chmod 755 "$BACKUP_DIR"/* 2>/dev/null || true
+    chmod 700 "$BACKUP_DIR"
+    chmod 700 "$BACKUP_DIR"/* 2>/dev/null || true
 
     log_success "Directorios de backup creados"
 }

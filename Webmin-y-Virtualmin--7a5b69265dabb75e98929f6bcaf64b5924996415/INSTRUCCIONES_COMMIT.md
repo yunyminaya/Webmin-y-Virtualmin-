@@ -9,25 +9,33 @@ git status
 
 ### **2. Agregar todos los archivos nuevos**
 ```bash
-# Agregar scripts principales
+# Agregar cambios reales del proyecto
 git add *.sh
-
-# Agregar directorios Pro
 git add pro_config/
 git add pro_migration/
 git add pro_clustering/
 git add pro_api/
 git add pro_monitoring/
-
-# Agregar documentación
 git add *.md *.txt
-
-# Agregar archivos de configuración
-git add .pro_environment
 git add pro_status.json
-
-# Agregar instalador de un comando
 git add install_pro_complete.sh
+
+# Agregar actualizaciones de archivos ya versionados
+git add -u
+```
+
+### **2.1 No agregar archivos locales o generados automáticamente**
+```bash
+# NO versionar archivos locales/sensibles/temporales
+# .pro_environment
+# .update_security_lock
+# .roo/
+# .kilocode/
+# .kilocodemodes
+# .vscode/
+# __pycache__/
+# *.pyc
+# venv/
 ```
 
 ### **3. Verificar que todo está agregado**

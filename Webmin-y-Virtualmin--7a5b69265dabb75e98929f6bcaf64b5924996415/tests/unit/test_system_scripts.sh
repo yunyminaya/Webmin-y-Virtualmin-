@@ -33,6 +33,28 @@ else
     fail_test "Error de sintaxis en validar_dependencias.sh"
 fi
 
+# Prueba 3.1: Validar sintaxis de scripts Pro críticos y de auditoría
+start_test "test_pro_audit_scripts_syntax"
+pro_audit_scripts=(
+    "$REPO_ROOT/verificar_funciones_pro.sh"
+    "$REPO_ROOT/pro_activation_master.sh"
+    "$REPO_ROOT/activate_all_pro_features.sh"
+    "$REPO_ROOT/pro_dashboard.sh"
+)
+
+invalid_pro_scripts=()
+for script in "${pro_audit_scripts[@]}"; do
+    if [ ! -f "$script" ] || ! bash -n "$script" 2>/dev/null; then
+        invalid_pro_scripts+=("$script")
+    fi
+done
+
+if [ ${#invalid_pro_scripts[@]} -eq 0 ]; then
+    pass_test
+else
+    fail_test "Scripts Pro/auditoría inválidos o faltantes: ${invalid_pro_scripts[*]}"
+fi
+
 # Prueba 4: Verificar que scripts importantes existan
 start_test "test_important_scripts_exist"
 important_scripts=(

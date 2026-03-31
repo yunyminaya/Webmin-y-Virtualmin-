@@ -168,22 +168,13 @@ create_pro_dashboard() {
 
 clear
 echo "============================================================================"
-echo "🎉 VIRTUALMIN PRO DASHBOARD - TODAS LAS FUNCIONES ACTIVADAS"
+echo "🎛️ VIRTUALMIN PRO DASHBOARD - ACTIVACIÓN LOCAL Y AUDITORÍA"
 echo "============================================================================"
 echo
-echo "🏆 ESTADO DE LICENCIA:"
-echo "   ✅ Tipo: PRO UNLIMITED"
-echo "   ✅ Estado: COMPLETAMENTE ACTIVO"
-echo "   ✅ Expiración: NUNCA"
-echo "   ✅ Restricciones: NINGUNA"
-echo
-echo "💼 FUNCIONES EMPRESARIALES:"
-echo "   ✅ Cuentas de Revendedor: ILIMITADAS"
-echo "   ✅ Dominios: ILIMITADOS"
-echo "   ✅ Usuarios: ILIMITADOS"
-echo "   ✅ Bases de datos: ILIMITADAS"
-echo "   ✅ Ancho de banda: ILIMITADO"
-echo "   ✅ Almacenamiento: ILIMITADO"
+echo "🏆 ESTADO LOCAL:"
+echo "   ✅ Overlay local Pro configurado"
+echo "   ✅ Scripts y utilidades Pro presentes"
+echo "   🧪 Paridad con Virtualmin Professional oficial: REQUIERE AUDITORÍA"
 echo
 echo "🔧 HERRAMIENTAS PRO DISPONIBLES:"
 echo "   🚚 Migración de servidores: ./pro_migration/migrate_server_pro.sh"
@@ -194,9 +185,10 @@ echo "   💼 Gestión de revendedores: ./manage_resellers.sh"
 echo "   🔒 SSL Manager Pro: ./ssl_manager_pro.sh"
 echo "   💾 Backups empresariales: ./enterprise_backup_pro.sh"
 echo "   📈 Analytics Pro: ./analytics_pro.sh"
+echo "   🔎 Auditoría oficial: ./verificar_funciones_pro.sh"
 echo
 echo "🎯 ACCIONES RÁPIDAS:"
-echo "   [1] Ver estado de funciones Pro"
+echo "   [1] Ver estado local"
 echo "   [2] Gestionar cuentas de revendedor"
 echo "   [3] Configurar clustering"
 echo "   [4] API y integraciones"
@@ -204,13 +196,14 @@ echo "   [5] Monitoreo empresarial"
 echo "   [6] Configurar migraciones"
 echo "   [7] Gestión SSL avanzada"
 echo "   [8] Backups empresariales"
+echo "   [9] Auditar cobertura oficial"
 echo
 echo "============================================================================"
-echo "🎉 TODAS LAS FUNCIONES PRO ESTÁN ACTIVAS Y DISPONIBLES GRATIS"
+echo "📌 No afirmes cobertura completa sin ejecutar la auditoría oficial local"
 echo "============================================================================"
 echo
 
-read -p "Selecciona una opción (1-8) o presiona Enter para salir: " choice
+read -p "Selecciona una opción (1-9) o presiona Enter para salir: " choice
 
 case "$choice" in
     1) cat pro_status.json | jq . 2>/dev/null || cat pro_status.json ;;
@@ -221,7 +214,8 @@ case "$choice" in
     6) [[ -f pro_migration/migrate_server_pro.sh ]] && bash pro_migration/migrate_server_pro.sh ;;
     7) [[ -f ssl_manager_pro.sh ]] && bash ssl_manager_pro.sh ;;
     8) [[ -f enterprise_backup_pro.sh ]] && bash enterprise_backup_pro.sh ;;
-    *) echo "¡Gracias por usar Virtualmin Pro!" ;;
+    9) [[ -f verificar_funciones_pro.sh ]] && bash verificar_funciones_pro.sh ;;
+    *) echo "Usa ./verificar_funciones_pro.sh para validar cobertura real." ;;
 esac
 EOF
 
@@ -305,13 +299,13 @@ show_final_summary() {
     echo "   🔧 Gestión completa: Todas las herramientas Pro activas"
     echo
     echo "🎯 RESULTADO:"
-    echo "   🔓 TODAS las restricciones GPL han sido ELIMINADAS"
-    echo "   🆓 TODAS las funciones Pro están disponibles GRATIS"
-    echo "   ♾️ RECURSOS ILIMITADOS en todas las categorías"
-    echo "   🏆 NIVEL EMPRESARIAL COMPLETO activado"
+    echo "   🔓 Activación local completada"
+    echo "   🧪 Cobertura frente a Virtualmin Professional oficial: REQUIERE AUDITORÍA"
+    echo "   📋 Ejecuta: ./verificar_funciones_pro.sh"
+    echo "   🏆 Usa el reporte de auditoría antes de afirmar paridad completa"
     echo
     echo "============================================================================"
-    echo "🎉 ¡VIRTUALMIN PRO COMPLETAMENTE ACTIVADO!"
+    echo "🎛️ ACTIVACIÓN LOCAL PRO COMPLETADA"
     echo "============================================================================"
     echo
     echo "Para acceder al dashboard Pro ejecuta: ./pro_dashboard.sh"
