@@ -118,14 +118,18 @@ case "$OS" in
             echo -e "${RED}Error: No se pudo descargar Webmin${NC}"
             exit 1
         }
-        dpkg -i "${TEMP_DIR}/webmin.deb" 2>/dev/null || apt-get install -f -y
+        dpkg -i "${TEMP_DIR}/webmin.deb" 2>/dev/null || { apt-get install -f -y && dpkg -i "${TEMP_DIR}/webmin.deb"; }
         ;;
     centos|rhel|fedora)
         wget -qO "${TEMP_DIR}/webmin.rpm" https://www.webmin.com/download/rpm/webmin-current.rpm 2>/dev/null || {
             echo -e "${RED}Error: No se pudo descargar Webmin${NC}"
             exit 1
         }
-        rpm -U "${TEMP_DIR}/webmin.rpm" 2>/dev/null
+        if command -v dnf >/dev/null 2>&1; then
+            dnf install -y "${TEMP_DIR}/webmin.rpm"
+        else
+            yum localinstall -y "${TEMP_DIR}/webmin.rpm"
+        fi
         ;;
 esac
 echo -e "${GREEN}Webmin instalado${NC}"

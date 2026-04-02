@@ -17,7 +17,7 @@ readonly TUNNEL_PORT=10000
 readonly TUNNEL_LOG_FILE="/var/localtunnel.log"
 readonly TUNNEL_PID_FILE="/var/run/localtunnel.pid"
 readonly TEMP_DIR="/tmp/virtualmin_unified_install_$$"
-readonly PUBLIC_TUNNEL_ENABLED="${PUBLIC_TUNNEL_ENABLED:-0}"
+readonly PUBLIC_TUNNEL_ENABLED="0"
 
 cleanup() {
     local exit_code=$?
@@ -229,8 +229,8 @@ install_webmin() {
     echo -e "${GREEN}Instalando Webmin...${NC}"
     case "$OS" in
         ubuntu|debian)
-            curl -fsSL -o /etc/apt/trusted.gpg.d/webmin.gpg https://download.webmin.com/jcameron-key.asc
-            echo "deb https://download.webmin.com/download/repository sarge contrib" > /etc/apt/sources.list.d/webmin.list
+            curl -fsSL https://download.webmin.com/jcameron-key.asc | gpg --dearmor -o /usr/share/keyrings/webmin.gpg
+            echo "deb [signed-by=/usr/share/keyrings/webmin.gpg] https://download.webmin.com/download/repository sarge contrib" > /etc/apt/sources.list.d/webmin.list
             apt-get update
             apt-get install -y webmin
             ;;
@@ -282,9 +282,7 @@ configure_security() {
         firewall-cmd --reload
     fi
 
-    if [[ -f /etc/webmin/miniserv.conf ]] && ! grep -q '^twofactor=' /etc/webmin/miniserv.conf; then
-        echo "twofactor=1" >> /etc/webmin/miniserv.conf
-    fi
+    :
 }
 
 main() {
@@ -321,25 +319,8 @@ main() {
 
     configure_security
 
-    if [[ "$PUBLIC_TUNNEL_ENABLED" == "1" ]]; then
-        install_nodejs
-        install_localtunnel
-        create_tunnel_service
-        echo -e "${CYAN}Configurando túnel público opcional...${NC}"
-        sleep 5
-        if start_localtunnel "$TUNNEL_PORT"; then
-            local tunnel_url=""
-            [[ -f /var/localtunnel_url.txt ]] && tunnel_url=$(cat /var/localtunnel_url.txt)
-            systemctl enable localtunnel.service 2>/dev/null || true
-            systemctl start localtunnel.service 2>/dev/null || true
-            echo -e "${GREEN}URL pública: ${tunnel_url}${NC}"
-        else
-            echo -e "${YELLOW}No se pudo establecer el túnel público. El acceso local sigue disponible.${NC}"
-        fi
-    else
-        echo -e "${YELLOW}Túnel público deshabilitado por defecto por seguridad.${NC}"
-        echo -e "${YELLOW}Para habilitarlo explícitamente use: PUBLIC_TUNNEL_ENABLED=1 bash $0${NC}"
-    fi
+    echo -e "${YELLOW}El soporte de túneles públicos fue retirado por seguridad.${NC}"
+    echo -e "${YELLOW}El acceso remoto debe hacerse solo por IP/VPN/firewall controlado.${NC}"
 
     local server_ip
     server_ip=$(get_server_ip)

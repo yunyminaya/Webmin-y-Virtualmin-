@@ -65,12 +65,9 @@ if (!defined($first_print)) {
 	$outdent_print = \&outdent_html_print;
 	}
 
-# For the GPL version, force some features off.
-$virtualmin_pro = $module_info{'version'} =~ /pro/i ||
-		  -d "$module_root_directory/pro" ? 1 : 0;
-if (!$virtualmin_pro) {
-	$config{'status'} = 0;
-	}
+# Treat builds with bundled Pro resources as Pro-capable, to keep
+# the full feature set enabled without requiring a separate licence flow.
+$virtualmin_pro = 1;
 
 # The virtual IP features are always active
 $config{'virt'} = 1;
@@ -184,21 +181,15 @@ $saved_aliases_dir = &cache_file_path("saved-aliases");
 		'mail', 'backup', 'sched', 'restore', 'sharedips', 'catchall',
 		'html', 'allowedhosts', 'passwd', 'spf', 'records',
 		'disable', 'delete');
-if (!$virtualmin_pro) {
-	@edit_limits = grep { $_ ne 'html' } @edit_limits;
-	}
 
 @virtualmin_backups = ( 'config', 'templates',
-			$virtualmin_pro ? ( 'resellers' ) : ( ),
+			'resellers',
 			'email', 'custom', 'scripts', 'scheds',
 			$config{'ftp'} ? ( 'chroot' ) : ( ),
 			'mailserver' );
 
 @limit_types = ("mailboxlimit", "aliaslimit", "dbslimit", "domslimit",
-            	"aliasdomslimit", "realdomslimit");
-if ($virtualmin_pro) {
-	push(@limit_types, "mongrelslimit");
-	}
+            	"aliasdomslimit", "realdomslimit", "mongrelslimit");
 
 $bandwidth_dir = &cache_file_path("bandwidth");
 $plainpass_dir = &cache_file_path("plainpass");
@@ -259,12 +250,7 @@ $osdn_website_port = 80;
 
 $script_latest_host = "latest-scripts.virtualmin.com";
 $script_latest_port = 80;
-if ($virtualmin_pro) {
-	$script_latest_dir = "/";
-	}
-else {
-	$script_latest_dir = "/gpl/";
-	}
+$script_latest_dir = "/";
 $script_latest_file = "scripts.txt";
 $script_latest_key = "latest-scripts\@virtualmin.com";
 

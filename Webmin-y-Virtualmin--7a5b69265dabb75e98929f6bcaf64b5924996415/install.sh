@@ -114,11 +114,15 @@ echo -e "${YELLOW}Instalando Webmin...${NC}"
 case "$OS" in
     ubuntu|debian)
         wget -qO "$TEMP_DIR/webmin.deb" https://www.webmin.com/download/deb/webmin-current.deb
-        dpkg -i "$TEMP_DIR/webmin.deb" 2>/dev/null || apt-get install -f -y
+        dpkg -i "$TEMP_DIR/webmin.deb" 2>/dev/null || { apt-get install -f -y && dpkg -i "$TEMP_DIR/webmin.deb"; }
         ;;
     centos|rhel|fedora|rocky|almalinux)
         wget -qO "$TEMP_DIR/webmin.rpm" https://www.webmin.com/download/rpm/webmin-current.rpm
-        rpm -U "$TEMP_DIR/webmin.rpm" 2>/dev/null
+        if command -v dnf >/dev/null 2>&1; then
+            dnf install -y "$TEMP_DIR/webmin.rpm"
+        else
+            yum localinstall -y "$TEMP_DIR/webmin.rpm"
+        fi
         ;;
 esac
 echo -e "${GREEN}Webmin instalado${NC}"

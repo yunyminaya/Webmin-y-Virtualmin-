@@ -775,40 +775,10 @@ run_auto_repair_complete_system() {
     fi
 }
 
-# Instalar sistema de túnel automático inteligente
+# El soporte de túneles públicos se omite por seguridad
 install_auto_tunnel_system() {
-    log_step "Instalando sistema de túnel automático inteligente..."
-
-    # Verificar que el script existe y es ejecutable
-    if [[ ! -f "${SCRIPT_DIR}/install_auto_tunnel_system.sh" ]]; then
-        log_warning "Script install_auto_tunnel_system.sh no encontrado, omitiendo instalación del túnel automático"
-        return 0
-    fi
-
-    if [[ ! -x "${SCRIPT_DIR}/install_auto_tunnel_system.sh" ]]; then
-        log_info "Dando permisos de ejecución a install_auto_tunnel_system.sh"
-        chmod +x "${SCRIPT_DIR}/install_auto_tunnel_system.sh" 2>/dev/null || {
-            log_warning "No se pudieron dar permisos de ejecución a install_auto_tunnel_system.sh, omitiendo instalación del túnel automático"
-            return 0
-        }
-    fi
-
-    # Ejecutar instalación del túnel automático
-    local tunnel_output
-    local tunnel_exit_code
-
-    if ! tunnel_output=$(bash "${SCRIPT_DIR}/install_auto_tunnel_system.sh" auto 2>&1); then
-        tunnel_exit_code=$?
-        log_warning "La instalación del sistema de túnel automático falló (código de salida: $tunnel_exit_code), pero continuando con la instalación"
-        if [[ "${DEBUG:-false}" == "true" ]]; then
-            log_debug "Output del túnel automático:"
-            echo "$tunnel_output" | while IFS= read -r line; do
-                log_debug "  $line"
-            done
-        fi
-    else
-        log_success "Sistema de túnel automático inteligente instalado correctamente"
-    fi
+    log_warning "Instalación de túneles automáticos omitida por seguridad. Use acceso por IP, VPN o firewall controlado."
+    return 0
 }
 
 

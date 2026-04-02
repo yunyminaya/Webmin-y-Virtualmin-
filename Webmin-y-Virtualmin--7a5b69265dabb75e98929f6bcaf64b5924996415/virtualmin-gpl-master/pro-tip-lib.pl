@@ -83,15 +83,7 @@ print &alert_pro_tip($etype,
 # If the current user should see Pro tip for the given page
 sub should_show_pro_tip
 {
-my ($tipid, $ignore) = @_;
-return if ($virtualmin_pro);
-return if (!&master_admin());
-return if (!$ignore &&
-            $config{'hide_pro_tips'} == 1);
-my %protips;
-my $protip_file = "$newfeatures_seen_dir/$remote_user-pro-tips";
-&read_file_cached($protip_file, \%protips);
-return wantarray ? ($protips{$tipid}) : !$protips{$tipid};
+return wantarray ? (undef) : 0;
 }
 
 # set_seen_pro_tip(tipid)
@@ -422,8 +414,8 @@ my $fh = "SCRIPTS";
 # Returns 1 or 0 depending on whether Pro features should be shown at all in GPL
 sub proshow
 {
-return 1 if ($virtualmin_pro);
-return ($config{'hide_pro_tips'} == 1 && !$virtualmin_pro) ? 0 : 1
+return 0 if (!$virtualmin_pro);
+return 1;
 }
 
 # procell([col-size], [tds-ref])

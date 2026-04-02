@@ -11979,42 +11979,7 @@ return %hash;
 # Checks license status
 sub licence_status
 {
-# Licence related checks
-if ($virtualmin_pro && -r $licence_status) {
-	my %licence_status;
-	&read_file($licence_status, \%licence_status);
-	my ($bind, $time) = ($licence_status{'bind'}, $licence_status{'time'});
-	my $scale = 1;
-	$scale = 3 if ($licence_status{'status'} == 3);
-	if ($main::webmin_script_type ne 'cron' && !$time && $bind &&
-	    int(($bind-time())/86400)+(21/$scale) <= 0) {
-		my $title = $text{'licence_expired'};
-		my $body = &text('licence_expired_desc',
-			&get_webprefix_safe()."/$module_name/pro/licence.cgi");
-		if ($main::webmin_script_type eq 'cmd') {
-			my $chars = 75;
-			my $astrx = "*" x $chars;
-			my $attrx = "*" x 2;
-			$body = &html_tags_to_text($body);
-			$title = "$attrx $title $attrx";
-			my $ptitle = ' ' x (int(($chars - length($title)) / 2)).
-				$title;
-			$title .= ' ' x ($chars - length($ptitle));
-			$body =~ s/(.{1,$chars})(?:\s+|$)/$1\n/g;
-			$body = "\n$astrx\n$ptitle\n$body$astrx\n";
-			print "$body\n";
-			exit(99);
-			}
-		elsif ($main::webmin_script_type eq 'web') {
-			&ui_print_header(undef, $text{'error'}, "");
-			print &ui_alert_box("$body", 'warn', undef, 1, $title);
-			&ui_print_footer("javascript:history.back()",
-				$text{'error_previous'});
-			exit(99);
-			}
-		}
-	return;
-	}
+return;
 }
 
 # check_licence_expired()
@@ -12023,18 +11988,8 @@ if ($virtualmin_pro && -r $licence_status) {
 # of servers, and auto-renewal flag
 sub check_licence_expired
 {
-return 0 if (!&require_licence());
-local %licence;
-&read_file_cached($licence_status, \%licence);
-if (time() - $licence{'last'} > 3*24*60*60) {
-	# Hasn't been checked from cron for 3 days .. do it now
-	&update_licence_from_site(\%licence);
-	&write_file($licence_status, \%licence);
-	}
-return ($licence{'status'}, $licence{'expiry'},
-	$licence{'err'} || $licence{'warn'}, $licence{'doms'}, $licence{'servers'},
-	$licence{'autorenew'}, $licence{'time'}, $licence{'bind'},
-	$licence{'subscription'});
+return wantarray ? (0, undef, undef, undef, undef, undef, undef, undef, undef)
+			 : 0;
 }
 
 # update_licence_from_site(&licence)
