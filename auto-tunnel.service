@@ -1,35 +1,9 @@
 [Unit]
-Description=Sistema de Túnel Automático 24/7
-After=network.target network-online.target
-Wants=network-online.target
-Requires=network.target
+Description=Disabled insecure auto tunnel service
 
 [Service]
-Type=simple
-ExecStart=/bin/bash /usr/local/bin/auto_tunnel_system.sh start
-ExecStop=/bin/bash /usr/local/bin/auto_tunnel_system.sh stop
-ExecReload=/bin/bash /usr/local/bin/auto_tunnel_system.sh restart
-Restart=always
-RestartSec=10
-User=root
-Group=root
-Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-StandardOutput=journal
-StandardError=journal
-SyslogIdentifier=auto-tunnel
-
-# Configuración de seguridad
-NoNewPrivileges=yes
-PrivateTmp=yes
-ProtectSystem=strict
-ReadWritePaths=/etc/auto_tunnel_config.conf /var/log/auto_tunnel_system.log /var/run
-ProtectHome=yes
-PrivateDevices=yes
-
-# Límites de recursos
-LimitNOFILE=65536
-MemoryLimit=256M
-CPUQuota=50%
+Type=oneshot
+ExecStart=/bin/false
 
 [Install]
 WantedBy=multi-user.target

@@ -3,17 +3,34 @@
 # ============================================================================
 # INSTALADOR DE WEBMIN/VIRTUALMIN PARA UBUNTU
 # ============================================================================
-# Versión: 1.0
+# Versión: 2.0 - Corregido y mejorado
 # Compatible con: Ubuntu, Debian, CentOS, RHEL, Fedora
 # ============================================================================
 
-set -e
+set -euo pipefail
 
-# Colores para mensajes
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
+# Colores para mensajes (readonly)
+readonly RED='\033[0;31m'
+readonly GREEN='\033[0;32m'
+readonly YELLOW='\033[1;33m'
+readonly NC='\033[0m'
+
+# Directorio temporal
+readonly TEMP_DIR="/tmp/webmin_install_$$"
+
+# Función de limpieza al salir
+cleanup() {
+    local exit_code=$?
+    if [ -d "$TEMP_DIR" ]; then
+        rm -rf "$TEMP_DIR"
+    fi
+    if [ "$exit_code" -ne 0 ]; then
+        echo -e "\n${RED}Instalación interrumpida. Limpiando archivos temporales...${NC}" >&2
+    fi
+    exit "$exit_code"
+}
+
+trap cleanup EXIT INT TERM
 
 echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}  INSTALADOR WEBMIN/VIRTUALMIN  ${NC}"
@@ -23,9 +40,10 @@ echo ""
 # Detectar sistema operativo
 echo -e "${YELLOW}Detectando sistema operativo...${NC}"
 if [ -f /etc/os-release ]; then
+    # shellcheck disable=SC1091
     . /etc/os-release
-    OS=$ID
-    VERSION=$VERSION_ID
+    readonly OS="$ID"
+    readonly VERSION="$VERSION_ID"
     echo -e "${GREEN}Sistema detectado: $PRETTY_NAME${NC}"
 else
     echo -e "${RED}Error: No se pudo detectar el sistema operativo${NC}"
@@ -43,34 +61,43 @@ echo -e "${GREEN}Permisos de root verificados${NC}"
 
 # Verificar requisitos del sistema
 echo -e "${YELLOW}Verificando requisitos del sistema...${NC}"
-MEM_GB=$(free -g | awk '/^Mem:/ {print $2}' | awk '{printf "%.0f", $2/1024/1024}')
-DISK_GB=$(df -h / | awk '$NF=="/" {print $4}')
 
-if (( $(echo "$MEM_GB < 2" | bc) )); then
+# Obtener memoria RAM en KB desde /proc/meminfo (método confiable)
+MEM_KB=$(grep MemTotal /proc/meminfo 2>/dev/null | awk '{print $2}')
+MEM_GB=$((MEM_KB / 1024 / 1024))
+
+# Obtener espacio en disco disponible en KB
+DISK_KB=$(df -k / 2>/dev/null | tail -1 | awk '{print $4}')
+DISK_GB=$((DISK_KB / 1024 / 1024))
+
+if [ "$MEM_GB" -lt 2 ]; then
     echo -e "${RED}Error: Memoria RAM insuficiente (${MEM_GB}GB). Mínimo requerido: 2GB${NC}"
     exit 1
-elif (( $(echo "$MEM_GB < 4" | bc) )); then
+elif [ "$MEM_GB" -lt 4 ]; then
     echo -e "${YELLOW}Advertencia: Memoria RAM limitada (${MEM_GB}GB). Se recomiendan 4GB o más${NC}"
 fi
 
-if (( $(echo "$DISK_GB < 20" | bc) )); then
+if [ "$DISK_GB" -lt 20 ]; then
     echo -e "${RED}Error: Espacio en disco insuficiente (${DISK_GB}GB). Mínimo requerido: 20GB${NC}"
     exit 1
-elif (( $(echo "$DISK_GB < 50" | bc) )); then
+elif [ "$DISK_GB" -lt 50 ]; then
     echo -e "${YELLOW}Advertencia: Espacio en disco limitado (${DISK_GB}GB). Se recomiendan 50GB o más${NC}"
 fi
 
 echo -e "${GREEN}Requisitos verificados${NC}"
 
+# Crear directorio temporal
+mkdir -p "$TEMP_DIR"
+
 # Instalar dependencias
 echo -e "${YELLOW}Instalando dependencias...${NC}"
-case $OS in
+case "$OS" in
     ubuntu|debian)
         apt-get update -qq
         apt-get install -y curl wget gnupg2
         ;;
     centos|rhel|fedora)
-        if command -v dnf >/dev/null; then
+        if command -v dnf >/dev/null 2>&1; then
             dnf install -y curl wget gnupg2
         else
             yum install -y curl wget gnupg2
@@ -85,38 +112,59 @@ echo -e "${GREEN}Dependencias instaladas${NC}"
 
 # Instalar Webmin
 echo -e "${YELLOW}Instalando Webmin...${NC}"
-case $OS in
+case "$OS" in
     ubuntu|debian)
-        wget -qO /tmp/webmin.deb http://www.webmin.com/download/deb/webmin-current.deb 2>/dev/null
-        dpkg -i /tmp/webmin.deb 2>/dev/null
+        wget -qO "${TEMP_DIR}/webmin.deb" https://www.webmin.com/download/deb/webmin-current.deb 2>/dev/null || {
+            echo -e "${RED}Error: No se pudo descargar Webmin${NC}"
+            exit 1
+        }
+        dpkg -i "${TEMP_DIR}/webmin.deb" 2>/dev/null || { apt-get install -f -y && dpkg -i "${TEMP_DIR}/webmin.deb"; }
         ;;
     centos|rhel|fedora)
-        wget -qO /tmp/webmin.rpm http://www.webmin.com/download/rpm/webmin-current.rpm 2>/dev/null
-        rpm -U /tmp/webmin.rpm 2>/dev/null
+        wget -qO "${TEMP_DIR}/webmin.rpm" https://www.webmin.com/download/rpm/webmin-current.rpm 2>/dev/null || {
+            echo -e "${RED}Error: No se pudo descargar Webmin${NC}"
+            exit 1
+        }
+        if command -v dnf >/dev/null 2>&1; then
+            dnf install -y "${TEMP_DIR}/webmin.rpm"
+        else
+            yum localinstall -y "${TEMP_DIR}/webmin.rpm"
+        fi
         ;;
 esac
 echo -e "${GREEN}Webmin instalado${NC}"
 
-# Instalar Virtualmin
+# Instalar Virtualmin (descargar primero, verificar, luego ejecutar)
 echo -e "${YELLOW}Instalando Virtualmin...${NC}"
 echo -e "${YELLOW}Esto puede tomar varios minutos...${NC}"
-curl -sSL https://software.virtualmin.com/gpl/scripts/install.sh | bash
+wget -qO "${TEMP_DIR}/virtualmin-install.sh" https://software.virtualmin.com/gpl/scripts/install.sh 2>/dev/null || {
+    echo -e "${RED}Error: No se pudo descargar el instalador de Virtualmin${NC}"
+    exit 1
+}
+
+# Verificar que el archivo descargado es un script de shell válido
+if head -1 "${TEMP_DIR}/virtualmin-install.sh" 2>/dev/null | grep -qE '^#!/bin/(ba)?sh'; then
+    bash "${TEMP_DIR}/virtualmin-install.sh"
+else
+    echo -e "${RED}Error: El instalador de Virtualmin descargado no parece ser un script válido${NC}"
+    exit 1
+fi
 echo -e "${GREEN}Virtualmin instalado${NC}"
 
 # Configurar firewall
 echo -e "${YELLOW}Configurando firewall...${NC}"
-if command -v ufw >/dev/null; then
+if command -v ufw >/dev/null 2>&1; then
     ufw allow 10000/tcp 2>/dev/null
     ufw reload 2>/dev/null
     echo -e "${GREEN}Firewall UFW configurado${NC}"
-elif command -v firewall-cmd >/dev/null; then
+elif command -v firewall-cmd >/dev/null 2>&1; then
     firewall-cmd --permanent --add-port=10000/tcp 2>/dev/null
     firewall-cmd --reload 2>/dev/null
     echo -e "${GREEN}Firewall Firewalld configurado${NC}"
 fi
 
 # Obtener IP del servidor
-SERVER_IP=$(hostname -I | awk '{print $1}')
+SERVER_IP=$(hostname -I 2>/dev/null | awk '{print $1}')
 
 # Mostrar resultados
 echo ""
