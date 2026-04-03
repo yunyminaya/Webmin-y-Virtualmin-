@@ -28,23 +28,388 @@ set +e  # No abortar en errores - continuar siempre
 
 # --- Colores ---
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
-BLUE='\033[0;34m'; CYAN='\033[0;36m'; NC='\033[0m'
+BLUE='\033[0;34m'; NC='\033[0m'
 
 ok()   { echo -e "${GREEN}[OK]${NC} $*"; }
 info() { echo -e "${BLUE}[..] $*${NC}"; }
 warn() { echo -e "${YELLOW}[!!] $*${NC}"; }
 fail() { echo -e "${RED}[ERROR] $*${NC}"; }
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+VIRTUALMIN_REPO_DIR="${SCRIPT_DIR}/virtualmin-gpl-master"
 WEBMIN_VSERVER="/etc/webmin/virtual-server"
-WEBMIN_DIR="/etc/webmin"
+WEBMIN_MODULE_DIR=""
+WEBMIN_PRO_DIR=""
+WEBMIN_MINISERV_CONF="/etc/webmin/miniserv.conf"
 LOG="/var/log/setup_pro_production.log"
+STATUS_FILE="${SCRIPT_DIR}/production_profile_status.json"
 PASS_COUNT=0
 FAIL_COUNT=0
 
 log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" >> "$LOG"; }
 
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+systemd_running() {
+    command_exists systemctl && [[ -d /run/systemd/system ]]
+}
+
+record_failure() {
+    ((FAIL_COUNT++))
+    log "FALLO: $*"
+    fail "$*"
+}
+
+backup_target_file() {
+    local target="$1"
+    local stamp
+
+    [[ -f "$target" ]] || return 0
+
+    stamp="$(date +%Y%m%d_%H%M%S)"
+    cp -p "$target" "${target}.repo-backup.${stamp}" 2>/dev/null || true
+}
+
+detect_webmin_paths() {
+    local candidate
+    local candidates=(
+        "/usr/share/webmin/virtual-server"
+        "/usr/libexec/webmin/virtual-server"
+        "/usr/local/share/webmin/virtual-server"
+    )
+
+    for candidate in "${candidates[@]}"; do
+        if [[ -d "$candidate" ]]; then
+            WEBMIN_MODULE_DIR="$candidate"
+            WEBMIN_PRO_DIR="${candidate}/pro"
+            break
+        fi
+    done
+
+    if [[ -z "$WEBMIN_MODULE_DIR" ]]; then
+        record_failure "No se encontro el modulo runtime de Virtualmin en el sistema"
+        exit 1
+    fi
+
+    ok "Modulo runtime detectado: $WEBMIN_MODULE_DIR"
+}
+
+install_runtime_file() {
+    local source_file="$1"
+    local target_file="$2"
+    local mode="${3:-755}"
+
+    if [[ ! -f "$source_file" ]]; then
+        record_failure "Archivo fuente no encontrado para despliegue runtime: $source_file"
+        return 1
+    fi
+
+    backup_target_file "$target_file"
+    install -m "$mode" "$source_file" "$target_file"
+    chown root:root "$target_file" 2>/dev/null || true
+}
+
+deploy_runtime_panel_overlay() {
+    info "[Panel] Desplegando overlays runtime del panel Pro..."
+    log "Iniciando deploy runtime overlay"
+
+    [[ -d "$VIRTUALMIN_REPO_DIR" ]] || {
+        record_failure "No se encontro el arbol fuente local de Virtualmin: $VIRTUALMIN_REPO_DIR"
+        return 1
+    }
+
+    mkdir -p "$WEBMIN_PRO_DIR"
+
+    install_runtime_file "${VIRTUALMIN_REPO_DIR}/pro/connectivity.cgi" "${WEBMIN_PRO_DIR}/connectivity.cgi" || return 1
+    install_runtime_file "${VIRTUALMIN_REPO_DIR}/pro/maillog.cgi" "${WEBMIN_PRO_DIR}/maillog.cgi" || return 1
+    install_runtime_file "${VIRTUALMIN_REPO_DIR}/pro/edit_html.cgi" "${WEBMIN_PRO_DIR}/edit_html.cgi" || return 1
+    install_runtime_file "${VIRTUALMIN_REPO_DIR}/pro/list_bkeys.cgi" "${WEBMIN_PRO_DIR}/list_bkeys.cgi" || return 1
+    install_runtime_file "${VIRTUALMIN_REPO_DIR}/remotedns.cgi" "${WEBMIN_MODULE_DIR}/remotedns.cgi" || return 1
+
+    ok "[Panel] Overlays runtime Pro desplegados en $WEBMIN_MODULE_DIR"
+    ((PASS_COUNT++)); log "runtime overlay: OK"
+}
+
+get_ssh_ports() {
+    local ports=''
+
+    if command_exists sshd; then
+        ports="$(sshd -T 2>/dev/null | awk '/^port / {print $2}' | sort -u | tr '\n' ' ')"
+    fi
+
+    if [[ -z "$ports" ]]; then
+        ports='22'
+    fi
+
+    printf '%s\n' "$ports"
+}
+
+configure_ufw_for_virtualmin() {
+    local ssh_port
+    local -a tcp_ports=(80 443 10000)
+    local -a udp_ports=()
+
+    info "[Seguridad] Configurando firewall UFW para produccion..."
+
+    apt-get install -y ufw >/dev/null 2>&1 || {
+        record_failure "No se pudo instalar UFW"
+        return 1
+    }
+
+    for ssh_port in $(get_ssh_ports); do
+        ufw allow "${ssh_port}/tcp" >/dev/null 2>&1 || true
+    done
+
+    if systemd_running && (systemctl is-enabled --quiet postfix || systemctl is-active --quiet postfix); then
+        tcp_ports+=(25 465 587)
+    fi
+
+    if systemd_running && (systemctl is-enabled --quiet dovecot || systemctl is-active --quiet dovecot); then
+        tcp_ports+=(110 143 993 995)
+    fi
+
+    if systemd_running && (systemctl is-enabled --quiet bind9 || systemctl is-active --quiet bind9 || systemctl is-enabled --quiet named || systemctl is-active --quiet named); then
+        tcp_ports+=(53)
+        udp_ports+=(53)
+    fi
+
+    for ssh_port in "${tcp_ports[@]}"; do
+        ufw allow "${ssh_port}/tcp" >/dev/null 2>&1 || true
+    done
+
+    for ssh_port in "${udp_ports[@]}"; do
+        ufw allow "${ssh_port}/udp" >/dev/null 2>&1 || true
+    done
+
+    ufw --force enable >/dev/null 2>&1 || true
+    ok "[Seguridad] Firewall UFW preparado para servicios activos"
+}
+
+configure_fail2ban_for_webmin() {
+    info "[Seguridad] Configurando Fail2ban para SSH y Webmin..."
+
+    apt-get install -y fail2ban >/dev/null 2>&1 || {
+        record_failure "No se pudo instalar Fail2ban"
+        return 1
+    }
+
+    cat > /etc/fail2ban/filter.d/webmin-auth.conf << 'EOF'
+[Definition]
+failregex = ^.*(?:Failed|Non-existent) login as .* from <HOST>.*$
+ignoreregex =
+EOF
+
+    cat > /etc/fail2ban/jail.d/webmin-production.local << 'EOF'
+[DEFAULT]
+bantime = 1h
+findtime = 10m
+maxretry = 5
+
+[sshd]
+enabled = true
+
+[webmin-auth]
+enabled = true
+port = 10000
+logpath = /var/webmin/miniserv.log
+backend = auto
+EOF
+
+    if systemd_running; then
+        systemctl enable fail2ban >/dev/null 2>&1 || true
+        systemctl restart fail2ban >/dev/null 2>&1 || true
+    fi
+
+    ok "[Seguridad] Fail2ban configurado"
+}
+
+configure_unattended_upgrades() {
+    info "[Seguridad] Habilitando actualizaciones de seguridad automáticas del sistema..."
+
+    apt-get install -y unattended-upgrades apt-listchanges needrestart >/dev/null 2>&1 || {
+        record_failure "No se pudieron instalar unattended-upgrades y utilidades relacionadas"
+        return 1
+    }
+
+    cat > /etc/apt/apt.conf.d/20auto-upgrades << 'EOF'
+APT::Periodic::Update-Package-Lists "1";
+APT::Periodic::Unattended-Upgrade "1";
+EOF
+
+    ok "[Seguridad] Actualizaciones automáticas del sistema habilitadas"
+}
+
+configure_webmin_hardening() {
+    info "[Seguridad] Aplicando endurecimiento basico a Webmin..."
+
+    [[ -f "$WEBMIN_MINISERV_CONF" ]] || {
+        record_failure "No se encontro miniserv.conf para endurecimiento de Webmin"
+        return 1
+    }
+
+    backup_target_file "$WEBMIN_MINISERV_CONF"
+
+    grep -q '^ssl=1$' "$WEBMIN_MINISERV_CONF" 2>/dev/null || echo 'ssl=1' >> "$WEBMIN_MINISERV_CONF"
+    grep -q '^logouttime=' "$WEBMIN_MINISERV_CONF" 2>/dev/null || echo 'logouttime=15' >> "$WEBMIN_MINISERV_CONF"
+    grep -q '^session=1$' "$WEBMIN_MINISERV_CONF" 2>/dev/null || echo 'session=1' >> "$WEBMIN_MINISERV_CONF"
+
+    ok "[Seguridad] Endurecimiento basico de Webmin aplicado"
+}
+
+install_repo_update_timer() {
+    local service_file="/etc/systemd/system/virtualmin-pro-repo-update.service"
+    local timer_file="/etc/systemd/system/virtualmin-pro-repo-update.timer"
+
+    info "[Actualizaciones] Instalando timer de sincronizacion desde el mismo repositorio..."
+
+    [[ -f "${SCRIPT_DIR}/update_system_secure.sh" ]] || {
+        record_failure "No se encontro update_system_secure.sh para crear el timer de actualizacion"
+        return 1
+    }
+
+    if ! systemd_running; then
+        warn "systemd no disponible; se omite timer de actualizacion automatica"
+        return 0
+    fi
+
+    cat > "$service_file" <<EOF
+[Unit]
+Description=Virtualmin Pro repository update sync
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=${SCRIPT_DIR}
+Environment=AUTO_YES=1
+ExecStart=/bin/bash -lc 'cd "${SCRIPT_DIR}" && bash "${SCRIPT_DIR}/update_system_secure.sh" update && bash "${SCRIPT_DIR}/setup_pro_production.sh" --sync-runtime'
+EOF
+
+    cat > "$timer_file" <<'EOF'
+[Unit]
+Description=Run Virtualmin Pro repository update sync daily
+
+[Timer]
+OnCalendar=daily
+RandomizedDelaySec=20m
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+
+    systemctl daemon-reload
+    systemctl enable --now virtualmin-pro-repo-update.timer >/dev/null 2>&1 || true
+
+    ok "[Actualizaciones] Timer de actualizacion automatica instalado"
+    ((PASS_COUNT++)); log "repo update timer: OK"
+}
+
+configure_production_security_baseline() {
+    configure_ufw_for_virtualmin || return 1
+    configure_fail2ban_for_webmin || return 1
+    configure_unattended_upgrades || return 1
+    configure_webmin_hardening || return 1
+    ((PASS_COUNT++)); log "production security baseline: OK"
+}
+
+write_production_status() {
+    cat > "$STATUS_FILE" <<EOF
+{
+  "generated_at": "$(date -Iseconds)",
+  "runtime_module_dir": "${WEBMIN_MODULE_DIR}",
+  "runtime_pro_dir": "${WEBMIN_PRO_DIR}",
+  "pass_count": ${PASS_COUNT},
+  "fail_count": ${FAIL_COUNT}
+}
+EOF
+}
+
+validate_runtime_profile() {
+    local failures=0
+    local file
+    local required_runtime_files=(
+        "${WEBMIN_PRO_DIR}/connectivity.cgi"
+        "${WEBMIN_PRO_DIR}/maillog.cgi"
+        "${WEBMIN_PRO_DIR}/edit_html.cgi"
+        "${WEBMIN_PRO_DIR}/list_bkeys.cgi"
+        "${WEBMIN_MODULE_DIR}/remotedns.cgi"
+    )
+
+    info "[Validacion] Verificando panel profesional en runtime..."
+
+    for file in "${required_runtime_files[@]}"; do
+        if [[ -f "$file" ]]; then
+            ok "[Validacion] Archivo runtime presente: $file"
+        else
+            failures=$((failures + 1))
+            fail "[Validacion] Falta archivo runtime: $file"
+        fi
+    done
+
+    if systemd_running && systemctl is-active --quiet webmin; then
+        ok "[Validacion] webmin.service activo"
+    else
+        failures=$((failures + 1))
+        fail "[Validacion] webmin.service no esta activo"
+    fi
+
+    if ufw status 2>/dev/null | grep -q '^Status: active'; then
+        ok "[Validacion] UFW activo"
+    else
+        failures=$((failures + 1))
+        fail "[Validacion] UFW no esta activo"
+    fi
+
+    if systemd_running && systemctl is-active --quiet fail2ban; then
+        ok "[Validacion] fail2ban activo"
+    else
+        failures=$((failures + 1))
+        fail "[Validacion] fail2ban no esta activo"
+    fi
+
+    if systemd_running && systemctl is-enabled --quiet virtualmin-pro-repo-update.timer; then
+        ok "[Validacion] timer de actualizacion del repositorio activo"
+    else
+        failures=$((failures + 1))
+        fail "[Validacion] timer de actualizacion del repositorio no esta habilitado"
+    fi
+
+    if (( failures > 0 )); then
+        FAIL_COUNT=$((FAIL_COUNT + failures))
+        log "validacion runtime: FAIL (${failures} errores)"
+        return 1
+    fi
+
+    ((PASS_COUNT++)); log "validacion runtime: OK"
+    ok "[Validacion] Perfil profesional listo en runtime"
+    return 0
+}
+
 check_root() {
     [[ $EUID -eq 0 ]] || { fail "Ejecutar como root: sudo bash $0"; exit 1; }
+}
+
+check_supported_os() {
+    if [[ ! -f /etc/os-release ]]; then
+        fail "No se pudo detectar el sistema operativo"
+        exit 1
+    fi
+
+    # shellcheck disable=SC1091
+    . /etc/os-release
+
+    case "$ID" in
+        ubuntu|debian)
+            ok "Sistema operativo soportado para setup Pro: ${PRETTY_NAME:-$ID}"
+            ;;
+        *)
+            fail "setup_pro_production.sh solo soporta Ubuntu/Debian por ahora. Sistema detectado: ${PRETTY_NAME:-$ID}"
+            exit 1
+            ;;
+    esac
 }
 
 # =============================================================================
@@ -987,7 +1352,11 @@ show_summary() {
     echo "   WEBMIN/VIRTUALMIN PRO - SETUP COMPLETADO"
     echo "============================================================"
     echo ""
-    echo "  Funciones implementadas: $PASS_COUNT / 16"
+    echo "  Pasos completados: $PASS_COUNT"
+    echo "  Fallos detectados: $FAIL_COUNT"
+    echo ""
+    echo "  MODULO RUNTIME: ${WEBMIN_MODULE_DIR}"
+    echo "  ESTADO PERFIL: ${STATUS_FILE}"
     echo ""
     echo "  HERRAMIENTAS INSTALADAS:"
     for cmd in vmin-install-app vmin-ssh-keys vmin-backup-keys \
@@ -1004,6 +1373,9 @@ show_summary() {
     echo ""
     echo "  ACCESO WEBMIN: https://$(hostname -I | awk '{print $1}'):10000"
     echo ""
+    echo "  PANEL PRO RUNTIME: ${WEBMIN_PRO_DIR}"
+    echo "  TIMER REPO UPDATE: virtualmin-pro-repo-update.timer"
+    echo ""
     echo "  Ver ayuda de cada herramienta: <comando> --help o sin argumentos"
     echo "============================================================"
 }
@@ -1012,7 +1384,11 @@ show_summary() {
 # MAIN
 # =============================================================================
 main() {
+    local mode="${1:-full}"
+
     check_root
+    check_supported_os
+    detect_webmin_paths
 
     echo ""
     echo "============================================================"
@@ -1022,7 +1398,29 @@ main() {
     echo ""
 
     mkdir -p "$(dirname "$LOG")"
-    log "Iniciando setup_pro_production.sh"
+    log "Iniciando setup_pro_production.sh en modo: $mode"
+
+    case "$mode" in
+        --sync-runtime|sync-runtime)
+            deploy_runtime_panel_overlay || exit 1
+            configure_webmin_hardening || exit 1
+            if systemd_running; then
+                systemctl restart webmin 2>/dev/null || true
+            fi
+            validate_runtime_profile || exit 1
+            write_production_status
+            log "setup_pro_production.sh sync-runtime completado: $PASS_COUNT OK, $FAIL_COUNT FAIL"
+            return 0
+            ;;
+        --validate|validate)
+            validate_runtime_profile || exit 1
+            write_production_status
+            log "setup_pro_production.sh validate completado: $PASS_COUNT OK, $FAIL_COUNT FAIL"
+            return 0
+            ;;
+    esac
+
+    deploy_runtime_panel_overlay || exit 1
 
     setup_reseller_accounts
     setup_web_apps_installer
@@ -1040,12 +1438,23 @@ main() {
     setup_ssl_providers
     setup_edit_web_pages
     setup_email_server_owners
+    configure_production_security_baseline || exit 1
+    install_repo_update_timer || exit 1
 
     # Reiniciar Webmin para aplicar todos los cambios de config
-    systemctl restart webmin 2>/dev/null || true
+    if systemd_running; then
+        systemctl restart webmin 2>/dev/null || true
+    fi
+
+    validate_runtime_profile || exit 1
+    write_production_status
 
     show_summary
     log "setup_pro_production.sh completado: $PASS_COUNT OK, $FAIL_COUNT FAIL"
+
+    if (( FAIL_COUNT > 0 )); then
+        exit 1
+    fi
 }
 
 main "$@"

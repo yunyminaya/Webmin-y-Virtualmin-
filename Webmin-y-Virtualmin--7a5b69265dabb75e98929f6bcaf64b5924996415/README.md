@@ -1,269 +1,147 @@
-# 🚀 Webmin/Virtualmin - Sistema de Gestión de Servidores Seguro y Escalable
+# Webmin / Virtualmin Installer
 
-## 📋 Resumen
+Repositorio enfocado en una instalacion automatica y repetible de Webmin + Virtualmin con una sola linea de comando.
 
-Sistema completo de Webmin/Virtualmin con seguridad empresarial, capacidad de escalado para millones de usuarios y gestión multi-nube. Incluye firewall inteligente, sistema de backup automático, monitoreo avanzado y protección contra ataques DDoS.
+Hay dos rutas soportadas:
 
-## ✨ Características Principales
+- `install.sh`: instala la base Webmin + Virtualmin GPL con validaciones de produccion.
+- `install_pro_complete.sh`: instala la base y luego aplica el perfil profesional del repositorio sobre el servidor ya instalado.
 
-### 🔐 Seguridad Empresarial
-- ✅ Gestión segura de credenciales con cifrado AES-256
-- ✅ Firewall inteligente con machine learning
-- ✅ Sistema de detección de intrusos (IDS/IPS)
-- ✅ Protección contra ataques DDoS
-- ✅ Hardening completo del sistema
-- ✅ Auditoría de seguridad continua
+## Estado real del instalador
 
-### 📈 Escalabilidad Infinita
-- ✅ Soporte para 1000+ servidores virtuales
-- ✅ Auto-escalado horizontal y vertical
-- ✅ Balanceo de carga inteligente
-- ✅ Orquestación con Kubernetes
-- ✅ Gestión multi-nube (AWS, Azure, GCP)
+- Instala Webmin + Virtualmin GPL usando el instalador oficial.
+- Funciona como one-liner con `curl ... | bash` y eleva privilegios con `sudo` si hace falta.
+- Selecciona `full` cuando el servidor ya tiene un FQDN valido.
+- Selecciona `mini` automaticamente cuando no hay FQDN, para evitar una configuracion de correo invalida.
+- Bloquea instalaciones sobre sistemas ya preconfigurados, salvo que se fuerce con `VIRTUALMIN_ALLOW_PRECONFIGURED=1`.
+- Genera log en `/var/log/webmin-virtualmin-install.log` y reporte en `/root/webmin_virtualmin_installation_report.txt`.
 
-### 🛠️ Gestión Avanzada
-- ✅ Panel de control Webmin/Virtualmin
-- ✅ Sistema de backup inteligente
-- ✅ Monitoreo en tiempo real
-- ✅ Alertas automáticas
-- ✅ Recuperación de desastres
+## Perfil profesional soportado
 
-## 🚀 Instalación Automática (Comando Único)
+La ruta `install_pro_complete.sh` deja el servidor con un perfil mas cercano a produccion profesional:
 
-### Requisitos Mínimos
-- Ubuntu 18.04+ / Debian 9+
-- 2GB RAM mínimo
-- 20GB espacio en disco
-- Acceso root/sudo
+- despliega overlays runtime del panel Pro del repo en el modulo instalado de Virtualmin
+- activa herramientas de operacion para resellers, backup keys, mail log search, connectivity check y editor web
+- aplica baseline de seguridad con `ufw`, `fail2ban` y `unattended-upgrades`
+- instala un timer para resincronizar actualizaciones desde el mismo repositorio oficial
+- valida que el panel runtime y la seguridad base hayan quedado operativos
 
-### Instalación con un Solo Comando (Ubuntu)
+## Lo que no instala por defecto
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/instalar_webmin_virtualmin.sh | sudo bash
-```
+- No instala automaticamente los extras del repositorio como clustering, multi-cloud, SIEM, IA, backup enterprise o dashboards experimentales.
+- La ruta base `install.sh` no aplica por si sola el perfil profesional del repo.
+- No debe ejecutarse para reparar, reinstalar o actualizar un servidor Virtualmin existente.
 
-### Instalación con un Solo Comando (Multi-Distro)
+Los directorios y scripts adicionales del repositorio deben tratarse como componentes opcionales y requieren validacion manual antes de usarlos en produccion.
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/instalar_webmin_virtualmin.sh | sudo bash
-```
+## Sistemas soportados para produccion
 
-> ⚠️ **Importante:** El instalador funciona en **Linux** (Ubuntu/Debian/CentOS/RHEL/Fedora/Rocky/Alma). No se puede instalar directamente en macOS.
+El flujo automatico se alinea con los sistemas Grade A soportados por el instalador oficial de Virtualmin:
 
-> ✅ **URL oficial válida:** `https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/instalar_webmin_virtualmin.sh`
+- Ubuntu 22.04 LTS
+- Ubuntu 24.04 LTS
+- Debian 12
+- Debian 13
+- Rocky Linux 8, 9, 10
+- AlmaLinux 8, 9, 10
+- RHEL 8, 9, 10
 
-> ❌ **URL incorrecta (404):** `https://raw.githubusercontent.com/yunyminaya/Wedmin-Y-Virtualmin/main/instalar_webmin_virtualmin.sh`
+Sistemas Grade B solo deben usarse con validacion manual y requieren `VIRTUALMIN_ALLOW_GRADE_B=1`.
 
-### Instalación Paso a Paso (Opcional)
+## Instalacion de una linea
+
+Instalacion automatica base:
 
 ```bash
-# 1. Clonar repositorio
-git clone https://github.com/yunyminaya/Webmin-y-Virtualmin-.git
-cd Webmin-y-Virtualmin-
-
-# 2. Ejecutar instalación (Ubuntu)
-sudo ./instalar_webmin_virtualmin.sh
-
-# O ejecutar instalación (Multi-Distro)
-sudo ./instalar_webmin_virtualmin.sh
+curl -fsSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/install.sh | bash
 ```
 
-## 🌐 Acceso al Sistema
-
-Una vez completada la instalación:
-
-- **URL Webmin**: `https://tu-servidor:10000`
-- **Usuario**: `root` o `webminadmin`
-- **Contraseña**: La configurada durante la instalación
-
-## 📊 Arquitectura del Sistema
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    CAPA DE PRESENTACIÓN                     │
-├─────────────────────────────────────────────────────────────┤
-│  Webmin Dashboard  │  Virtualmin Panel  │  Monitoring UI    │
-├─────────────────────────────────────────────────────────────┤
-│                     CAPA DE GESTIÓN                          │
-├─────────────────────────────────────────────────────────────┤
-│  User Management  │  Domain Control  │  Resource Manager   │
-├─────────────────────────────────────────────────────────────┤
-│                    CAPA DE SEGURIDAD                         │
-├─────────────────────────────────────────────────────────────┤
-│  Intelligent FW  │  IDS/IPS System   │  DDoS Protection    │
-├─────────────────────────────────────────────────────────────┤
-│                   CAPA DE INFRAESTRUCTURA                    │
-├─────────────────────────────────────────────────────────────┤
-│  Load Balancer   │  Auto-Scaling     │  Multi-Cloud        │
-└─────────────────────────────────────────────────────────────┘
-```
-
-## 🔧 Componentes Incluidos
-
-### Seguridad
-- **Firewall Inteligente**: [`intelligent-firewall/`](intelligent-firewall/)
-- **Sistema IDS/IPS**: [`siem/`](siem/)
-- **Zero Trust Architecture**: [`zero-trust/`](zero-trust/)
-- **Gestor de Secretos**: [`security/secret_manager.sh`](security/secret_manager.sh)
-
-### Escalabilidad
-- **Auto-Scaling**: [`auto_scaling_system.sh`](auto_scaling_system.sh)
-- **Kubernetes Orchestration**: [`kubernetes_orchestration.sh`](kubernetes_orchestration.sh)
-- **Load Balancer Inteligente**: [`ai_optimization_system/load_balancer/`](ai_optimization_system/load_balancer/)
-- **Multi-Cloud Integration**: [`multi_cloud_integration/`](multi_cloud_integration/)
-
-### Gestión
-- **Backup Inteligente**: [`intelligent_backup_system/`](intelligent_backup_system/)
-- **Monitoreo Avanzado**: [`monitoring/`](monitoring/)
-- **Disaster Recovery**: [`disaster_recovery_system/`](disaster_recovery_system/)
-- **Business Intelligence**: [`bi_system/`](bi_system/)
-
-### Infraestructura
-- **Cluster Management**: [`cluster_infrastructure/`](cluster_infrastructure/)
-- **Container Orchestration**: [`container_orchestration_system.sh`](container_orchestration_system.sh)
-- **Networking Avanzado**: [`advanced_networking_system.sh`](advanced_networking_system.sh)
-
-## 📈 Métricas de Rendimiento
-
-### Capacidad de Escalado
-- **Servidores Virtuales**: 1000+
-- **Conexiones Simultáneas**: 1M+
-- **Requests/Segundo**: 100K+
-- **Almacenamiento**: Escalable a Petabytes
-
-### Métricas de Seguridad
-- **Puntuación de Seguridad**: 98.75% (Excelente)
-- **Tiempo de Respuesta**: <100ms
-- **Disponibilidad**: 99.99%
-- **Protección contra 0-day**: Activa
-
-## 🛠️ Configuración Post-Instalación
-
-### 1. Configurar Dominios
-```bash
-# Acceder a Virtualmin
-https://tu-servidor:10000
-
-# Navegar a: Virtualmin > Create Virtual Server
-# Configurar dominio, usuario y recursos
-```
-
-### 2. Configurar SSL/TLS
-```bash
-# Let's Encrypt automático incluido
-# Panel: Server Configuration > Manage SSL Certificate
-```
-
-### 3. Configurar Backups
-```bash
-# Sistema de backup inteligente activado
-# Panel: Backup and Restore > Scheduled Backups
-```
-
-### 4. Monitoreo
-```bash
-# Acceder al dashboard de monitoreo
-# URL: http://tu-servidor:8080/monitoring
-```
-
-## 🔍 Verificación de Instalación
+Instalacion profesional del panel desde el mismo repositorio:
 
 ```bash
-# Verificar servicios
+curl -fsSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/install_pro_complete.sh | bash
+```
+
+Instalacion full con hostname explicito:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/install.sh | VIRTUALMIN_HOSTNAME=panel.example.com bash
+```
+
+Instalacion LEMP en una sola linea:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/install.sh | VIRTUALMIN_HOSTNAME=panel.example.com VIRTUALMIN_BUNDLE=LEMP bash
+```
+
+## Variables utiles
+
+- `VIRTUALMIN_HOSTNAME`: fuerza el FQDN del panel, por ejemplo `panel.example.com`.
+- `VIRTUALMIN_TYPE`: `auto`, `full` o `mini`.
+- `VIRTUALMIN_BUNDLE`: `LAMP` o `LEMP`.
+- `VIRTUALMIN_DISABLE_HOSTNAME_SSL=1`: omite el intento de certificado inicial para el hostname.
+- `VIRTUALMIN_ALLOW_PRECONFIGURED=1`: permite instalar sobre un sistema no limpio. No recomendado.
+- `VIRTUALMIN_ALLOW_GRADE_B=1`: habilita sistemas Grade B. No recomendado para produccion.
+
+## Requisitos minimos
+
+- Servidor Linux limpio
+- Acceso root o sudo
+- 2 GB de RAM minimo
+- 20 GB libres en disco minimo
+- Conexion a Internet
+
+Para produccion real se recomienda:
+
+- 4 GB o mas de RAM
+- 40 GB o mas libres
+- Hostname FQDN configurado antes de instalar
+- DNS resuelto al servidor si se desea SSL inicial sin advertencias
+
+## Flujo del instalador
+
+1. Verifica root, sistema operativo y recursos minimos.
+2. Valida que el servidor este limpio.
+3. Detecta si hay FQDN valido y decide `full` o `mini`.
+4. Descarga el instalador oficial desde `https://download.virtualmin.com/virtualmin-install`.
+5. Ejecuta la instalacion oficial con los parametros correctos.
+6. Abre el puerto `10000/tcp` solo si el firewall ya esta activo.
+7. Verifica que `webmin` quede levantado.
+8. Escribe log y reporte final.
+
+## Verificacion posterior
+
+Acceso al panel:
+
+- `https://tu-hostname:10000`
+- `https://tu-ip:10000`
+
+Comandos utiles:
+
+```bash
 systemctl status webmin
-systemctl status fail2ban
-ufw status
-
-# Verificar reporte de instalación
 cat /root/webmin_virtualmin_installation_report.txt
-
-# Verificar log de instalación
-tail -f /tmp/webmin_virtualmin_install_*.log
+tail -f /var/log/webmin-virtualmin-install.log
+bash /opt/virtualmin-pro/setup_pro_production.sh --validate
 ```
 
-## 🚨 Solución de Problemas
+## Archivos clave del flujo soportado
 
-### Errores Comunes
+- `install.sh`
+- `instalar_webmin_virtualmin.sh`
+- `install_pro_complete.sh`
+- `setup_pro_production.sh`
+- `INSTALL_GUIDE.md`
 
-#### 1. Webmin no responde
-```bash
-# Reiniciar Webmin
-systemctl restart webmin
+## Nota sobre los extras del repositorio
 
-# Verificar puerto
-netstat -tlnp | grep :10000
+El repositorio contiene muchos scripts y documentos historicos. No todos forman parte del camino soportado de una linea. Para produccion, la referencia principal debe ser:
 
-# Verificar firewall
-ufw status verbose
-```
+- `README.md`
+- `INSTALL_GUIDE.md`
+- `install.sh`
+- `instalar_webmin_virtualmin.sh`
 
-#### 2. Error de permisos
-```bash
-# Verificar usuario
-id webminadmin
+## Licencia
 
-# Restablecer contraseña
-passwd webminadmin
-```
-
-#### 3. Problemas de memoria
-```bash
-# Verificar uso de memoria
-free -h
-
-# Aumentar swap si es necesario
-fallocate -l 2G /swapfile
-chmod 600 /swapfile
-mkswap /swapfile
-swapon /swapfile
-```
-
-## 📚 Documentación Adicional
-
-- [Guía de Instalación Avanzada](docs/ADVANCED_INSTALLATION.md)
-- [Guía de Seguridad](docs/SECURITY_GUIDE.md)
-- [Guía de Escalabilidad](docs/SCALABILITY_GUIDE.md)
-- [Guía de Multi-Nube](docs/MULTI_CLOUD_GUIDE.md)
-- [API Documentation](docs/API_REFERENCE.md)
-
-## 🤝 Contribuir
-
-1. Fork el repositorio
-2. Crear feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push al branch (`git push origin feature/AmazingFeature`)
-5. Abrir Pull Request
-
-## 📄 Licencia
-
-Este proyecto está licenciado bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para detalles.
-
-## 🆘 Soporte
-
-- **Issues**: [GitHub Issues](https://github.com/yunyminaya/Webmin-y-Virtualmin-/issues)
-- **Discusiones**: [GitHub Discussions](https://github.com/yunyminaya/Webmin-y-Virtualmin-/discussions)
-- **Wiki**: [GitHub Wiki](https://github.com/yunyminaya/Webmin-y-Virtualmin-/wiki)
-
-## 🏆 Reconocimientos
-
-- Webmin Team por el panel de control base
-- Virtualmin Team por la gestión de hosting
-- Comunidad de código abierto por las herramientas de seguridad
-
----
-
-## 📞 Contacto
-
-- **Autor**: Yuny Minaya
-- **Email**: yunyminaya@example.com
-- **GitHub**: [@yunyminaya](https://github.com/yunyminaya)
-
----
-
-<div align="center">
-
-**⭐ Si este proyecto te ayuda, dale una estrella! ⭐**
-
-Made with ❤️ by [Yuny Minaya](https://github.com/yunyminaya)
-
-</div>
+Este repositorio usa la licencia definida en `LICENSE`.

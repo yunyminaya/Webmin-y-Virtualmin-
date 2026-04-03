@@ -241,6 +241,32 @@ check_root() {
     fi
 }
 
+confirm_action() {
+    local prompt="$1"
+    local default_answer="${2:-N}"
+    local reply=""
+
+    if [[ "${AUTO_YES:-0}" == "1" || "${ASSUME_YES:-0}" == "1" ]]; then
+        log_info "$prompt -> respuesta automatica: yes"
+        return 0
+    fi
+
+    if [[ ! -t 0 ]]; then
+        log_info "$prompt -> modo no interactivo, respuesta por defecto: $default_answer"
+        [[ "$default_answer" =~ ^[Yy]$ ]]
+        return
+    fi
+
+    if [[ "$default_answer" =~ ^[Yy]$ ]]; then
+        read -r -p "$prompt [Y/n]: " reply
+        [[ -z "$reply" || "$reply" =~ ^[Yy]$ ]]
+        return
+    fi
+
+    read -r -p "$prompt [y/N]: " reply
+    [[ "$reply" =~ ^[Yy]$ ]]
+}
+
 check_internet() {
     local test_urls=("https://google.com" "https://github.com" "https://software.virtualmin.com")
 
@@ -506,7 +532,7 @@ detect_and_validate_os() {
 export -f _log log_error log_success log_info log_warning log_debug log_step
 export -f command_exists show_progress check_url_connectivity get_file_size_mb
 export -f backup_file restore_file verify_checksum handle_error validate_args
-export -f check_root check_internet show_help parse_common_args
+export -f check_root confirm_action check_internet show_help parse_common_args
 export -f get_timestamp get_system_info service_running check_network_connectivity
 export -f check_port_available check_mysql_connection detect_package_manager
 export -f check_write_permissions install_packages show_system_info get_server_ip

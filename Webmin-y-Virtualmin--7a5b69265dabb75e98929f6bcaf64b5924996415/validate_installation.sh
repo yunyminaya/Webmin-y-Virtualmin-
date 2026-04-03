@@ -27,7 +27,8 @@ log() {
     local level="$1"
     shift
     local message="$*"
-    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    local timestamp
+    timestamp=$(date '+%Y-%m-%d %H:%M:%S')
     
     case "$level" in
         "INFO")  echo -e "${BLUE}[INFO]${NC}  $message" ;;
@@ -63,6 +64,7 @@ validate_os() {
         return 1
     fi
     
+    # shellcheck disable=SC1091
     source /etc/os-release
     
     if [[ "$ID" != "ubuntu" && "$ID" != "debian" ]]; then
@@ -81,7 +83,8 @@ validate_system_resources() {
     log "INFO" "Validando recursos del sistema..."
     
     # Verificar RAM
-    local total_ram_gb=$(free -g | awk 'NR==2{print $2}')
+    local total_ram_gb
+    total_ram_gb=$(free -g | awk 'NR==2{print $2}')
     if [[ $total_ram_gb -lt 2 ]]; then
         log "WARN" "RAM baja: ${total_ram_gb}GB (recomendado: 2GB+)"
         count_check "WARN"
@@ -91,7 +94,8 @@ validate_system_resources() {
     fi
     
     # Verificar espacio en disco
-    local available_disk_gb=$(df / | awk 'NR==2 {print int($4/1024/1024)}')
+    local available_disk_gb
+    available_disk_gb=$(df / | awk 'NR==2 {print int($4/1024/1024)}')
     if [[ $available_disk_gb -lt 10 ]]; then
         log "FAIL" "Espacio en disco insuficiente: ${available_disk_gb}GB"
         count_check "FAIL"
@@ -101,7 +105,8 @@ validate_system_resources() {
     fi
     
     # Verificar CPU cores
-    local cpu_cores=$(nproc)
+    local cpu_cores
+    cpu_cores=$(nproc)
     if [[ $cpu_cores -lt 2 ]]; then
         log "WARN" "Pocos cores de CPU: ${cpu_cores} (recomendado: 2+)"
         count_check "WARN"
@@ -150,7 +155,7 @@ validate_network() {
 validate_system_services() {
     log "INFO" "Validando servicios del sistema..."
     
-    local services=("webmin" "fail2ban" "ufw")
+    local services=("webmin" "fail2ban")
     for service in "${services[@]}"; do
         if systemctl is-active --quiet "$service"; then
             log "PASS" "Servicio $service está activo"
@@ -219,9 +224,11 @@ validate_webmin() {
 # Validar Virtualmin
 validate_virtualmin() {
     log "INFO" "Validando instalación de Virtualmin..."
+    local runtime_dir=""
+    local runtime_files=()
     
     # Verificar archivos de Virtualmin
-    local virtualmin_files=("/usr/share/webmin/virtual-server" "/etc/webmin/virtual-server")
+    local virtualmin_files=("/usr/share/webmin/virtual-server" "/usr/libexec/webmin/virtual-server" "/etc/webmin/virtual-server")
     for file in "${virtualmin_files[@]}"; do
         if [[ -e "$file" ]]; then
             log "PASS" "Módulo de Virtualmin encontrado: $file"
@@ -238,6 +245,43 @@ validate_virtualmin() {
         count_check "PASS"
     else
         log "WARN" "Configuración de Virtualmin no encontrada"
+        count_check "WARN"
+    fi
+
+    if [[ -d /usr/share/webmin/virtual-server ]]; then
+        runtime_dir="/usr/share/webmin/virtual-server"
+    elif [[ -d /usr/libexec/webmin/virtual-server ]]; then
+        runtime_dir="/usr/libexec/webmin/virtual-server"
+    fi
+
+    if [[ -n "$runtime_dir" ]]; then
+        runtime_files=(
+            "$runtime_dir/pro/connectivity.cgi"
+            "$runtime_dir/pro/maillog.cgi"
+            "$runtime_dir/pro/edit_html.cgi"
+            "$runtime_dir/pro/list_bkeys.cgi"
+            "$runtime_dir/remotedns.cgi"
+        )
+
+        for file in "${runtime_files[@]}"; do
+            if [[ -f "$file" ]]; then
+                log "PASS" "Overlay runtime Pro encontrado: $file"
+                count_check "PASS"
+            else
+                log "FAIL" "Overlay runtime Pro faltante: $file"
+                count_check "FAIL"
+            fi
+        done
+    else
+        log "FAIL" "No se pudo detectar el directorio runtime de Virtualmin"
+        count_check "FAIL"
+    fi
+
+    if systemctl is-enabled --quiet virtualmin-pro-repo-update.timer 2>/dev/null; then
+        log "PASS" "Timer de actualización del repositorio habilitado"
+        count_check "PASS"
+    else
+        log "WARN" "Timer de actualización del repositorio no habilitado"
         count_check "WARN"
     fi
 }
@@ -277,7 +321,7 @@ validate_security() {
     fi
     
     # Verificar configuración de Fail2Ban
-    if [[ -f /etc/fail2ban/jail.local ]]; then
+    if [[ -f /etc/fail2ban/jail.d/webmin-production.local || -f /etc/fail2ban/jail.local ]]; then
         log "PASS" "Configuración de Fail2Ban encontrada"
         count_check "PASS"
     else
@@ -457,16 +501,16 @@ Tasa de éxito: ${success_rate}%
 ESTADO DE COMPONENTES:
 ---------------------
 Sistema Operativo: $(validate_os &>/dev/null && echo "✅ OK" || echo "❌ ERROR")
-Recursos del Sistema: $(echo "${PASSED_CHECKS}/$TOTAL_CHECKS checks pasados")
-Conectividad de Red: $(echo "${PASSED_CHECKS}/$TOTAL_CHECKS checks pasados")
-Servicios del Sistema: $(echo "${PASSED_CHECKS}/$TOTAL_CHECKS checks pasados")
-Webmin: $(echo "${PASSED_CHECKS}/$TOTAL_CHECKS checks pasados")
-Virtualmin: $(echo "${PASSED_CHECKS}/$TOTAL_CHECKS checks pasados")
-Seguridad: $(echo "${PASSED_CHECKS}/$TOTAL_CHECKS checks pasados")
-Módulos Adicionales: $(echo "${PASSED_CHECKS}/$TOTAL_CHECKS checks pasados")
-Base de Datos: $(echo "${PASSED_CHECKS}/$TOTAL_CHECKS checks pasados")
-Configuración SSL: $(echo "${PASSED_CHECKS}/$TOTAL_CHECKS checks pasados")
-Configuración de Usuarios: $(echo "${PASSED_CHECKS}/$TOTAL_CHECKS checks pasados")
+Recursos del Sistema: ${PASSED_CHECKS}/$TOTAL_CHECKS checks pasados
+Conectividad de Red: ${PASSED_CHECKS}/$TOTAL_CHECKS checks pasados
+Servicios del Sistema: ${PASSED_CHECKS}/$TOTAL_CHECKS checks pasados
+Webmin: ${PASSED_CHECKS}/$TOTAL_CHECKS checks pasados
+Virtualmin: ${PASSED_CHECKS}/$TOTAL_CHECKS checks pasados
+Seguridad: ${PASSED_CHECKS}/$TOTAL_CHECKS checks pasados
+Módulos Adicionales: ${PASSED_CHECKS}/$TOTAL_CHECKS checks pasados
+Base de Datos: ${PASSED_CHECKS}/$TOTAL_CHECKS checks pasados
+Configuración SSL: ${PASSED_CHECKS}/$TOTAL_CHECKS checks pasados
+Configuración de Usuarios: ${PASSED_CHECKS}/$TOTAL_CHECKS checks pasados
 
 ACCESO WEBMIN:
 --------------

@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # ============================================================================
-# INSTALADOR COMPLETO DE UN SOLO COMANDO - VIRTUALMIN PRO GRATIS
+# INSTALADOR COMPLETO DE UN SOLO COMANDO - PERFIL PROFESIONAL DE PRODUCCION
 # ============================================================================
-# Instala y activa TODAS las funciones Pro con un solo comando:
+# Instala la base Webmin/Virtualmin y aplica el perfil profesional del repositorio:
 # curl -sSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/install_pro_complete.sh | bash
 # ============================================================================
 
@@ -21,16 +21,19 @@ NC='\033[0m'
 
 # Variables
 REPO_URL="https://github.com/yunyminaya/Webmin-y-Virtualmin-.git"
+REPO_RAW_BASE="https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main"
+SCRIPT_URL="${REPO_RAW_BASE}/install_pro_complete.sh"
 INSTALL_DIR="/opt/virtualmin-pro"
 START_TIME=$(date +%s)
 
 echo -e "${BLUE}============================================================================${NC}"
 echo -e "${PURPLE}🚀 INSTALADOR VIRTUALMIN PRO COMPLETO - UN SOLO COMANDO${NC}"
 echo -e "${BLUE}============================================================================${NC}"
-echo -e "${GREEN}🎉 Instalando TODAS las funciones Pro GRATIS${NC}"
+echo -e "${GREEN}🎉 Instalando perfil profesional del panel para produccion${NC}"
 echo -e "${CYAN}   ✅ Cuentas de Revendedor ILIMITADAS${NC}"
 echo -e "${CYAN}   ✅ Funciones Empresariales COMPLETAS${NC}"
-echo -e "${CYAN}   ✅ Sin restricciones GPL${NC}"
+echo -e "${CYAN}   ✅ Overlay runtime del panel Pro${NC}"
+echo -e "${CYAN}   ✅ Seguridad base y actualizacion desde el mismo repo${NC}"
 echo -e "${BLUE}============================================================================${NC}"
 echo
 
@@ -38,7 +41,8 @@ echo
 log_install() {
     local level="$1"
     local message="$2"
-    local timestamp=$(date '+%H:%M:%S')
+    local timestamp
+    timestamp=$(date '+%H:%M:%S')
 
     case "$level" in
         "SUCCESS") echo -e "${GREEN}✅ [$timestamp] PRO INSTALLER:${NC} $message" ;;
@@ -54,10 +58,27 @@ check_root() {
     if [[ $EUID -eq 0 ]]; then
         log_install "SUCCESS" "Ejecutándose como root - permisos completos"
         return 0
-    else
-        log_install "WARNING" "No es root - algunas funciones pueden requerir sudo"
-        return 1
     fi
+
+    if ! command -v sudo >/dev/null 2>&1; then
+        log_install "ERROR" "Se requiere root o sudo para continuar"
+        exit 1
+    fi
+
+    log_install "INFO" "Elevando privilegios con sudo..."
+
+    if command -v curl >/dev/null 2>&1; then
+        curl -fsSL "$SCRIPT_URL" | sudo -E bash
+        exit $?
+    fi
+
+    if command -v wget >/dev/null 2>&1; then
+        wget -qO- "$SCRIPT_URL" | sudo -E bash
+        exit $?
+    fi
+
+    log_install "ERROR" "No se encontro curl ni wget para relanzar el instalador con sudo"
+    exit 1
 }
 
 # Instalar dependencias
@@ -109,15 +130,14 @@ install_webmin_virtualmin() {
     log_install "INFO" "Verificando instalación de Webmin/Virtualmin..."
 
     if ! command -v virtualmin >/dev/null 2>&1; then
-        log_install "INFO" "Instalando Webmin/Virtualmin base..."
+        log_install "INFO" "Instalando Webmin/Virtualmin base desde el repositorio local..."
 
-        # Descargar e instalar script oficial
-        cd /tmp
-        curl -sSL https://software.virtualmin.com/gpl/scripts/install.sh -o virtualmin-install.sh
-        chmod +x virtualmin-install.sh
-
-        # Ejecutar instalación
-        ./virtualmin-install.sh --force --hostname $(hostname -f) --minimal
+        if [[ -f "$INSTALL_DIR/install.sh" ]]; then
+            bash "$INSTALL_DIR/install.sh"
+        else
+            log_install "ERROR" "No se encontro $INSTALL_DIR/install.sh"
+            exit 1
+        fi
 
         log_install "SUCCESS" "Webmin/Virtualmin base instalado"
     else
@@ -146,6 +166,16 @@ activate_all_pro() {
             log_install "WARNING" "Activador $activator no encontrado"
         fi
     done
+
+    if [[ -f "setup_pro_production.sh" ]]; then
+        log_install "INFO" "Aplicando integracion Pro sobre el sistema instalado..."
+        if ! bash "setup_pro_production.sh"; then
+            log_install "ERROR" "setup_pro_production.sh fallo; no se puede afirmar una instalacion Pro completa"
+            exit 1
+        fi
+    else
+        log_install "WARNING" "setup_pro_production.sh no encontrado"
+    fi
 
     log_install "SUCCESS" "Activación Pro completada"
 }
@@ -177,7 +207,10 @@ case "$1" in
         cd "$INSTALL_DIR" && bash pro_dashboard.sh
         ;;
     "status")
-        cd "$INSTALL_DIR" && cat pro_status.json 2>/dev/null | jq . || cat master_pro_status.txt
+        cd "$INSTALL_DIR" && if [[ -f production_profile_status.json ]]; then cat production_profile_status.json 2>/dev/null | jq . || cat production_profile_status.json; elif [[ -f pro_status.json ]]; then cat pro_status.json 2>/dev/null | jq . || cat pro_status.json; else cat master_pro_status.txt; fi
+        ;;
+    "validate")
+        cd "$INSTALL_DIR" && bash setup_pro_production.sh --validate
         ;;
     "update")
         cd "$INSTALL_DIR" && bash update_system_secure.sh
@@ -207,6 +240,7 @@ case "$1" in
         echo "   virtualmin-pro ssl        - SSL Manager Pro"
         echo "   virtualmin-pro backup     - Backups empresariales"
         echo "   virtualmin-pro analytics  - Analytics Pro"
+        echo "   virtualmin-pro validate   - Validar runtime del panel"
         ;;
 esac
 EOF
@@ -217,8 +251,11 @@ EOF
 
 # Mostrar resumen final
 show_final_summary() {
-    local end_time=$(date +%s)
-    local duration=$((end_time - START_TIME))
+    local end_time
+    local duration
+
+    end_time=$(date +%s)
+    duration=$((end_time - START_TIME))
 
     echo
     echo -e "${BLUE}============================================================================${NC}"
@@ -237,12 +274,14 @@ show_final_summary() {
     echo -e "${CYAN}   ✅ SSL Manager Avanzado ACTIVO${NC}"
     echo -e "${CYAN}   ✅ Backups Empresariales ACTIVOS${NC}"
     echo -e "${CYAN}   ✅ Analytics y Reportes Pro ACTIVOS${NC}"
-    echo -e "${CYAN}   ✅ Restricciones GPL ELIMINADAS${NC}"
+    echo -e "${CYAN}   ✅ Timer de sincronizacion desde el mismo repositorio ACTIVO${NC}"
+    echo -e "${CYAN}   ✅ Baseline de seguridad de produccion APLICADO${NC}"
     echo
     echo -e "${YELLOW}🚀 ACCESO RÁPIDO:${NC}"
     echo -e "${BLUE}   Panel Web: https://$(hostname -I | awk '{print $1}'):10000${NC}"
     echo -e "${BLUE}   Dashboard Pro: virtualmin-pro dashboard${NC}"
     echo -e "${BLUE}   Estado: virtualmin-pro status${NC}"
+    echo -e "${BLUE}   Validación: bash /opt/virtualmin-pro/setup_pro_production.sh --validate${NC}"
     echo
     echo -e "${GREEN}🎯 COMANDOS DISPONIBLES:${NC}"
     echo -e "${YELLOW}   virtualmin-pro dashboard  ${NC}# Dashboard Pro completo"
@@ -253,7 +292,7 @@ show_final_summary() {
     echo
     echo -e "${BLUE}============================================================================${NC}"
     echo -e "${PURPLE}🎉 ¡VIRTUALMIN PRO COMPLETO INSTALADO Y ACTIVO!${NC}"
-    echo -e "${GREEN}   Todas las funciones Pro están disponibles GRATIS${NC}"
+    echo -e "${GREEN}   El panel runtime y la seguridad base quedaron sincronizados desde este repositorio${NC}"
     echo -e "${BLUE}============================================================================${NC}"
 }
 
@@ -280,10 +319,10 @@ main() {
 
     log_install "SUCCESS" "¡Instalación completada exitosamente!"
 
-    # Ejecutar dashboard al final
-    echo -e "${YELLOW}Presiona Enter para abrir el Dashboard Pro...${NC}"
-    read -p ""
-    virtualmin-pro dashboard
+    # Ejecutar dashboard solo si hay terminal interactiva
+    if [[ -t 0 && -t 1 ]]; then
+        virtualmin-pro dashboard || true
+    fi
 }
 
 # Ejecutar instalación

@@ -17,6 +17,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # ===== INCLUIR BIBLIOTECA COMÚN =====
 if [[ -f "${SCRIPT_DIR}/lib/common.sh" ]]; then
+    # shellcheck disable=SC1091
     source "${SCRIPT_DIR}/lib/common.sh"
 else
     echo "ERROR: No se encuentra la biblioteca común en ${SCRIPT_DIR}/lib/common.sh"
@@ -126,7 +127,8 @@ verify_commit_signatures() {
 create_update_backup() {
     log_info "💾 Creando backup antes de la actualización..."
 
-    local backup_dir="${SCRIPT_DIR}/backups/pre_update_$(date +%Y%m%d_%H%M%S)"
+    local backup_dir
+    backup_dir="${SCRIPT_DIR}/backups/pre_update_$(date +%Y%m%d_%H%M%S)"
 
     if ensure_directory "$backup_dir"; then
         # Backup de archivos críticos
@@ -225,6 +227,11 @@ perform_secure_update() {
         if [[ -f "${SCRIPT_DIR}/auto_repair.sh" ]]; then
             log_info "🔧 Ejecutando auto-reparación después de la actualización..."
             bash "${SCRIPT_DIR}/auto_repair.sh" || log_warning "Auto-reparación completada con advertencias"
+        fi
+
+        if [[ -f "${SCRIPT_DIR}/setup_pro_production.sh" ]]; then
+            log_info "🧩 Resincronizando panel runtime Pro tras la actualización..."
+            bash "${SCRIPT_DIR}/setup_pro_production.sh" --sync-runtime || log_warning "La resincronización runtime completó con advertencias"
         fi
 
         log_success "🎉 ¡Actualización completada exitosamente!"

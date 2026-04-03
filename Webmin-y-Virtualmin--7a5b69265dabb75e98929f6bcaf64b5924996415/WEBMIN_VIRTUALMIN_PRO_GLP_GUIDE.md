@@ -1,5 +1,7 @@
 # Guía de Funciones Pro y GLP en Webmin/Virtualmin
 
+> Nota de produccion: este repositorio ya dispone de una ruta soportada para el perfil profesional del panel mediante `install_pro_complete.sh`, que despliega la base oficial de Virtualmin y sincroniza en runtime los overlays `pro/` del repo. Aun asi, cualquier modulo adicional fuera de ese flujo debe validarse antes de usarse en produccion.
+
 ## 📋 Tabla de Contenidos
 
 1. [Descripción General](#descripción-general)

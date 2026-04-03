@@ -1,105 +1,158 @@
 #!/bin/bash
 
 set -euo pipefail
-IFS=$'
-	'
+IFS=$'\n\t'
 
-readonly RED='[0;31m'
-readonly GREEN='[0;32m'
-readonly YELLOW='[1;33m'
-readonly CYAN='[0;36m'
-readonly NC='[0m'
-readonly TEMP_DIR="/tmp/virtualmin_secure_install_$$"
 export DEBIAN_FRONTEND=noninteractive
 export APT_LISTCHANGES_FRONTEND=none
+
+readonly RED='\033[0;31m'
+readonly GREEN='\033[0;32m'
+readonly YELLOW='\033[1;33m'
+readonly CYAN='\033[0;36m'
+readonly NC='\033[0m'
+
+TEMP_DIR="$(mktemp -d /tmp/webmin-virtualmin-install.XXXXXX)"
+readonly TEMP_DIR
+readonly INSTALL_LOG="${INSTALL_LOG:-/var/log/webmin-virtualmin-install.log}"
+readonly REPORT_PATH="${REPORT_PATH:-/root/webmin_virtualmin_installation_report.txt}"
+readonly VIRTUALMIN_INSTALL_URL="${VIRTUALMIN_INSTALL_URL:-https://download.virtualmin.com/virtualmin-install}"
+
+OS=''
+VERSION_ID=''
+INSTALL_TYPE=''
+INSTALL_BUNDLE=''
+INSTALL_HOSTNAME=''
+SERVER_IP=''
+GRADE_B_FLAG=0
 
 cleanup() {
     local exit_code=$?
     rm -rf "$TEMP_DIR" 2>/dev/null || true
     exit "$exit_code"
 }
+
 trap cleanup EXIT INT TERM
-mkdir -p "$TEMP_DIR"
 
-get_server_ip() {
-    local ip=""
-    ip=$(hostname -I 2>/dev/null | awk '{print $1}')
-    if [[ -z "$ip" || "$ip" == "127.0.0.1" ]]; then
-        ip=$(ip route get 1 2>/dev/null | awk '{print $7; exit}')
-    fi
-    if [[ -z "$ip" || "$ip" == "127.0.0.1" ]]; then
-        ip=$(ifconfig 2>/dev/null | awk '/inet / && $2 != "127.0.0.1" {print $2; exit}')
-    fi
-    if [[ -z "$ip" ]]; then
-        ip="127.0.0.1"
-    fi
-    printf '%s
-' "$ip"
+log_info() {
+    printf '%b[INFO]%b %s\n' "$GREEN" "$NC" "$*"
 }
 
-get_virtualmin_hostname() {
-    local current short fallback
-    current=$(hostname -f 2>/dev/null || hostname 2>/dev/null || true)
-    if [[ -n "$current" && "$current" == *.* ]]; then
-        printf '%s
-' "$current"
-        return 0
-    fi
-
-    if [[ -n "${VIRTUALMIN_HOSTNAME:-}" ]]; then
-        printf '%s
-' "$VIRTUALMIN_HOSTNAME"
-        return 0
-    fi
-
-    short=$(hostname -s 2>/dev/null || hostname 2>/dev/null || printf 'server')
-    fallback="${short}.localdomain"
-    printf '%s
-' "$fallback"
+log_warn() {
+    printf '%b[WARN]%b %s\n' "$YELLOW" "$NC" "$*"
 }
 
+log_error() {
+    printf '%b[ERROR]%b %s\n' "$RED" "$NC" "$*" >&2
+}
 
-ensure_hostname_resolution() {
-    local fqdn short host_ip hosts_line
-    fqdn=$(get_virtualmin_hostname)
-    short=${fqdn%%.*}
-    host_ip=$(get_server_ip)
-    [[ -n "$host_ip" && "$host_ip" != "127.0.0.1" ]] || host_ip="127.0.1.1"
+fail() {
+    log_error "$*"
+    exit 1
+}
 
-    if grep -Eq "(^|[[:space:]])${fqdn//./\.}($|[[:space:]])" /etc/hosts 2>/dev/null; then
-        return 0
-    fi
-
-    hosts_line=$(printf '%s %s %s' "$host_ip" "$fqdn" "$short")
-    printf '%s
-' "$hosts_line" >> /etc/hosts
+enable_logging() {
+    mkdir -p "$(dirname "$INSTALL_LOG")"
+    : > "$INSTALL_LOG"
+    chmod 600 "$INSTALL_LOG"
+    exec > >(tee -a "$INSTALL_LOG") 2>&1
 }
 
 check_root() {
-    if [[ "$EUID" -ne 0 ]]; then
-        echo -e "${RED}Error: Este script debe ejecutarse como root${NC}" >&2
-        exit 1
+    if [[ "${EUID:-$(id -u)}" -ne 0 ]]; then
+        fail 'Este instalador debe ejecutarse como root.'
     fi
 }
 
-check_os() {
-    if [[ -f /etc/os-release ]]; then
-        # shellcheck disable=SC1091
-        . /etc/os-release
-        OS="$ID"
-        VERSION="$VERSION_ID"
-    else
-        echo -e "${RED}Error: No se pudo determinar el sistema operativo${NC}" >&2
-        exit 1
+detect_os() {
+    if [[ ! -f /etc/os-release ]]; then
+        fail 'No se pudo detectar el sistema operativo.'
+    fi
+
+    # shellcheck disable=SC1091
+    . /etc/os-release
+
+    OS="$ID"
+    if [[ -z "$OS" || -z "$VERSION_ID" ]]; then
+        fail 'Falta informacion del sistema operativo en /etc/os-release.'
     fi
 }
 
+is_grade_a_supported_os() {
+    local major_version="${VERSION_ID%%.*}"
+
+    case "$OS" in
+        ubuntu)
+            [[ "$VERSION_ID" == '22.04' || "$VERSION_ID" == '24.04' ]]
+            ;;
+        debian)
+            [[ "$VERSION_ID" == '12' || "$VERSION_ID" == '13' ]]
+            ;;
+        rocky|almalinux|rhel)
+            [[ "$major_version" == '8' || "$major_version" == '9' || "$major_version" == '10' ]]
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
+is_grade_b_supported_os() {
+    case "$OS" in
+        centos|centos_stream|fedora|amzn|ol|openeuler|cloudlinux)
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
+check_supported_os() {
+    if is_grade_a_supported_os; then
+        return 0
+    fi
+
+    if [[ "${VIRTUALMIN_ALLOW_GRADE_B:-0}" == '1' ]] && is_grade_b_supported_os; then
+        GRADE_B_FLAG=1
+        log_warn "SO grado B detectado ($OS $VERSION_ID). Se continuara con --os-grade B. No es la ruta recomendada para produccion."
+        return 0
+    fi
+
+    fail "SO no soportado para esta instalacion automatica: $OS $VERSION_ID. Usa Ubuntu 22.04/24.04, Debian 12/13, Rocky/AlmaLinux/RHEL 8-10, o exporta VIRTUALMIN_ALLOW_GRADE_B=1 para pruebas controladas."
+}
+
+check_system_requirements() {
+    local mem_kb mem_gb disk_kb disk_gb
+
+    mem_kb="$(awk '/MemTotal/ {print $2}' /proc/meminfo)"
+    disk_kb="$(df -k / | awk 'END {print $4}')"
+
+    mem_gb=$((mem_kb / 1024 / 1024))
+    disk_gb=$((disk_kb / 1024 / 1024))
+
+    if (( mem_gb < 2 )); then
+        fail "RAM insuficiente (${mem_gb}GB). Se requieren al menos 2GB."
+    fi
+
+    if (( disk_gb < 20 )); then
+        fail "Espacio insuficiente (${disk_gb}GB libres). Se requieren al menos 20GB."
+    fi
+
+    if (( mem_gb < 4 )); then
+        log_warn "RAM limitada (${mem_gb}GB). Para full install se recomiendan 4GB o mas."
+    fi
+
+    if (( disk_gb < 40 )); then
+        log_warn "Espacio justo (${disk_gb}GB libres). Para produccion se recomiendan 40GB o mas."
+    fi
+}
 
 wait_for_apt_ready() {
     local waited=0
     local timeout=900
 
-    if [[ "$OS" != "ubuntu" && "$OS" != "debian" ]]; then
+    if [[ "$OS" != 'ubuntu' && "$OS" != 'debian' ]]; then
         return 0
     fi
 
@@ -108,167 +161,248 @@ wait_for_apt_ready() {
         systemctl stop apt-daily.timer apt-daily-upgrade.timer 2>/dev/null || true
     fi
 
-    while pgrep -x apt >/dev/null 2>&1 ||           pgrep -x apt-get >/dev/null 2>&1 ||           pgrep -x dpkg >/dev/null 2>&1 ||           pgrep -x unattended-upgr >/dev/null 2>&1; do
+    while pgrep -x apt >/dev/null 2>&1 || \
+          pgrep -x apt-get >/dev/null 2>&1 || \
+          pgrep -x dpkg >/dev/null 2>&1 || \
+          pgrep -x unattended-upgr >/dev/null 2>&1; do
         sleep 5
         waited=$((waited + 5))
+
         if (( waited >= timeout )); then
-            echo -e "${RED}Error: apt/dpkg sigue ocupado tras ${timeout}s${NC}" >&2
-            return 1
+            fail "apt/dpkg sigue ocupado despues de ${timeout}s."
         fi
     done
 
     dpkg --configure -a >/dev/null 2>&1 || true
 }
 
-check_system_requirements() {
-    local mem_kb mem_gb disk_kb disk_gb
-    mem_kb=$(awk '/MemTotal/ {print $2}' /proc/meminfo)
-    mem_gb=$((mem_kb / 1024 / 1024))
-    disk_kb=$(df -k / | awk 'END {print $4}')
-    disk_gb=$((disk_kb / 1024 / 1024))
-
-    if [[ "$mem_gb" -lt 2 ]]; then
-        echo -e "${RED}Error: Memoria RAM insuficiente (${mem_gb}GB). Mínimo requerido: 2GB${NC}" >&2
-        exit 1
-    elif [[ "$mem_gb" -lt 4 ]]; then
-        echo -e "${YELLOW}Advertencia: Memoria RAM limitada (${mem_gb}GB). Se recomiendan 4GB o más${NC}"
-    fi
-
-    if [[ "$disk_gb" -lt 20 ]]; then
-        echo -e "${RED}Error: Espacio en disco insuficiente (${disk_gb}GB). Mínimo requerido: 20GB${NC}" >&2
-        exit 1
-    elif [[ "$disk_gb" -lt 50 ]]; then
-        echo -e "${YELLOW}Advertencia: Espacio en disco limitado (${disk_gb}GB). Se recomiendan 50GB o más${NC}"
-    fi
+systemd_running() {
+    command -v systemctl >/dev/null 2>&1 && [[ -d /run/systemd/system ]]
 }
 
-install_dependencies() {
-    echo -e "${GREEN}Instalando dependencias...${NC}"
+ensure_downloader() {
+    if command -v curl >/dev/null 2>&1 || command -v wget >/dev/null 2>&1; then
+        return 0
+    fi
+
     case "$OS" in
         ubuntu|debian)
             wait_for_apt_ready
             apt-get update
             wait_for_apt_ready
-            apt-get install -y curl wget gnupg2 software-properties-common apt-transport-https ca-certificates iproute2 net-tools iputils-ping
+            apt-get install -y curl wget ca-certificates
             ;;
-        centos|rhel|fedora|rocky|almalinux)
+        rocky|almalinux|rhel|centos|centos_stream|fedora|amzn|ol|openeuler|cloudlinux)
             if command -v dnf >/dev/null 2>&1; then
-                dnf install -y curl wget gnupg2 ca-certificates iproute net-tools iputils
+                dnf install -y curl wget ca-certificates
+            elif command -v yum >/dev/null 2>&1; then
+                yum install -y curl wget ca-certificates
             else
-                yum install -y curl wget gnupg2 ca-certificates iproute net-tools iputils
+                fail 'No se encontro gestor de paquetes compatible para instalar curl/wget.'
             fi
             ;;
         *)
-            echo -e "${RED}Error: Sistema operativo no soportado: $OS${NC}" >&2
-            exit 1
+            fail 'No se pudo instalar un cliente HTTP en este sistema.'
             ;;
     esac
 }
 
-install_webmin() {
-    echo -e "${GREEN}Instalando Webmin...${NC}"
-    case "$OS" in
-        ubuntu|debian)
-            local webmin_deb="$TEMP_DIR/webmin-current.deb"
-            curl -fsSL -o "$webmin_deb" https://www.webmin.com/download/deb/webmin-current.deb
-            wait_for_apt_ready
-            apt-get install -y perl
-            wait_for_apt_ready
-            apt-get install -y "$webmin_deb"
-            ;;
-        centos|rhel|fedora|rocky|almalinux)
-            local webmin_rpm="$TEMP_DIR/webmin-current.rpm"
-            curl -fsSL -o "$webmin_rpm" https://www.webmin.com/download/rpm/webmin-current.rpm
-            if command -v dnf >/dev/null 2>&1; then
-                dnf install -y "$webmin_rpm"
-            else
-                yum localinstall -y "$webmin_rpm"
+download_file() {
+    local url="$1"
+    local destination="$2"
+
+    if command -v curl >/dev/null 2>&1; then
+        curl -fsSL "$url" -o "$destination"
+        return 0
+    fi
+
+    if command -v wget >/dev/null 2>&1; then
+        wget -qO "$destination" "$url"
+        return 0
+    fi
+
+    fail 'No hay curl ni wget disponibles para descargar archivos.'
+}
+
+is_deb_package_installed() {
+    local package_name="$1"
+    dpkg-query -W -f='${Status}' "$package_name" 2>/dev/null | grep -q 'install ok installed'
+}
+
+is_rpm_package_installed() {
+    local package_name="$1"
+    rpm -q "$package_name" >/dev/null 2>&1
+}
+
+assert_fresh_system() {
+    local -a detected=()
+
+    if [[ "${VIRTUALMIN_ALLOW_PRECONFIGURED:-0}" == '1' ]]; then
+        log_warn 'Se omite la validacion de sistema limpio porque VIRTUALMIN_ALLOW_PRECONFIGURED=1.'
+        return 0
+    fi
+
+    if [[ "$OS" == 'ubuntu' || "$OS" == 'debian' ]]; then
+        local -a packages=(apache2 nginx mariadb-server mysql-server postfix bind9 webmin usermin virtualmin-base virtualmin-core)
+        local package_name
+        for package_name in "${packages[@]}"; do
+            if is_deb_package_installed "$package_name"; then
+                detected+=("$package_name")
             fi
+        done
+    else
+        local -a packages=(httpd nginx mariadb-server mysql-server postfix bind webmin usermin virtualmin-base virtualmin-core)
+        local package_name
+        for package_name in "${packages[@]}"; do
+            if is_rpm_package_installed "$package_name"; then
+                detected+=("$package_name")
+            fi
+        done
+    fi
+
+    if (( ${#detected[@]} > 0 )); then
+        fail "Sistema no limpio detectado. Paquetes ya presentes: ${detected[*]}. Para produccion usa un SO fresco o exporta VIRTUALMIN_ALLOW_PRECONFIGURED=1 si sabes exactamente lo que haces."
+    fi
+}
+
+is_fqdn() {
+    local hostname_value="$1"
+    local fqdn_regex='^[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+$'
+
+    [[ -n "$hostname_value" ]] || return 1
+    [[ ! "$hostname_value" =~ (^localhost$|\.local$|\.localdomain$) ]] || return 1
+    [[ "$hostname_value" =~ $fqdn_regex ]]
+}
+
+get_server_ip() {
+    local ip_address=''
+
+    ip_address="$(hostname -I 2>/dev/null | awk '{print $1}')"
+
+    if [[ -z "$ip_address" || "$ip_address" == '127.0.0.1' ]]; then
+        ip_address="$(ip route get 1 2>/dev/null | awk '{print $7; exit}')"
+    fi
+
+    if [[ -z "$ip_address" || "$ip_address" == '127.0.0.1' ]]; then
+        ip_address='127.0.0.1'
+    fi
+
+    printf '%s\n' "$ip_address"
+}
+
+get_current_hostname() {
+    local hostname_value=''
+
+    hostname_value="$(hostname -f 2>/dev/null || true)"
+
+    if [[ -z "$hostname_value" ]]; then
+        hostname_value="$(hostnamectl --static 2>/dev/null || true)"
+    fi
+
+    if [[ -z "$hostname_value" ]]; then
+        hostname_value="$(hostname 2>/dev/null || true)"
+    fi
+
+    printf '%s\n' "$hostname_value"
+}
+
+resolve_install_settings() {
+    local requested_type="${VIRTUALMIN_TYPE:-auto}"
+    local current_hostname=''
+
+    INSTALL_BUNDLE="${VIRTUALMIN_BUNDLE:-LAMP}"
+    INSTALL_BUNDLE="${INSTALL_BUNDLE^^}"
+
+    case "$INSTALL_BUNDLE" in
+        LAMP|LEMP)
+            ;;
+        *)
+            fail "Bundle invalido: $INSTALL_BUNDLE. Usa LAMP o LEMP."
             ;;
     esac
+
+    if [[ -n "${VIRTUALMIN_HOSTNAME:-}" ]]; then
+        INSTALL_HOSTNAME="$VIRTUALMIN_HOSTNAME"
+    else
+        current_hostname="$(get_current_hostname)"
+        if is_fqdn "$current_hostname"; then
+            INSTALL_HOSTNAME="$current_hostname"
+        fi
+    fi
+
+    if [[ -n "$INSTALL_HOSTNAME" ]] && ! is_fqdn "$INSTALL_HOSTNAME"; then
+        fail "Hostname invalido: $INSTALL_HOSTNAME. Debe ser un FQDN valido, por ejemplo panel.example.com."
+    fi
+
+    case "$requested_type" in
+        auto)
+            if [[ -n "$INSTALL_HOSTNAME" ]]; then
+                INSTALL_TYPE='full'
+            else
+                INSTALL_TYPE='mini'
+                log_warn 'No se detecto FQDN. Se usara instalacion mini para evitar una configuracion de correo no valida.'
+            fi
+            ;;
+        full|mini)
+            INSTALL_TYPE="$requested_type"
+            ;;
+        *)
+            fail "Tipo de instalacion invalido: $requested_type. Usa auto, full o mini."
+            ;;
+    esac
+
+    if [[ "$INSTALL_TYPE" == 'full' && -z "$INSTALL_HOSTNAME" ]]; then
+        fail 'La instalacion full requiere un FQDN valido. Configura el hostname del servidor o exporta VIRTUALMIN_HOSTNAME=panel.example.com.'
+    fi
+}
+
+ensure_hostname_resolution() {
+    local short_hostname hosts_line
+
+    [[ -n "$INSTALL_HOSTNAME" ]] || return 0
+
+    short_hostname="${INSTALL_HOSTNAME%%.*}"
+    SERVER_IP="$(get_server_ip)"
+
+    if [[ -z "$SERVER_IP" || "$SERVER_IP" == '127.0.0.1' ]]; then
+        SERVER_IP='127.0.1.1'
+    fi
+
+    if grep -Eq "(^|[[:space:]])${INSTALL_HOSTNAME//./\\.}($|[[:space:]])" /etc/hosts 2>/dev/null; then
+        return 0
+    fi
+
+    hosts_line="$(printf '%s %s %s' "$SERVER_IP" "$INSTALL_HOSTNAME" "$short_hostname")"
+    printf '%s\n' "$hosts_line" >> /etc/hosts
 }
 
 install_virtualmin() {
-    local installer_path="$TEMP_DIR/virtualmin-install.sh"
-    local mem_kb mem_gb install_hostname
-    local -a installer_args=(--force)
+    local installer_path="$TEMP_DIR/virtualmin-install"
+    local -a installer_args=(--bundle "$INSTALL_BUNDLE" --type "$INSTALL_TYPE" --yes)
 
-    echo -e "${GREEN}Instalando Virtualmin...${NC}"
-    curl -fsSL -o "$installer_path" https://software.virtualmin.com/gpl/scripts/install.sh
-    if ! head -1 "$installer_path" | grep -qE '^#!/bin/(ba)?sh'; then
-        echo -e "${RED}Error: El instalador oficial de Virtualmin no parece válido${NC}" >&2
-        exit 1
+    if [[ -n "$INSTALL_HOSTNAME" ]]; then
+        installer_args+=(--hostname "$INSTALL_HOSTNAME")
     fi
 
-    mem_kb=$(awk '/MemTotal/ {print $2}' /proc/meminfo)
-    mem_gb=$((mem_kb / 1024 / 1024))
-    if [[ "$mem_gb" -lt 4 ]]; then
-        echo -e "${YELLOW}Memoria limitada detectada (${mem_gb}GB). Usando modo minimal${NC}"
-        installer_args+=(--minimal)
+    if [[ "${VIRTUALMIN_DISABLE_HOSTNAME_SSL:-0}" == '1' ]]; then
+        installer_args+=(--no-hostname-ssl)
     fi
 
-    install_hostname=$(get_virtualmin_hostname)
-    if [[ -n "$install_hostname" ]]; then
-        echo -e "${YELLOW}Usando hostname para Virtualmin: ${install_hostname}${NC}"
-        installer_args+=(--hostname "$install_hostname")
+    if (( GRADE_B_FLAG == 1 )); then
+        installer_args+=(--os-grade B)
     fi
 
-    wait_for_apt_ready
-    bash "$installer_path" "${installer_args[@]}"
+    log_info "Descargando instalador oficial desde $VIRTUALMIN_INSTALL_URL"
+    download_file "$VIRTUALMIN_INSTALL_URL" "$installer_path"
+    chmod 700 "$installer_path"
+
+    if [[ "$OS" == 'ubuntu' || "$OS" == 'debian' ]]; then
+        wait_for_apt_ready
+    fi
+
+    log_info "Ejecutando instalador oficial de Virtualmin ($INSTALL_BUNDLE / $INSTALL_TYPE)"
+    sh "$installer_path" "${installer_args[@]}"
 }
-
-configure_webmin_listen() {
-    local miniserv_conf="/etc/webmin/miniserv.conf"
-    [[ -f "$miniserv_conf" ]] || return 0
-
-    cp "$miniserv_conf" "${miniserv_conf}.backup.$(date +%s)"
-    grep -vE '^(listen|bind)=' "$miniserv_conf" > "${miniserv_conf}.tmp"
-    printf 'listen=10000
-bind=0.0.0.0
-' >> "${miniserv_conf}.tmp"
-    mv "${miniserv_conf}.tmp" "$miniserv_conf"
-}
-
-configure_security() {
-    echo -e "${GREEN}Configurando seguridad básica...${NC}"
-    if command -v ufw >/dev/null 2>&1; then
-        ufw allow 10000/tcp
-        ufw reload
-    elif command -v firewall-cmd >/dev/null 2>&1; then
-        firewall-cmd --permanent --add-port=10000/tcp
-        firewall-cmd --reload
-    fi
-}
-
-
-ensure_root_alias() {
-    if [[ -f /etc/aliases ]] && ! grep -Eq '^root\s*:' /etc/aliases; then
-        printf 'root: root
-' >> /etc/aliases
-        if command -v newaliases >/dev/null 2>&1; then
-            newaliases >/dev/null 2>&1 || true
-        fi
-    fi
-}
-
-configure_apache_servername() {
-    local fqdn conf_file
-    fqdn=$(get_virtualmin_hostname)
-
-    if [[ -d /etc/apache2 ]]; then
-        conf_file='/etc/apache2/conf-available/servername.conf'
-        printf 'ServerName %s
-' "$fqdn" > "$conf_file"
-        if command -v a2enconf >/dev/null 2>&1; then
-            a2enconf servername >/dev/null 2>&1 || true
-        fi
-    elif [[ -d /etc/httpd ]]; then
-        conf_file='/etc/httpd/conf.d/servername.conf'
-        printf 'ServerName %s
-' "$fqdn" > "$conf_file"
-    fi
-}
-
 
 fix_mail_delivery_compat() {
     local wrapper_info arch
@@ -276,14 +410,13 @@ fix_mail_delivery_compat() {
     command -v postconf >/dev/null 2>&1 || return 0
     [[ -x /usr/bin/procmail-wrapper ]] || return 0
 
-    arch=$(uname -m 2>/dev/null || true)
-    wrapper_info=$(file /usr/bin/procmail-wrapper 2>/dev/null || true)
+    arch="$(uname -m 2>/dev/null || true)"
+    wrapper_info="$(file /usr/bin/procmail-wrapper 2>/dev/null || true)"
 
     case "$arch" in
         arm64|aarch64)
-            if printf '%s
-' "$wrapper_info" | grep -Eqi 'Intel 80386|x86-64'; then
-                echo -e "${YELLOW}Ajustando Postfix para Maildir directo por incompatibilidad de procmail-wrapper en ${arch}.${NC}"
+            if printf '%s\n' "$wrapper_info" | grep -Eqi 'Intel 80386|x86-64'; then
+                log_warn "Ajustando Postfix a Maildir directo por incompatibilidad de procmail-wrapper en $arch."
                 postconf -e 'mailbox_command=' 'home_mailbox=Maildir/'
                 if systemd_running; then
                     systemctl reload postfix 2>/dev/null || systemctl restart postfix 2>/dev/null || true
@@ -295,62 +428,102 @@ fix_mail_delivery_compat() {
     esac
 }
 
-systemd_running() {
-    command -v systemctl >/dev/null 2>&1 && [[ -d /run/systemd/system ]]
-}
+configure_firewall() {
+    if command -v ufw >/dev/null 2>&1; then
+        if ufw status 2>/dev/null | grep -q '^Status: active'; then
+            ufw allow 10000/tcp >/dev/null 2>&1 || true
+        fi
+        return 0
+    fi
 
-start_webmin_service() {
-    if systemd_running; then
-        systemctl enable webmin
-        systemctl start webmin
-        sleep 2
-    else
-        service webmin status >/dev/null 2>&1 || service webmin start
+    if command -v firewall-cmd >/dev/null 2>&1; then
+        if systemd_running && systemctl is-active --quiet firewalld; then
+            firewall-cmd --permanent --add-port=10000/tcp >/dev/null 2>&1 || true
+            firewall-cmd --reload >/dev/null 2>&1 || true
+        fi
     fi
 }
 
-restart_webmin_service() {
+ensure_webmin_running() {
+    [[ -d /etc/webmin ]] || fail 'No se encontro /etc/webmin despues de la instalacion.'
+
     if systemd_running; then
-        systemctl restart webmin
-        sleep 3
+        systemctl enable webmin >/dev/null 2>&1 || true
+        systemctl restart webmin >/dev/null 2>&1 || systemctl start webmin >/dev/null 2>&1 || true
+        if ! systemctl is-active --quiet webmin; then
+            fail 'webmin.service no quedo activo despues de la instalacion.'
+        fi
     else
-        service webmin restart >/dev/null 2>&1 || {
-            service webmin stop >/dev/null 2>&1 || true
-            service webmin start
-        }
+        service webmin restart >/dev/null 2>&1 || service webmin start >/dev/null 2>&1 || true
     fi
+}
+
+write_install_report() {
+    local access_host
+
+    mkdir -p "$(dirname "$REPORT_PATH")"
+
+    if [[ -n "$INSTALL_HOSTNAME" ]]; then
+        access_host="$INSTALL_HOSTNAME"
+    else
+        access_host="$SERVER_IP"
+    fi
+
+    cat > "$REPORT_PATH" <<EOF
+Webmin / Virtualmin installation report
+Generated: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+Operating system: $OS $VERSION_ID
+Bundle: $INSTALL_BUNDLE
+Install type: $INSTALL_TYPE
+Hostname: ${INSTALL_HOSTNAME:-not-set}
+Server IP: $SERVER_IP
+Webmin URL: https://$access_host:10000
+Log file: $INSTALL_LOG
+Official installer: $VIRTUALMIN_INSTALL_URL
+EOF
+
+    chmod 600 "$REPORT_PATH"
+}
+
+show_completion_message() {
+    local access_host
+
+    if [[ -n "$INSTALL_HOSTNAME" ]]; then
+        access_host="$INSTALL_HOSTNAME"
+    else
+        access_host="$SERVER_IP"
+    fi
+
+    printf '\n'
+    printf '%b========================================%b\n' "$GREEN" "$NC"
+    printf '%b   INSTALACION COMPLETADA CON EXITO    %b\n' "$GREEN" "$NC"
+    printf '%b========================================%b\n' "$GREEN" "$NC"
+    printf '%bAcceso:%b https://%s:10000\n' "$CYAN" "$NC" "$access_host"
+    printf '%bUsuario:%b root\n' "$YELLOW" "$NC"
+    printf '%bLog:%b %s\n' "$YELLOW" "$NC" "$INSTALL_LOG"
+    printf '%bReporte:%b %s\n' "$YELLOW" "$NC" "$REPORT_PATH"
 }
 
 main() {
+    enable_logging
+    log_info 'Inicio de instalacion automatica Webmin/Virtualmin.'
+
     check_root
-    check_os
+    detect_os
+    check_supported_os
     check_system_requirements
-    install_dependencies
+    assert_fresh_system
+    ensure_downloader
+    resolve_install_settings
     ensure_hostname_resolution
-    install_webmin
-
-    start_webmin_service
-
     install_virtualmin
-    ensure_root_alias
-    configure_apache_servername
     fix_mail_delivery_compat
-    configure_webmin_listen
-    configure_security
+    configure_firewall
+    ensure_webmin_running
 
-    restart_webmin_service
-
-    local server_ip
-    server_ip=$(get_server_ip)
-
-    echo
-    echo -e "${GREEN}========================================${NC}"
-    echo -e "${GREEN}     INSTALACIÓN COMPLETADA SEGURA     ${NC}"
-    echo -e "${GREEN}========================================${NC}"
-    echo -e "${CYAN}Acceso:${NC} https://${server_ip}:10000"
-    echo -e "${YELLOW}Usuario:${NC} root"
-    echo -e "${YELLOW}Contraseña:${NC} la contraseña actual de root"
-    echo -e "${YELLOW}Nota:${NC} No se habilitan túneles públicos automáticos en esta versión segura."
+    SERVER_IP="$(get_server_ip)"
+    write_install_report
+    show_completion_message
 }
 
-main
+main "$@"
