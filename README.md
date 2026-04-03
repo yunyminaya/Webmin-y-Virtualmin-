@@ -33,13 +33,13 @@ Sistema completo de Webmin/Virtualmin con seguridad empresarial, capacidad de es
 ### Requisitos Mínimos
 - Ubuntu 18.04+ / Debian 9+
 - 2GB RAM mínimo
-- 10GB espacio en disco
+- 20GB espacio en disco
 - Acceso root/sudo
 
 ### Instalación con un Solo Comando (Ubuntu)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/install_webmin_ubuntu.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/instalar_webmin_virtualmin.sh | sudo bash
 ```
 
 ### Instalación con un Solo Comando (Multi-Distro)
@@ -56,7 +56,7 @@ git clone https://github.com/yunyminaya/Webmin-y-Virtualmin-.git
 cd Webmin-y-Virtualmin-
 
 # 2. Ejecutar instalación (Ubuntu)
-sudo ./install_webmin_ubuntu.sh
+sudo ./instalar_webmin_virtualmin.sh
 
 # O ejecutar instalación (Multi-Distro)
 sudo ./instalar_webmin_virtualmin.sh
