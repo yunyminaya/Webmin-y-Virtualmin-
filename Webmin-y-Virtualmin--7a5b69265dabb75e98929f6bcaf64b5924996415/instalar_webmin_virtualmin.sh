@@ -17,6 +17,9 @@ readonly TEMP_DIR
 readonly INSTALL_LOG="${INSTALL_LOG:-/var/log/webmin-virtualmin-install.log}"
 readonly REPORT_PATH="${REPORT_PATH:-/root/webmin_virtualmin_installation_report.txt}"
 readonly VIRTUALMIN_INSTALL_URL="${VIRTUALMIN_INSTALL_URL:-https://download.virtualmin.com/virtualmin-install}"
+readonly REPO_RAW_BASE="${REPO_RAW_BASE:-https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main}"
+readonly REPO_INSTALLER_URL="${REPO_INSTALLER_URL:-${REPO_RAW_BASE}/install_pro_complete.sh}"
+readonly REPO_PROFILE_STATUS_FILE="${REPO_PROFILE_STATUS_FILE:-/root/webmin_repo_profile_status.txt}"
 
 OS=''
 VERSION_ID=''
@@ -25,6 +28,8 @@ INSTALL_BUNDLE=''
 INSTALL_HOSTNAME=''
 SERVER_IP=''
 GRADE_B_FLAG=0
+REPO_PROFILE_APPLIED=0
+REPO_PROFILE_MESSAGE='not-requested'
 
 cleanup() {
     local exit_code=$?
@@ -458,6 +463,50 @@ ensure_webmin_running() {
     fi
 }
 
+supports_repo_profile() {
+    [[ "$OS" == 'ubuntu' || "$OS" == 'debian' ]]
+}
+
+apply_repository_profile() {
+    local profile_installer="$TEMP_DIR/install_pro_complete.sh"
+
+    if [[ "${VIRTUALMIN_SKIP_REPO_PROFILE:-0}" == '1' ]]; then
+        REPO_PROFILE_MESSAGE='skipped-by-env'
+        log_warn 'Se omite el perfil profesional del repositorio porque VIRTUALMIN_SKIP_REPO_PROFILE=1.'
+        return 0
+    fi
+
+    if ! supports_repo_profile; then
+        REPO_PROFILE_MESSAGE="unsupported-os:${OS}-${VERSION_ID}"
+        log_warn "El perfil profesional del repositorio solo esta soportado automaticamente en Ubuntu/Debian. Se mantiene la instalacion base en $OS $VERSION_ID."
+        return 0
+    fi
+
+    log_info 'Aplicando perfil profesional del panel desde el mismo repositorio.'
+    download_file "$REPO_INSTALLER_URL" "$profile_installer"
+    chmod 700 "$profile_installer"
+
+    if bash "$profile_installer" --post-base; then
+        REPO_PROFILE_APPLIED=1
+        REPO_PROFILE_MESSAGE='applied'
+        log_info 'Perfil profesional del repositorio aplicado correctamente.'
+        return 0
+    fi
+
+    REPO_PROFILE_MESSAGE='failed'
+    fail 'La instalacion base termino, pero fallo la aplicacion del perfil profesional del repositorio.'
+}
+
+write_repo_profile_status() {
+    mkdir -p "$(dirname "$REPO_PROFILE_STATUS_FILE")"
+    cat > "$REPO_PROFILE_STATUS_FILE" <<EOF
+repo_profile_applied=$REPO_PROFILE_APPLIED
+repo_profile_message=$REPO_PROFILE_MESSAGE
+repo_installer_url=$REPO_INSTALLER_URL
+EOF
+    chmod 600 "$REPO_PROFILE_STATUS_FILE"
+}
+
 write_install_report() {
     local access_host
 
@@ -480,6 +529,10 @@ Server IP: $SERVER_IP
 Webmin URL: https://$access_host:10000
 Log file: $INSTALL_LOG
 Official installer: $VIRTUALMIN_INSTALL_URL
+Repository profile applied: $REPO_PROFILE_APPLIED
+Repository profile status: $REPO_PROFILE_MESSAGE
+Repository installer: $REPO_INSTALLER_URL
+Repository profile status file: $REPO_PROFILE_STATUS_FILE
 EOF
 
     chmod 600 "$REPORT_PATH"
@@ -502,6 +555,7 @@ show_completion_message() {
     printf '%bUsuario:%b root\n' "$YELLOW" "$NC"
     printf '%bLog:%b %s\n' "$YELLOW" "$NC" "$INSTALL_LOG"
     printf '%bReporte:%b %s\n' "$YELLOW" "$NC" "$REPORT_PATH"
+    printf '%bPerfil repo:%b %s\n' "$YELLOW" "$NC" "$REPO_PROFILE_MESSAGE"
 }
 
 main() {
@@ -520,8 +574,10 @@ main() {
     fix_mail_delivery_compat
     configure_firewall
     ensure_webmin_running
+    apply_repository_profile
 
     SERVER_IP="$(get_server_ip)"
+    write_repo_profile_status
     write_install_report
     show_completion_message
 }

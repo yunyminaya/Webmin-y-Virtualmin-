@@ -43,13 +43,14 @@ Ese comando hace lo siguiente:
 2. Usa `sudo` automaticamente si no estas en root.
 3. Descarga `instalar_webmin_virtualmin.sh`.
 4. Ejecuta el instalador oficial de Virtualmin con validaciones previas.
+5. En Ubuntu/Debian aplica automaticamente el perfil profesional del repositorio.
 
-## One-liner profesional del panel
+## One-liner directo del instalador principal
 
-Si quieres que el servidor quede con el perfil profesional del repositorio, incluyendo overlay runtime del panel, baseline de seguridad y sincronizacion automatica desde el mismo repo:
+Este comando ya deja el perfil profesional del panel en Ubuntu/Debian:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/install_pro_complete.sh | bash
+curl -fsSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/instalar_webmin_virtualmin.sh | sudo bash
 ```
 
 Ese flujo hace ademas:
@@ -60,6 +61,12 @@ Ese flujo hace ademas:
 4. Configura `ufw`, `fail2ban` y `unattended-upgrades`.
 5. Instala `virtualmin-pro-repo-update.timer` para resincronizar cambios del mismo repositorio.
 6. Ejecuta validacion runtime del panel antes de dar la instalacion por buena.
+
+Si quieres omitir ese perfil y dejar solo la base:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/instalar_webmin_virtualmin.sh | sudo env VIRTUALMIN_SKIP_REPO_PROFILE=1 bash
+```
 
 ## Modos de instalacion
 
@@ -98,6 +105,7 @@ curl -fsSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/mai
 - `VIRTUALMIN_DISABLE_HOSTNAME_SSL=1`: no intenta SSL inicial para el hostname.
 - `VIRTUALMIN_ALLOW_PRECONFIGURED=1`: omite el control de sistema limpio.
 - `VIRTUALMIN_ALLOW_GRADE_B=1`: permite distros Grade B.
+- `VIRTUALMIN_SKIP_REPO_PROFILE=1`: omite el perfil profesional del repositorio y deja solo la base.
 - `INSTALL_LOG`: cambia la ruta del log.
 - `REPORT_PATH`: cambia la ruta del reporte final.
 
@@ -122,6 +130,7 @@ systemctl status webmin
 cat /root/webmin_virtualmin_installation_report.txt
 tail -f /var/log/webmin-virtualmin-install.log
 bash /opt/virtualmin-pro/setup_pro_production.sh --validate
+cat /root/webmin_repo_profile_status.txt
 ```
 
 Acceso esperado:
@@ -166,6 +175,6 @@ Si tu firewall esta activo, abre el puerto manualmente segun tu distro.
 
 ## Alcance del one-liner
 
-- `install.sh` cubre la base soportada de Webmin + Virtualmin.
-- `install_pro_complete.sh` cubre el perfil profesional soportado del repositorio sobre esa base.
+- `install.sh` y `instalar_webmin_virtualmin.sh` ya aplican el perfil profesional soportado en Ubuntu/Debian.
+- `install_pro_complete.sh` sigue disponible como entrypoint explicito del perfil profesional.
 - Los otros scripts del repositorio siguen siendo complementarios y deben evaluarse por separado antes de usarlos en produccion.

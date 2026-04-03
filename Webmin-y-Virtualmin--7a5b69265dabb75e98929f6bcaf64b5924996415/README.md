@@ -4,8 +4,8 @@ Repositorio enfocado en una instalacion automatica y repetible de Webmin + Virtu
 
 Hay dos rutas soportadas:
 
-- `install.sh`: instala la base Webmin + Virtualmin GPL con validaciones de produccion.
-- `install_pro_complete.sh`: instala la base y luego aplica el perfil profesional del repositorio sobre el servidor ya instalado.
+- `install.sh`: bootstrap recomendado; descarga `instalar_webmin_virtualmin.sh`.
+- `instalar_webmin_virtualmin.sh`: instala la base Webmin + Virtualmin y, en Ubuntu/Debian, aplica automaticamente el perfil profesional del repositorio.
 
 ## Estado real del instalador
 
@@ -18,7 +18,7 @@ Hay dos rutas soportadas:
 
 ## Perfil profesional soportado
 
-La ruta `install_pro_complete.sh` deja el servidor con un perfil mas cercano a produccion profesional:
+La ruta profesional soportada ahora queda integrada en `instalar_webmin_virtualmin.sh` y `install.sh`. En Ubuntu/Debian, el servidor termina con un perfil mas cercano a produccion profesional:
 
 - despliega overlays runtime del panel Pro del repo en el modulo instalado de Virtualmin
 - activa herramientas de operacion para resellers, backup keys, mail log search, connectivity check y editor web
@@ -50,16 +50,22 @@ Sistemas Grade B solo deben usarse con validacion manual y requieren `VIRTUALMIN
 
 ## Instalacion de una linea
 
-Instalacion automatica base:
+Instalacion automatica recomendada:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/install.sh | bash
 ```
 
-Instalacion profesional del panel desde el mismo repositorio:
+Instalacion directa con el instalador principal:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/install_pro_complete.sh | bash
+curl -fsSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/instalar_webmin_virtualmin.sh | sudo bash
+```
+
+Para forzar solo la base y omitir el perfil profesional del repo:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/instalar_webmin_virtualmin.sh | sudo env VIRTUALMIN_SKIP_REPO_PROFILE=1 bash
 ```
 
 Instalacion full con hostname explicito:
@@ -82,6 +88,7 @@ curl -fsSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/mai
 - `VIRTUALMIN_DISABLE_HOSTNAME_SSL=1`: omite el intento de certificado inicial para el hostname.
 - `VIRTUALMIN_ALLOW_PRECONFIGURED=1`: permite instalar sobre un sistema no limpio. No recomendado.
 - `VIRTUALMIN_ALLOW_GRADE_B=1`: habilita sistemas Grade B. No recomendado para produccion.
+- `VIRTUALMIN_SKIP_REPO_PROFILE=1`: deja solo la instalacion base y omite el perfil profesional del repositorio.
 
 ## Requisitos minimos
 
@@ -123,6 +130,7 @@ systemctl status webmin
 cat /root/webmin_virtualmin_installation_report.txt
 tail -f /var/log/webmin-virtualmin-install.log
 bash /opt/virtualmin-pro/setup_pro_production.sh --validate
+cat /root/webmin_repo_profile_status.txt
 ```
 
 ## Archivos clave del flujo soportado

@@ -25,6 +25,18 @@ REPO_RAW_BASE="https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-
 SCRIPT_URL="${REPO_RAW_BASE}/install_pro_complete.sh"
 INSTALL_DIR="/opt/virtualmin-pro"
 START_TIME=$(date +%s)
+POST_BASE_ONLY=0
+
+parse_args() {
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --post-base)
+                POST_BASE_ONLY=1
+                ;;
+        esac
+        shift
+    done
+}
 
 echo -e "${BLUE}============================================================================${NC}"
 echo -e "${PURPLE}🚀 INSTALADOR VIRTUALMIN PRO COMPLETO - UN SOLO COMANDO${NC}"
@@ -133,7 +145,7 @@ install_webmin_virtualmin() {
         log_install "INFO" "Instalando Webmin/Virtualmin base desde el repositorio local..."
 
         if [[ -f "$INSTALL_DIR/install.sh" ]]; then
-            bash "$INSTALL_DIR/install.sh"
+            VIRTUALMIN_SKIP_REPO_PROFILE=1 bash "$INSTALL_DIR/install.sh"
         else
             log_install "ERROR" "No se encontro $INSTALL_DIR/install.sh"
             exit 1
@@ -301,7 +313,13 @@ show_final_summary() {
 # ============================================================================
 
 main() {
-    log_install "INFO" "Iniciando instalación completa de Virtualmin Pro..."
+    parse_args "$@"
+
+    if (( POST_BASE_ONLY == 1 )); then
+        log_install "INFO" "Iniciando fase post-base del perfil profesional..."
+    else
+        log_install "INFO" "Iniciando instalación completa de Virtualmin Pro..."
+    fi
 
     # Verificar sistema
     check_root
@@ -309,7 +327,11 @@ main() {
     # Instalar componentes
     install_dependencies
     download_repo
-    install_webmin_virtualmin
+    if (( POST_BASE_ONLY == 0 )); then
+        install_webmin_virtualmin
+    else
+        log_install "SUCCESS" "Instalacion base ya presente - se omite reinstall"
+    fi
     activate_all_pro
     setup_secure_updates
     create_global_command
