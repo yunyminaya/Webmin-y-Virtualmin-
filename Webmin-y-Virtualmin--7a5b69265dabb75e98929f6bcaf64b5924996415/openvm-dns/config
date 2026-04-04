@@ -1,0 +1,4 @@
+feature_dns_clouds=1
+feature_remote_dns=1
+show_provider_links=1
+max_domain_links=100

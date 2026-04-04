@@ -1,0 +1,4 @@
+feature_schedules=1
+feature_keys=1
+feature_restore=1
+default_restore_domain_limit=25

@@ -1,0 +1,7 @@
+desc=OpenVM Administration
+name=openvm_admin
+version=0.1.0
+longdesc=Administración abierta para Webmin/Virtualmin con inventario de admins extra, revendedores y auditoría operativa sin depender de licencias comerciales oficiales.
+category=System
+depends=virtual-server
+hidden=0

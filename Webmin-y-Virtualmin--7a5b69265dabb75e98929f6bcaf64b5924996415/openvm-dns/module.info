@@ -1,0 +1,7 @@
+desc=OpenVM DNS Operations
+name=openvm_dns
+version=0.1.0
+longdesc=Operaciones abiertas para DNS cloud y DNS remoto sobre Webmin/Virtualmin usando helpers GPL disponibles sin depender de licencias comerciales oficiales.
+category=System
+depends=virtual-server
+hidden=0

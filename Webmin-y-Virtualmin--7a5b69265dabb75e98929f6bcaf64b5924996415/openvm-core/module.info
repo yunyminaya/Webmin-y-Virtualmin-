@@ -1,0 +1,7 @@
+desc=OpenVM Core Tools
+name=openvm_core
+version=0.1.0
+longdesc=Herramientas abiertas para Virtualmin/Webmin con funciones operativas independientes de licencias comerciales oficiales.
+category=System
+depends=virtual-server
+hidden=0

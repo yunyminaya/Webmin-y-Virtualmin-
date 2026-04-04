@@ -1,0 +1,5 @@
+feature_html_editor=1
+feature_connectivity=1
+feature_safe_write=1
+default_edit_file=index.html
+max_preview_bytes=262144

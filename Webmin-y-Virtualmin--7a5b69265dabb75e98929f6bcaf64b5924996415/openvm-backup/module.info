@@ -1,0 +1,7 @@
+desc=OpenVM Backup Operations
+name=openvm_backup
+version=0.1.0
+longdesc=Operaciones abiertas de backup para Webmin/Virtualmin con inventario de programaciones, claves de cifrado y preparación de restauración sin depender de licencias comerciales oficiales.
+category=System
+depends=virtual-server
+hidden=0
