@@ -72,6 +72,16 @@ sudo ./instalar_webmin_virtualmin.sh
 curl -fsSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/instalar_webmin_virtualmin.sh | sudo env VIRTUALMIN_HOSTNAME=panel.example.com bash
 ```
 
+### Virtualmin Professional oficial
+
+- El comando base instala `Virtualmin GPL`.
+- Si tienes una suscripcion oficial de Virtualmin Professional, puedes instalar el panel nativo Pro pasando tu licencia al instalador.
+- Debes definir ambas variables: `VIRTUALMIN_SERIAL` y `VIRTUALMIN_KEY`.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/instalar_webmin_virtualmin.sh | sudo env VIRTUALMIN_HOSTNAME=panel.example.com VIRTUALMIN_SERIAL=TU_SERIAL VIRTUALMIN_KEY=TU_LICENSE_KEY bash
+```
+
 ## 🌐 Acceso al Sistema
 
 Una vez completada la instalación:

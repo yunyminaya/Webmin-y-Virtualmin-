@@ -16,6 +16,67 @@ export APT_LISTCHANGES_FRONTEND=none
 RESOLVED_VIRTUALMIN_HOSTNAME=""
 RESOLVED_VIRTUALMIN_HOSTNAME_SOURCE=""
 
+validate_virtualmin_license_env() {
+    local has_serial=0
+    local has_key=0
+
+    [[ -n "${VIRTUALMIN_SERIAL:-}" ]] && has_serial=1
+    [[ -n "${VIRTUALMIN_KEY:-}" ]] && has_key=1
+
+    if (( has_serial == 0 && has_key == 0 )); then
+        return 0
+    fi
+
+    if (( has_serial == 0 || has_key == 0 )); then
+        echo -e "${RED}Error: Para instalar Virtualmin Professional oficial debes definir VIRTUALMIN_SERIAL y VIRTUALMIN_KEY juntos${NC}" >&2
+        exit 1
+    fi
+}
+
+virtualmin_pro_requested() {
+    [[ -n "${VIRTUALMIN_SERIAL:-}" && -n "${VIRTUALMIN_KEY:-}" ]]
+}
+
+shell_single_quote() {
+    local value="$1"
+    printf "'%s'" "${value//\'/\'\"\'\"\'}"
+}
+
+inject_virtualmin_license() {
+    local installer_path="$1"
+    local patched_path="$TEMP_DIR/virtualmin-install.patched.sh"
+    local serial_assignment key_assignment line
+    local serial_replaced=0
+    local key_replaced=0
+
+    virtualmin_pro_requested || return 0
+
+    serial_assignment="SERIAL=$(shell_single_quote "$VIRTUALMIN_SERIAL")"
+    key_assignment="KEY=$(shell_single_quote "$VIRTUALMIN_KEY")"
+
+    : > "$patched_path"
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        if (( serial_replaced == 0 )) && [[ "$line" == SERIAL=* ]]; then
+            printf '%s\n' "$serial_assignment" >> "$patched_path"
+            serial_replaced=1
+        elif (( key_replaced == 0 )) && [[ "$line" == KEY=* ]]; then
+            printf '%s\n' "$key_assignment" >> "$patched_path"
+            key_replaced=1
+        else
+            printf '%s\n' "$line" >> "$patched_path"
+        fi
+    done < "$installer_path"
+
+    if (( serial_replaced == 0 || key_replaced == 0 )); then
+        echo -e "${RED}Error: No se pudo preparar el instalador oficial de Virtualmin Professional${NC}" >&2
+        exit 1
+    fi
+
+    mv "$patched_path" "$installer_path"
+    chmod 700 "$installer_path"
+    echo -e "${YELLOW}Licencia detectada. Se instalara Virtualmin Professional oficial usando tu suscripcion.${NC}"
+}
+
 cleanup() {
     local exit_code=$?
     rm -rf "$TEMP_DIR" 2>/dev/null || true
@@ -262,12 +323,17 @@ install_virtualmin() {
     local mem_kb mem_gb install_hostname
     local -a installer_args=(--force)
 
-    echo -e "${GREEN}Instalando Virtualmin...${NC}"
+    if virtualmin_pro_requested; then
+        echo -e "${GREEN}Instalando Virtualmin Professional oficial...${NC}"
+    else
+        echo -e "${GREEN}Instalando Virtualmin GPL...${NC}"
+    fi
     curl -fsSL -o "$installer_path" https://software.virtualmin.com/gpl/scripts/install.sh
     if ! head -1 "$installer_path" | grep -qE '^#!/bin/(ba)?sh'; then
         echo -e "${RED}Error: El instalador oficial de Virtualmin no parece válido${NC}" >&2
         exit 1
     fi
+    inject_virtualmin_license "$installer_path"
 
     mem_kb=$(awk '/MemTotal/ {print $2}' /proc/meminfo)
     mem_gb=$((mem_kb / 1024 / 1024))
@@ -392,6 +458,7 @@ restart_webmin_service() {
 
 main() {
     check_root
+    validate_virtualmin_license_env
     check_os
     check_system_requirements
     install_dependencies
