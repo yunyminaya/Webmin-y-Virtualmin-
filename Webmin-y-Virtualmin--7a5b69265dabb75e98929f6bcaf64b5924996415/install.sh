@@ -3,7 +3,9 @@ set -euo pipefail
 
 readonly REPO_RAW_BASE="${REPO_RAW_BASE:-https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main}"
 readonly REMOTE_INSTALLER_URL="${REMOTE_INSTALLER_URL:-${REPO_RAW_BASE}/instalar_webmin_virtualmin.sh}"
-readonly PRESERVED_ENV_VARS="VIRTUALMIN_HOSTNAME,VIRTUALMIN_TYPE,VIRTUALMIN_BUNDLE,VIRTUALMIN_DISABLE_HOSTNAME_SSL,VIRTUALMIN_ALLOW_PRECONFIGURED,VIRTUALMIN_ALLOW_GRADE_B,VIRTUALMIN_INSTALL_URL,INSTALL_LOG,REPORT_PATH,VIRTUALMIN_SKIP_REPO_PROFILE,REPO_RAW_BASE,REPO_INSTALLER_URL,REPO_PROFILE_STATUS_FILE"
+readonly OPENVM_ENABLE_BOOTSTRAP="${OPENVM_ENABLE_BOOTSTRAP:-1}"
+readonly REMOTE_OPENVM_INSTALLER_URL="${REMOTE_OPENVM_INSTALLER_URL:-${REPO_RAW_BASE}/install_openvm_production.sh}"
+readonly PRESERVED_ENV_VARS="VIRTUALMIN_HOSTNAME,VIRTUALMIN_TYPE,VIRTUALMIN_BUNDLE,VIRTUALMIN_DISABLE_HOSTNAME_SSL,VIRTUALMIN_ALLOW_PRECONFIGURED,VIRTUALMIN_ALLOW_GRADE_B,VIRTUALMIN_INSTALL_URL,INSTALL_LOG,REPORT_PATH,VIRTUALMIN_SKIP_REPO_PROFILE,REPO_RAW_BASE,REPO_INSTALLER_URL,REPO_PROFILE_STATUS_FILE,OPENVM_ENABLE_BOOTSTRAP,REMOTE_OPENVM_INSTALLER_URL"
 
 TEMP_DIR=""
 
@@ -48,14 +50,36 @@ run_installer() {
     sudo --preserve-env="$PRESERVED_ENV_VARS" bash "$installer_path" "$@"
 }
 
+run_openvm_post_install() {
+    local script_dir="$1"
+    shift
+
+    if [[ "$OPENVM_ENABLE_BOOTSTRAP" == "0" ]]; then
+        printf 'OpenVM bootstrap deshabilitado por OPENVM_ENABLE_BOOTSTRAP=0\n'
+        return 0
+    fi
+
+    local openvm_installer=""
+    if [[ -f "$script_dir/install_openvm_production.sh" ]]; then
+        openvm_installer="$script_dir/install_openvm_production.sh"
+    else
+        openvm_installer="$TEMP_DIR/install_openvm_production.sh"
+        download_file "$REMOTE_OPENVM_INSTALLER_URL" "$openvm_installer"
+        chmod 700 "$openvm_installer"
+    fi
+
+    printf 'Ejecutando post-instalación nativa de OpenVM...\n'
+    run_installer "$openvm_installer" "$@"
+}
+
 main() {
     local script_source="${BASH_SOURCE[0]-}"
+    local script_dir=""
     local local_installer=""
 
     trap cleanup EXIT INT TERM
 
     if [[ -n "$script_source" && -f "$script_source" ]]; then
-        local script_dir
         script_dir="$(CDPATH='' cd -- "$(dirname -- "$script_source")" && pwd)"
 
         if [[ -f "$script_dir/instalar_webmin_virtualmin.sh" ]]; then
@@ -65,6 +89,7 @@ main() {
 
     if [[ -n "$local_installer" ]]; then
         run_installer "$local_installer" "$@"
+        run_openvm_post_install "$script_dir" "$@"
         return 0
     fi
 
@@ -75,6 +100,7 @@ main() {
     chmod 700 "$downloaded_installer"
 
     run_installer "$downloaded_installer" "$@"
+    run_openvm_post_install "$TEMP_DIR" "$@"
 }
 
 main "$@"
