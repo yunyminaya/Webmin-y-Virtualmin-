@@ -20,6 +20,7 @@ readonly VIRTUALMIN_INSTALL_URL="${VIRTUALMIN_INSTALL_URL:-https://download.virt
 readonly REPO_RAW_BASE="${REPO_RAW_BASE:-https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main}"
 readonly REPO_INSTALLER_URL="${REPO_INSTALLER_URL:-${REPO_RAW_BASE}/install_pro_complete.sh}"
 readonly REPO_PROFILE_STATUS_FILE="${REPO_PROFILE_STATUS_FILE:-/root/webmin_repo_profile_status.txt}"
+readonly VIRTUALMIN_AUTO_FQDN_DOMAIN="${VIRTUALMIN_AUTO_FQDN_DOMAIN:-sslip.io}"
 
 OS=''
 VERSION_ID=''
@@ -311,9 +312,26 @@ get_current_hostname() {
     printf '%s\n' "$hostname_value"
 }
 
+build_auto_fqdn_from_ip() {
+    local ip_address='' ip_label=''
+
+    ip_address="$(get_server_ip)"
+    [[ -n "$ip_address" && "$ip_address" != '127.0.0.1' ]] || return 1
+
+    ip_label="${ip_address//./-}"
+    ip_label="${ip_label//:/-}"
+    ip_label="${ip_label//[^A-Za-z0-9-]/-}"
+    ip_label="${ip_label#-}"
+    ip_label="${ip_label%-}"
+    [[ -n "$ip_label" ]] || return 1
+
+    printf '%s.%s\n' "$ip_label" "$VIRTUALMIN_AUTO_FQDN_DOMAIN"
+}
+
 resolve_install_settings() {
     local requested_type="${VIRTUALMIN_TYPE:-auto}"
     local current_hostname=''
+    local auto_generated_hostname=''
 
     INSTALL_BUNDLE="${VIRTUALMIN_BUNDLE:-LAMP}"
     INSTALL_BUNDLE="${INSTALL_BUNDLE^^}"
@@ -332,6 +350,9 @@ resolve_install_settings() {
         current_hostname="$(get_current_hostname)"
         if is_fqdn "$current_hostname"; then
             INSTALL_HOSTNAME="$current_hostname"
+        elif auto_generated_hostname="$(build_auto_fqdn_from_ip 2>/dev/null)" && is_fqdn "$auto_generated_hostname"; then
+            INSTALL_HOSTNAME="$auto_generated_hostname"
+            log_warn "No se detecto FQDN valido. Se generara automaticamente $INSTALL_HOSTNAME para permitir instalacion full."
         fi
     fi
 
@@ -344,8 +365,8 @@ resolve_install_settings() {
             if [[ -n "$INSTALL_HOSTNAME" ]]; then
                 INSTALL_TYPE='full'
             else
-                INSTALL_TYPE='mini'
-                log_warn 'No se detecto FQDN. Se usara instalacion mini para evitar una configuracion de correo no valida.'
+                INSTALL_TYPE='full'
+                fail 'No se pudo generar un FQDN valido para forzar instalacion full. Configura VIRTUALMIN_HOSTNAME o revisa la IP principal del servidor.'
             fi
             ;;
         full|mini)
