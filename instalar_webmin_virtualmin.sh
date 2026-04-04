@@ -13,6 +13,9 @@ readonly TEMP_DIR="/tmp/virtualmin_secure_install_$$"
 export DEBIAN_FRONTEND=noninteractive
 export APT_LISTCHANGES_FRONTEND=none
 
+RESOLVED_VIRTUALMIN_HOSTNAME=""
+RESOLVED_VIRTUALMIN_HOSTNAME_SOURCE=""
+
 cleanup() {
     local exit_code=$?
     rm -rf "$TEMP_DIR" 2>/dev/null || true
@@ -20,6 +23,48 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 mkdir -p "$TEMP_DIR"
+
+is_fqdn() {
+    local hostname_value="$1"
+    local fqdn_regex='^[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+$'
+
+    [[ -n "$hostname_value" ]] || return 1
+    [[ ! "$hostname_value" =~ (^localhost$|\.local$|\.localdomain$) ]] || return 1
+    [[ "$hostname_value" =~ $fqdn_regex ]]
+}
+
+get_current_hostname() {
+    local current=""
+
+    current=$(hostname -f 2>/dev/null || true)
+    if [[ -z "$current" ]]; then
+        current=$(hostnamectl --static 2>/dev/null || true)
+    fi
+    if [[ -z "$current" ]]; then
+        current=$(hostname 2>/dev/null || true)
+    fi
+
+    printf '%s
+' "$current"
+}
+
+sanitize_hostname_label() {
+    local label="${1:-server}"
+
+    label=$(printf '%s
+' "$label" | tr '[:upper:]' '[:lower:]')
+    label=$(printf '%s
+' "$label" | tr -cs 'a-z0-9-' '-')
+    label=$(printf '%s
+' "$label" | sed 's/^-*//; s/-*$//; s/--*/-/g')
+
+    if [[ -z "$label" ]]; then
+        label='server'
+    fi
+
+    printf '%.63s
+' "$label"
+}
 
 get_server_ip() {
     local ip=""
@@ -37,25 +82,49 @@ get_server_ip() {
 ' "$ip"
 }
 
-get_virtualmin_hostname() {
+resolve_virtualmin_hostname() {
     local current short fallback
-    current=$(hostname -f 2>/dev/null || hostname 2>/dev/null || true)
-    if [[ -n "$current" && "$current" == *.* ]]; then
-        printf '%s
-' "$current"
+
+    if [[ -n "$RESOLVED_VIRTUALMIN_HOSTNAME" ]]; then
         return 0
     fi
 
     if [[ -n "${VIRTUALMIN_HOSTNAME:-}" ]]; then
-        printf '%s
-' "$VIRTUALMIN_HOSTNAME"
+        if ! is_fqdn "$VIRTUALMIN_HOSTNAME"; then
+            echo -e "${RED}Error: VIRTUALMIN_HOSTNAME debe ser un FQDN valido, por ejemplo panel.example.com${NC}" >&2
+            exit 1
+        fi
+
+        RESOLVED_VIRTUALMIN_HOSTNAME="$VIRTUALMIN_HOSTNAME"
+        RESOLVED_VIRTUALMIN_HOSTNAME_SOURCE='env'
         return 0
     fi
 
-    short=$(hostname -s 2>/dev/null || hostname 2>/dev/null || printf 'server')
-    fallback="${short}.localdomain"
+    current=$(get_current_hostname)
+    if is_fqdn "$current"; then
+        RESOLVED_VIRTUALMIN_HOSTNAME="$current"
+        RESOLVED_VIRTUALMIN_HOSTNAME_SOURCE='system'
+        return 0
+    fi
+
+    short=$(sanitize_hostname_label "$(hostname -s 2>/dev/null || hostname 2>/dev/null || printf 'server')")
+    fallback="${short}.home.arpa"
+
+    RESOLVED_VIRTUALMIN_HOSTNAME="$fallback"
+    RESOLVED_VIRTUALMIN_HOSTNAME_SOURCE='fallback'
+
+    if [[ -n "$current" ]]; then
+        echo -e "${YELLOW}Advertencia: hostname actual invalido para Virtualmin (${current}). Se usara ${fallback}.${NC}" >&2
+    else
+        echo -e "${YELLOW}Advertencia: no se detecto un hostname valido. Se usara ${fallback}.${NC}" >&2
+    fi
+    echo -e "${YELLOW}Define un FQDN real con VIRTUALMIN_HOSTNAME=panel.example.com para correo y SSL publicos.${NC}" >&2
+}
+
+get_virtualmin_hostname() {
+    resolve_virtualmin_hostname
     printf '%s
-' "$fallback"
+' "$RESOLVED_VIRTUALMIN_HOSTNAME"
 }
 
 
@@ -326,6 +395,7 @@ main() {
     check_os
     check_system_requirements
     install_dependencies
+    resolve_virtualmin_hostname
     ensure_hostname_resolution
     install_webmin
 
@@ -351,6 +421,10 @@ main() {
     echo -e "${YELLOW}Usuario:${NC} root"
     echo -e "${YELLOW}Contraseña:${NC} la contraseña actual de root"
     echo -e "${YELLOW}Nota:${NC} No se habilitan túneles públicos automáticos en esta versión segura."
+    if [[ "$RESOLVED_VIRTUALMIN_HOSTNAME_SOURCE" == 'fallback' ]]; then
+        echo -e "${YELLOW}Hostname aplicado:${NC} ${RESOLVED_VIRTUALMIN_HOSTNAME}"
+        echo -e "${YELLOW}Importante:${NC} Cambialo luego por un FQDN publico para correo y SSL reales."
+    fi
 }
 
 main

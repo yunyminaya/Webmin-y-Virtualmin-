@@ -62,6 +62,16 @@ sudo ./instalar_webmin_virtualmin.sh
 sudo ./instalar_webmin_virtualmin.sh
 ```
 
+### Hostname para Virtualmin
+
+- Virtualmin requiere un FQDN valido; `*.localdomain` y hostnames sin dominio fallan en la instalacion oficial.
+- Si detecta un hostname invalido, el instalador ahora genera automaticamente uno local como `equipo.home.arpa` para completar la instalacion.
+- Para produccion, define un hostname real antes de instalar:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/instalar_webmin_virtualmin.sh | sudo env VIRTUALMIN_HOSTNAME=panel.example.com bash
+```
+
 ## 🌐 Acceso al Sistema
 
 Una vez completada la instalación:
