@@ -1138,27 +1138,41 @@ setup_custom_links() {
     local custom_dir="/etc/webmin/custom"
     mkdir -p "$custom_dir"
 
-    # Crear enlaces personalizados de ejemplo
-    cat > "${custom_dir}/0" << 'CUSTOM'
-name=Panel de Estado PRO
-url=https://localhost:10000/virtual-server/index.cgi
-desc=Dashboard completo del servidor
-icon=images/server.gif
-CUSTOM
+    write_custom_link() {
+        local id="$1"
+        local name="$2"
+        local url="$3"
+        local desc="$4"
+        local icon="$5"
 
-    cat > "${custom_dir}/1" << 'CUSTOM'
-name=Verificar Conectividad
-url=https://localhost:10000/virtual-server/pro/connectivity.cgi
-desc=Comprobar accesibilidad externa de dominios
-icon=images/network.gif
+        cat > "${custom_dir}/${id}" <<CUSTOM
+name=${name}
+url=${url}
+desc=${desc}
+icon=${icon}
 CUSTOM
+    }
 
-    cat > "${custom_dir}/2" << 'CUSTOM'
-name=Buscar en Logs de Correo
-url=https://localhost:10000/virtual-server/pro/maillog.cgi
-desc=Buscar mensajes en logs de Postfix
-icon=images/mail.gif
-CUSTOM
+    # Crear enlaces personalizados para modulos GPL, OpenVM y utilidades PRO
+    write_custom_link 0 "Panel de Estado GPL" "https://localhost:10000/virtual-server/index.cgi" "Dashboard principal de Virtualmin GPL" "images/server.gif"
+    write_custom_link 1 "OpenVM Suite" "https://localhost:10000/openvm-suite/index.cgi" "Panel unificado de modulos OpenVM" "images/server.gif"
+    write_custom_link 2 "OpenVM Core" "https://localhost:10000/openvm-core/index.cgi" "Utilidades operativas abiertas sobre GPL" "images/link.gif"
+    write_custom_link 3 "OpenVM Administration" "https://localhost:10000/openvm-admin/index.cgi" "Administracion delegada, revendedores y auditoria" "images/link.gif"
+    write_custom_link 4 "OpenVM DNS" "https://localhost:10000/openvm-dns/index.cgi" "Inventario y operaciones DNS abiertas" "images/network.gif"
+    write_custom_link 5 "OpenVM Backup" "https://localhost:10000/openvm-backup/index.cgi" "Backups abiertos sobre runtime GPL" "images/link.gif"
+    write_custom_link 6 "Editor HTML GPL/OpenVM" "https://localhost:10000/openvm-core/edit_html.cgi" "Editor HTML abierto sin licencia comercial" "images/link.gif"
+    write_custom_link 7 "Conectividad GPL/OpenVM" "https://localhost:10000/openvm-core/connectivity.cgi" "Diagnostico abierto de conectividad" "images/network.gif"
+    write_custom_link 8 "Mail Logs GPL/OpenVM" "https://localhost:10000/openvm-core/maillog.cgi" "Busqueda abierta en logs de correo" "images/mail.gif"
+    write_custom_link 9 "Backup Keys GPL/OpenVM" "https://localhost:10000/openvm-core/list_bkeys.cgi" "Inventario abierto de claves de backup" "images/link.gif"
+    write_custom_link 10 "Remote DNS GPL/OpenVM" "https://localhost:10000/openvm-core/remotedns.cgi" "Inventario y operacion de DNS remoto" "images/network.gif"
+    write_custom_link 11 "Edit Web Pages PRO" "https://localhost:10000/virtual-server/pro/edit_html.cgi" "Editor web estilo PRO integrado al entorno" "images/link.gif"
+    write_custom_link 12 "Verificar Conectividad PRO" "https://localhost:10000/virtual-server/pro/connectivity.cgi" "Comprobar accesibilidad externa de dominios" "images/network.gif"
+    write_custom_link 13 "Buscar en Logs de Correo PRO" "https://localhost:10000/virtual-server/pro/maillog.cgi" "Buscar mensajes en logs de Postfix" "images/mail.gif"
+    write_custom_link 14 "Claves de Backup PRO" "https://localhost:10000/virtual-server/pro/list_bkeys.cgi" "Inventario de claves de backup estilo PRO" "images/link.gif"
+    write_custom_link 15 "Intelligent Firewall" "https://localhost:10000/intelligent-firewall/index.cgi" "Firewall adaptativo integrado con Webmin" "images/network.gif"
+    write_custom_link 16 "Zero Trust" "https://localhost:10000/zero-trust/index.cgi" "Orquestacion Zero Trust" "images/network.gif"
+    write_custom_link 17 "SIEM" "https://localhost:10000/siem/index.cgi" "Correlacion de eventos y analisis forense" "images/link.gif"
+    write_custom_link 18 "Multi-cloud Integration" "https://localhost:10000/multi_cloud_integration/webmin_integration.cgi" "Integracion cloud unificada desde Webmin" "images/network.gif"
 
     cat > /usr/local/bin/vmin-add-link << 'LINKSCRIPT'
 #!/bin/bash

@@ -34,6 +34,7 @@ expected_entrypoints=(
 
 INSTALLER_FILE="${ROOT_DIR}/install_openvm_suite.sh"
 PRODUCTION_INSTALLER_FILE="${ROOT_DIR}/install_openvm_production.sh"
+PRO_COMPAT_TEST_FILE="${ROOT_DIR}/tests/functional/test_virtualmin_pro_compat.sh"
 
 echo "[openvm-stack-test] Verificando módulos declarados en instalador principal"
 for module in "${expected_modules[@]}"; do
@@ -57,6 +58,16 @@ echo "[openvm-stack-test] Verificando instalador de producción"
   exit 1
 }
 bash -n "$PRODUCTION_INSTALLER_FILE"
+
+echo "[openvm-stack-test] Verificando test de compatibilidad GPL/PRO"
+[[ -f "$PRO_COMPAT_TEST_FILE" ]] || {
+  echo "No existe test de compatibilidad GPL/PRO" >&2
+  exit 1
+}
+grep -q "test_virtualmin_pro_compat.sh" "$PRODUCTION_INSTALLER_FILE" || {
+  echo "El instalador de producción no ejecuta el test de compatibilidad GPL/PRO" >&2
+  exit 1
+}
 
 echo "[openvm-stack-test] Verificando README de producción"
 [[ -f "${ROOT_DIR}/docs/OPENVM_PRODUCTION_README.md" ]] || {

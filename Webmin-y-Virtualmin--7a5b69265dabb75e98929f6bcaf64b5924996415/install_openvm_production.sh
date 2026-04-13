@@ -10,6 +10,7 @@ VALIDATION_SCRIPTS=(
   "./tests/functional/test_openvm_suite.sh"
   "./tests/functional/test_openvm_dns.sh"
   "./tests/functional/test_openvm_backup.sh"
+  "./tests/functional/test_virtualmin_pro_compat.sh"
   "./tests/integration/test_openvm_stack.sh"
 )
 
