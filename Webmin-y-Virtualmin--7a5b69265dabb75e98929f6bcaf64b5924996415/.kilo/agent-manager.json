@@ -1,0 +1,17 @@
+{
+  "worktrees": {
+    "wt-1775181555965-1": {
+      "branch": "tabby-firewall",
+      "path": "/Users/yunyminaya/Wedmin Y Virtualmin/Webmin-y-Virtualmin--7a5b69265dabb75e98929f6bcaf64b5924996415/.kilo/worktrees/tabby-firewall",
+      "parentBranch": "main",
+      "createdAt": "2026-04-03T01:59:15.965Z",
+      "remote": "origin"
+    }
+  },
+  "sessions": {
+    "ses_2aeef15dfffexPcgvofJEqvvvc": {
+      "worktreeId": "wt-1775181555965-1",
+      "createdAt": "2026-04-03T01:59:17.258Z"
+    }
+  }
+}

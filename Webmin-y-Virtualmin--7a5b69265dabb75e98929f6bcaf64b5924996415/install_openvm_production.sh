@@ -13,6 +13,7 @@ VALIDATION_SCRIPTS=(
   "./tests/functional/test_virtualmin_pro_compat.sh"
   "./tests/integration/test_openvm_stack.sh"
 )
+RUNTIME_SYNC_SCRIPT="${SCRIPT_DIR}/setup_pro_production.sh"
 
 log() {
   printf '[openvm-production] %s\n' "$1"
@@ -39,7 +40,10 @@ run_validations() {
 main() {
   log "Iniciando despliegue OpenVM para producción"
   ensure_executable "${SCRIPT_DIR}/install_openvm_suite.sh"
+   ensure_executable "$RUNTIME_SYNC_SCRIPT"
   "${SCRIPT_DIR}/install_openvm_suite.sh"
+  log "Sincronizando overlay runtime GPL/OpenVM sobre Virtualmin"
+  "$RUNTIME_SYNC_SCRIPT" --sync-runtime
   run_validations
   log "Despliegue y validación OpenVM completados"
 }

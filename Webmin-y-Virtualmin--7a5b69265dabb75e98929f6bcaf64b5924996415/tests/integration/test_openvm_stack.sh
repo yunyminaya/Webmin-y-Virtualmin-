@@ -35,6 +35,7 @@ expected_entrypoints=(
 INSTALLER_FILE="${ROOT_DIR}/install_openvm_suite.sh"
 PRODUCTION_INSTALLER_FILE="${ROOT_DIR}/install_openvm_production.sh"
 PRO_COMPAT_TEST_FILE="${ROOT_DIR}/tests/functional/test_virtualmin_pro_compat.sh"
+RUNTIME_SYNC_FILE="${ROOT_DIR}/setup_pro_production.sh"
 
 echo "[openvm-stack-test] Verificando módulos declarados en instalador principal"
 for module in "${expected_modules[@]}"; do
@@ -58,6 +59,21 @@ echo "[openvm-stack-test] Verificando instalador de producción"
   exit 1
 }
 bash -n "$PRODUCTION_INSTALLER_FILE"
+
+echo "[openvm-stack-test] Verificando sincronización runtime GPL/OpenVM"
+[[ -f "$RUNTIME_SYNC_FILE" ]] || {
+  echo "No existe script de sincronización runtime" >&2
+  exit 1
+}
+bash -n "$RUNTIME_SYNC_FILE"
+grep -q "setup_pro_production.sh" "$PRODUCTION_INSTALLER_FILE" || {
+  echo "El instalador de producción no integra setup_pro_production.sh" >&2
+  exit 1
+}
+grep -q -- "--sync-runtime" "$PRODUCTION_INSTALLER_FILE" || {
+  echo "El instalador de producción no sincroniza el overlay runtime GPL/OpenVM" >&2
+  exit 1
+}
 
 echo "[openvm-stack-test] Verificando test de compatibilidad GPL/PRO"
 [[ -f "$PRO_COMPAT_TEST_FILE" ]] || {

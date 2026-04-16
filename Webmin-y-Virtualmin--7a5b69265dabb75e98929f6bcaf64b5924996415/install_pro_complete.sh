@@ -227,6 +227,10 @@ case "$1" in
     "update")
         cd "$INSTALL_DIR" && bash update_system_secure.sh
         ;;
+    "rollout")
+        shift
+        cd "$INSTALL_DIR" && bash scripts/rollout_openvm_update.sh "$@"
+        ;;
     "repair")
         cd "$INSTALL_DIR" && bash auto_repair.sh
         ;;
@@ -247,6 +251,7 @@ case "$1" in
         echo "   virtualmin-pro dashboard  - Dashboard Pro"
         echo "   virtualmin-pro status     - Estado del sistema"
         echo "   virtualmin-pro update     - Actualizar sistema"
+        echo "   virtualmin-pro rollout    - Actualizar múltiples servidores"
         echo "   virtualmin-pro repair     - Auto-reparación"
         echo "   virtualmin-pro resellers  - Gestión de revendedores"
         echo "   virtualmin-pro ssl        - SSL Manager Pro"
@@ -301,6 +306,7 @@ show_final_summary() {
     echo -e "${YELLOW}   virtualmin-pro ssl        ${NC}# SSL Manager Pro"
     echo -e "${YELLOW}   virtualmin-pro backup     ${NC}# Backups empresariales"
     echo -e "${YELLOW}   virtualmin-pro analytics  ${NC}# Analytics Pro"
+    echo -e "${YELLOW}   virtualmin-pro rollout    ${NC}# Actualización masiva de servidores"
     echo
     echo -e "${BLUE}============================================================================${NC}"
     echo -e "${PURPLE}🎉 ¡VIRTUALMIN PRO COMPLETO INSTALADO Y ACTIVO!${NC}"

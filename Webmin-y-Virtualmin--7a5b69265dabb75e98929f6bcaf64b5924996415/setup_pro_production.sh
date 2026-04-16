@@ -111,9 +111,18 @@ install_runtime_file() {
     chown root:root "$target_file" 2>/dev/null || true
 }
 
+repo_runtime_overlay_files() {
+    find "${VIRTUALMIN_REPO_DIR}/pro" -maxdepth 1 -type f \( -name '*.cgi' -o -name '*.pl' \) -print0 | sort -z
+}
+
 deploy_runtime_panel_overlay() {
     info "[Panel] Desplegando overlays runtime del panel Pro..."
     log "Iniciando deploy runtime overlay"
+
+    local source_file=""
+    local relative_path=""
+    local target_file=""
+    local deployed_count=0
 
     [[ -d "$VIRTUALMIN_REPO_DIR" ]] || {
         record_failure "No se encontro el arbol fuente local de Virtualmin: $VIRTUALMIN_REPO_DIR"
@@ -122,13 +131,26 @@ deploy_runtime_panel_overlay() {
 
     mkdir -p "$WEBMIN_PRO_DIR"
 
-    install_runtime_file "${VIRTUALMIN_REPO_DIR}/pro/connectivity.cgi" "${WEBMIN_PRO_DIR}/connectivity.cgi" || return 1
-    install_runtime_file "${VIRTUALMIN_REPO_DIR}/pro/maillog.cgi" "${WEBMIN_PRO_DIR}/maillog.cgi" || return 1
-    install_runtime_file "${VIRTUALMIN_REPO_DIR}/pro/edit_html.cgi" "${WEBMIN_PRO_DIR}/edit_html.cgi" || return 1
-    install_runtime_file "${VIRTUALMIN_REPO_DIR}/pro/list_bkeys.cgi" "${WEBMIN_PRO_DIR}/list_bkeys.cgi" || return 1
-    install_runtime_file "${VIRTUALMIN_REPO_DIR}/remotedns.cgi" "${WEBMIN_MODULE_DIR}/remotedns.cgi" || return 1
+    while IFS= read -r -d '' source_file; do
+        relative_path="${source_file#${VIRTUALMIN_REPO_DIR}/}"
+        target_file="${WEBMIN_MODULE_DIR}/${relative_path}"
+        install_runtime_file "$source_file" "$target_file" || return 1
+        deployed_count=$((deployed_count + 1))
+    done < <(repo_runtime_overlay_files)
 
-    ok "[Panel] Overlays runtime Pro desplegados en $WEBMIN_MODULE_DIR"
+    install_runtime_file "${VIRTUALMIN_REPO_DIR}/virtual-server-lib-funcs.pl" "${WEBMIN_MODULE_DIR}/virtual-server-lib-funcs.pl" 644 || return 1
+    deployed_count=$((deployed_count + 1))
+    install_runtime_file "${VIRTUALMIN_REPO_DIR}/pro-tip-lib.pl" "${WEBMIN_MODULE_DIR}/pro-tip-lib.pl" 644 || return 1
+    deployed_count=$((deployed_count + 1))
+    if [[ -f "${VIRTUALMIN_REPO_DIR}/edit_newresels.cgi" ]]; then
+        install_runtime_file "${VIRTUALMIN_REPO_DIR}/edit_newresels.cgi" "${WEBMIN_MODULE_DIR}/edit_newresels.cgi" || return 1
+        deployed_count=$((deployed_count + 1))
+    fi
+
+    install_runtime_file "${VIRTUALMIN_REPO_DIR}/remotedns.cgi" "${WEBMIN_MODULE_DIR}/remotedns.cgi" || return 1
+    deployed_count=$((deployed_count + 1))
+
+    ok "[Panel] Overlays runtime Pro/OpenVM desplegados: ${deployed_count} archivos en $WEBMIN_MODULE_DIR"
     ((PASS_COUNT++)); log "runtime overlay: OK"
 }
 
@@ -330,15 +352,26 @@ EOF
 validate_runtime_profile() {
     local failures=0
     local file
+    local source_file
+    local relative_path
     local required_runtime_files=(
-        "${WEBMIN_PRO_DIR}/connectivity.cgi"
-        "${WEBMIN_PRO_DIR}/maillog.cgi"
-        "${WEBMIN_PRO_DIR}/edit_html.cgi"
-        "${WEBMIN_PRO_DIR}/list_bkeys.cgi"
+        "${WEBMIN_MODULE_DIR}/virtual-server-lib-funcs.pl"
+        "${WEBMIN_MODULE_DIR}/pro-tip-lib.pl"
         "${WEBMIN_MODULE_DIR}/remotedns.cgi"
     )
 
     info "[Validacion] Verificando panel profesional en runtime..."
+
+    while IFS= read -r -d '' source_file; do
+        relative_path="${source_file#${VIRTUALMIN_REPO_DIR}/}"
+        file="${WEBMIN_MODULE_DIR}/${relative_path}"
+        if [[ -f "$file" ]]; then
+            ok "[Validacion] Overlay runtime presente: $file"
+        else
+            failures=$((failures + 1))
+            fail "[Validacion] Falta overlay runtime: $file"
+        fi
+    done < <(repo_runtime_overlay_files)
 
     for file in "${required_runtime_files[@]}"; do
         if [[ -f "$file" ]]; then

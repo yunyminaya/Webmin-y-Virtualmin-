@@ -3340,10 +3340,18 @@ sub can_edit_bandwidth
 return &master_admin() || &reseller_admin();
 }
 
+sub compat_virtualmin_page_available
+{
+my ($page) = @_;
+return 0 if (!$page);
+return -r "$module_root_directory/$page";
+}
+
 # Returns 1 if the current user can see historical system data
 sub can_show_history
 {
-return $virtualmin_pro && &master_admin();
+return &master_admin() &&
+	($virtualmin_pro || &compat_virtualmin_page_available("pro/history.cgi"));
 }
 
 sub can_edit_exclude
@@ -13701,7 +13709,8 @@ if ($d->{'unix'} && &can_edit_limits($d) && !$d->{'alias'}) {
 	}
 
 if ($d->{'unix'} && defined(&supports_resource_limits) &&
-    &supports_resource_limits() && &can_edit_res($d)) {
+    &supports_resource_limits() && &can_edit_res($d) &&
+    &compat_virtualmin_page_available('pro/edit_res.cgi')) {
 	# Resource limits button
 	push(@rv, { 'page' => 'pro/edit_res.cgi',
 		    'title' => $text{'edit_res'},
@@ -13853,8 +13862,9 @@ if ($d->{'dir'} && !$d->{'parent'}) {
 	}
 
 # Button to show mail logs
-if ($virtualmin_pro && $config{'mail'} && $mail_system <= 1 &&
-    &can_view_maillog($d) && $d->{'mail'}) {
+if ($config{'mail'} && $mail_system <= 1 &&
+    &can_view_maillog($d) && $d->{'mail'} &&
+    &compat_virtualmin_page_available('pro/maillog.cgi')) {
 	push(@rv, { 'page' => 'pro/maillog.cgi',
 		    'title' => $text{'edit_maillog'},
 		    'desc' => $text{'edit_maillogdesc'},
@@ -13863,7 +13873,7 @@ if ($virtualmin_pro && $config{'mail'} && $mail_system <= 1 &&
 	}
 
 # Button to validate connectivity
-if ($virtualmin_pro) {
+if (&compat_virtualmin_page_available('pro/connectivity.cgi')) {
 	push(@rv, { 'page' => 'pro/connectivity.cgi',
 		    'title' => $text{'edit_connect'},
 		    'desc' => $text{'edit_connectdesc'},
@@ -13935,8 +13945,8 @@ if (&can_user_2fa()) {
 	}
 
 if (&domain_has_website($d) && $d->{'dir'} && !$d->{'alias'} &&
-    !$d->{'proxy_pass_mode'} &&
-    $virtualmin_pro && &can_edit_html()) {
+    !$d->{'proxy_pass_mode'} && &can_edit_html() &&
+    &compat_virtualmin_page_available('pro/edit_html.cgi')) {
 	# Edit web pages button
 	push(@rv, { 'page' => 'pro/edit_html.cgi',
 		    'title' => $text{'edit_html'},
@@ -14111,30 +14121,41 @@ local ($d, $refresh) = @_;
 # categories and codes
 sub get_template_pages
 {
+local %compat_template_routes = (
+	'links' => 'edit_newlinks.cgi',
+	'resels' => 'edit_newresels.cgi',
+	'notify' => 'edit_newnotify.cgi',
+	'quotas' => 'edit_newquotas.cgi',
+	'mxs' => 'edit_newmxs.cgi',
+	'retention' => 'edit_newretention.cgi',
+	'smtpclouds' => 'pro/smtpclouds.cgi',
+	'remotedns' => 'remotedns.cgi',
+	'acmes' => 'pro/edit_newacmes.cgi',
+);
 local @tmpls = ( 'features', 'tmpl', 'plan', 'bw',
-   $virtualmin_pro ? ( 'fields', 'links', 'ips', 'sharedips', 'dynip', 'resels',
-		       'notify', 'scripts', )
-		   : ( 'fields', 'ips', 'sharedips', 'scripts', 'dynip' ),
-   'shells',
-   $config{'spam'} || $config{'virus'} ? ( 'sv' ) : ( ),
-   &has_home_quotas() && $virtualmin_pro ? ( 'quotas' ) : ( ),
-   &has_home_quotas() && !&has_quota_commands() && &has_quotacheck() ?
-	( 'quotacheck' ) : ( ),
-   $virtualmin_pro ? ( 'mxs' ) : ( ),
-   'validate', 'chroot', 'global',
-   $virtualmin_pro ? ( ) : ( 'upgrade' ),
-   $config{'mail'} && $mail_system == 0 ? ( 'postgrey' ) : ( ),
-   $config{'mail'} ? ( 'dkim' ) : ( ),
-   $config{'mail'} ? ( 'ratelimit' ) : ( ),
-   'provision',
-   $config{'mail'} ? ( 'autoconfig' ) : ( ),
-   $config{'mail'} && $virtualmin_pro ? ( 'retention' ) : ( ),
-   $virtualmin_pro ? ( 'smtpclouds' ) : ( ),
-   $config{'mysql'} ? ( 'mysqls' ) : ( ),
-   'dnsclouds',
-   $virtualmin_pro ? ( 'remotedns' ) : ( ),
-   $virtualmin_pro ? ( 'acmes' ) : ( ),
-   );
+	'fields', 'ips', 'sharedips', 'dynip', 'scripts',
+	'links',
+	&compat_virtualmin_page_available($compat_template_routes{'resels'}) ? ( 'resels' ) : ( ),
+	&compat_virtualmin_page_available($compat_template_routes{'notify'}) ? ( 'notify' ) : ( ),
+	'shells',
+	$config{'spam'} || $config{'virus'} ? ( 'sv' ) : ( ),
+	&has_home_quotas() && &compat_virtualmin_page_available($compat_template_routes{'quotas'}) ? ( 'quotas' ) : ( ),
+	&has_home_quotas() && !&has_quota_commands() && &has_quotacheck() ?
+		( 'quotacheck' ) : ( ),
+	&compat_virtualmin_page_available($compat_template_routes{'mxs'}) ? ( 'mxs' ) : ( ),
+	'validate', 'chroot', 'global',
+	$config{'mail'} && $mail_system == 0 ? ( 'postgrey' ) : ( ),
+	$config{'mail'} ? ( 'dkim' ) : ( ),
+	$config{'mail'} ? ( 'ratelimit' ) : ( ),
+	'provision',
+	$config{'mail'} ? ( 'autoconfig' ) : ( ),
+	$config{'mail'} && &compat_virtualmin_page_available($compat_template_routes{'retention'}) ? ( 'retention' ) : ( ),
+	&compat_virtualmin_page_available($compat_template_routes{'smtpclouds'}) ? ( 'smtpclouds' ) : ( ),
+	$config{'mysql'} ? ( 'mysqls' ) : ( ),
+	'dnsclouds',
+	&compat_virtualmin_page_available($compat_template_routes{'remotedns'}) ? ( 'remotedns' ) : ( ),
+	&compat_virtualmin_page_available($compat_template_routes{'acmes'}) ? ( 'acmes' ) : ( ),
+	);
 local %tmplcat = (
 	'features' => 'setting',
 	'notify' => 'email',
@@ -14185,8 +14206,11 @@ local %pro = ( 'resels', 1,
 	       'smtpclouds', 1,
 	       'remotedns', 1,
 	       'acmes', 1 );
-local @tlinks = map { ($pro{$_} ? "pro/" : "").
-		      ($nonew{$_} ? "${_}.cgi" : "edit_new${_}.cgi") } @tmpls;
+local @tlinks = map {
+	$compat_template_routes{$_} ? $compat_template_routes{$_} :
+	(($pro{$_} ? "pro/" : "").
+	 ($nonew{$_} ? "${_}.cgi" : "edit_new${_}.cgi"))
+	} @tmpls;
 local @ttitles = map { $nonew{$_} ? $text{"${_}_title"}
 			          : $text{"new${_}_title"} } @tmpls;
 local @ticons = map { $nonew{$_} ? "images/${_}.gif"
@@ -14295,7 +14319,7 @@ if (&can_master_reseller_2fa()) {
 	}
 
 # Show lic manager link for master admins
-if (&master_admin() && $virtualmin_pro) {
+if (&master_admin() && &compat_virtualmin_page_available('pro/licence.cgi')) {
 	push(@rv, { 'url' => "$vm/pro/licence.cgi",
 		    'title' => $text{'licence_manager_menu'},
 		    'cat' => 'setting' });
@@ -14306,7 +14330,8 @@ my ($dleft, $dreason, $dmax, $dhide) = &count_domains("realdoms");
 my ($aleft, $areason, $amax, $ahide) = &count_domains("aliasdoms");
 my $nobatch = !&can_create_batch();
 if ((&can_create_sub_servers() || &can_create_master_servers()) &&
-    $dleft && $virtualmin_pro && !$nobatch) {
+    $dleft && !$nobatch &&
+    &compat_virtualmin_page_available('mass_create_form.cgi')) {
 	# Batch create
 	push(@rv, { 'url' => "$vm/mass_create_form.cgi",
 		    'title' => $text{'index_batch'},
@@ -14365,7 +14390,8 @@ if (&reseller_admin() && &can_edit_plans()) {
 		    'title' => $text{'plans_title'},
 		    'icon' => 'newplan' });
 	}
-if (&reseller_admin() && &can_edit_resellers()) {
+if (&reseller_admin() && &can_edit_resellers() &&
+    &compat_virtualmin_page_available('edit_newresels.cgi')) {
 	# Reseller who can edit other resellers
 	push(@rv, { 'url' => $vm."/edit_newresels.cgi",
 		    'title' => $text{'newresels_title'},

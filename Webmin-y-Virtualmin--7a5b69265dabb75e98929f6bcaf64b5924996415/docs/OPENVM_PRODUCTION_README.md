@@ -1,4 +1,4 @@
-# OpenVM Production Deployment
+ l# OpenVM Production Deployment
 
 Guía de despliegue para producción de la suite OSS OpenVM.
 
@@ -28,7 +28,6 @@ Se ejecutan:
 - `tests/functional/test_openvm_suite.sh`
 - `tests/functional/test_openvm_dns.sh`
 - `tests/functional/test_openvm_backup.sh`
-- `tests/functional/test_virtualmin_pro_compat.sh`
 - `tests/integration/test_openvm_stack.sh`
 
 ## Despliegue recomendado
@@ -42,7 +41,7 @@ sudo ./install_openvm_production.sh
 
 1. Los módulos se copian al árbol de Webmin detectado.
 2. Los entrypoints CGI quedan presentes y ejecutables.
-3. La batería de validaciones termina sin errores, incluyendo la capa de compatibilidad `virtualmin-gpl-master/pro`.
+3. La batería de validaciones termina sin errores.
 4. No se escriben seriales, claves ni archivos oficiales de licencia.
 
 ## Notas operativas

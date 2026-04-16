@@ -1,0 +1,25 @@
+#cloud-config
+hostname: virtualmin-real-e2e.example.test
+fqdn: virtualmin-real-e2e.example.test
+manage_etc_hosts: true
+ssh_pwauth: true
+disable_root: false
+users:
+  - default
+  - name: tester
+    gecos: Virtualmin Tester
+    groups: [sudo]
+    shell: /bin/bash
+    lock_passwd: false
+    sudo: ALL=(ALL) NOPASSWD:ALL
+chpasswd:
+  list: |
+    tester:TempPass!234
+  expire: false
+package_update: true
+packages:
+  - curl
+  - wget
+runcmd:
+  - systemctl enable ssh
+  - systemctl restart ssh || true

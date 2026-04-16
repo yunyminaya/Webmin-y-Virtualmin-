@@ -171,6 +171,7 @@ return &ui_alert_box($form, 'success', undef, undef, $alert_title, $alertcls);
 sub global_menu_link_pro_tip
 {
 my ($global_links_hash) = @_;
+return;
 foreach my $pro_demo_feature
 (
 	# Add demo Reseller Accounts link for GPL users 
@@ -279,6 +280,7 @@ foreach my $pro_demo_feature
 sub menu_link_pro_tips
 {
 my ($links_hash, $d) = @_;
+return;
 foreach my $pro_demo_feature
 (
 	# Add demo Edit Resource Limits link for GPL users 

@@ -352,6 +352,14 @@ main() {
             block_unauthorized_updates
             log_success "🔒 Sistema de seguridad configurado"
             ;;
+        "rollout")
+            verify_repository_origin
+            shift || true
+            if [[ ! -f "${SCRIPT_DIR}/scripts/rollout_openvm_update.sh" ]]; then
+                handle_error 197 "No existe ${SCRIPT_DIR}/scripts/rollout_openvm_update.sh"
+            fi
+            bash "${SCRIPT_DIR}/scripts/rollout_openvm_update.sh" "$@"
+            ;;
         "help"|"-h"|"--help")
             echo "Uso: $0 [opción]"
             echo
@@ -359,6 +367,7 @@ main() {
             echo "  update    Actualizar desde repositorio oficial (por defecto)"
             echo "  status    Mostrar estado de seguridad"
             echo "  secure    Configurar bloqueos de seguridad"
+            echo "  rollout   Actualizar múltiples servidores y resincronizar runtime"
             echo "  help      Mostrar esta ayuda"
             echo
             echo "Repositorio oficial autorizado:"

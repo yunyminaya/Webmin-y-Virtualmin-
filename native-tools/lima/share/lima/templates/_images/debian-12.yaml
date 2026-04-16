@@ -1,0 +1,25 @@
+images:
+# Try to use release-yyyyMMdd image if available. Note that release-yyyyMMdd will be removed after several months.
+
+- location: "https://cloud.debian.org/images/cloud/bookworm/20260316-2418/debian-12-genericcloud-amd64-20260316-2418.qcow2"
+  arch: "x86_64"
+  digest: "sha512:9c9363e1b0fa5ba57974b98b108f5170a56e021e91e7ddc4d8f094909edecf8374f77b1eb1ce277e57a63128fe13071f6b5d2b16aa6aab68a0760bcbf627a52d"
+- location: "https://cloud.debian.org/images/cloud/bookworm/20260316-2418/debian-12-genericcloud-arm64-20260316-2418.qcow2"
+  arch: "aarch64"
+  digest: "sha512:26b8edf24cc8464f334b1dbce6fcc8c789d14258d07ad3c226fdaa7068b665d78fa9888a12557f4e21e3b76ae3eaec069d8183cbec6b5bc145c02513025cd706"
+- location: "https://cloud.debian.org/images/cloud/bookworm/20250703-2162/debian-12-genericcloud-ppc64el-20250703-2162.qcow2"
+  arch: "ppc64le"
+  digest: "sha512:fcf25e5d0e6a76e93c3abaecb8109a931380af29658586f51e30baec0f699a2f17de8a14de57acec80b13ab125fd165140893d814800144505a4982492256f19"
+# Fallback to the latest release image.
+# Hint: run `limactl prune` to invalidate the cache
+
+- location: https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericcloud-amd64.qcow2
+  arch: x86_64
+
+- location: https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericcloud-arm64.qcow2
+  arch: aarch64
+
+- location: https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericcloud-ppc64el.qcow2
+  arch: ppc64le
+
+mountTypesUnsupported: [9p]
