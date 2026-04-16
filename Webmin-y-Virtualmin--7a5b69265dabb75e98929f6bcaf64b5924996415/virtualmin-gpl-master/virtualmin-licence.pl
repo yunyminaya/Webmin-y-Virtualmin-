@@ -1,83 +1,36 @@
-# Defines the function for validating the Virtualmin licence, by making an
-# HTTP request to the licence CGI.
+# Defines the function for validating the Virtualmin licence - MODIFICADO PARA NUNCA PEDIR VALIDACIÓN
+# Esta capa siempre retorna que la licencia es válida
 
-$virtualmin_licence_host = "software.virtualmin.com";
-$virtualmin_licence_port = 443;
-$virtualmin_licence_prog = "/cgi-bin/vlicence.cgi";
-$virtualmin_licence_ssl = 1;
-$virtualmin_renewal_url = $config{'renewal_url'} ||
-			  $virtualmin_shop_link;
-# licence_scheduled(hostid, [serial, key], [vps-type])
-# Returns a status code (0=OK, 1=Invalid, 2=Down, 3=Expired), the expiry date,
-# an error message, the number of domains max, the number of servers max,
-# the number of servers used, and the auto-renewal flag
-sub licence_scheduled
-{
-local ($hostid, $serial, $key, $vps) = @_;
-local ($out, $error, $regerr);
-local @doms = grep { !$_->{'alias'} && !$_->{'defaultdomain'} } &list_domains();
-&read_env_file($virtualmin_license_file, \%serial);
-$key ||= $serial{'LicenseKey'};
-$serial ||= $serial{'SerialNumber'};
-&http_download($virtualmin_licence_host,
-	       $virtualmin_licence_port,
-	       "$virtualmin_licence_prog?id=$hostid&".
-		"serial=$key&doms=".scalar(@doms)."&vps=$vps",
-	       \$out, \$error, undef, $virtualmin_licence_ssl,
-	       undef, undef, 10, 0, 1);
-return (2, undef, "$text{'licence_efailed'} : @{[lcfirst($error)]}") if ($error);
-return $out =~ /^EXP\s+(?<exp>\S+)\s+(\S+)\s+(\S+)\s+(\S+)(?:\s+(\d+)(?:\s+([\w])(?:\s+(\d+))?)?)?/ ?
-	(3, "$+{exp}", &text("licence_eexp", "$+{exp}"), $2, $3, $4, $5, $6, $7) :
-       $out =~ /^ERR\s+(?<err>.*)/ && ($regerr = $+{err}) &&
-       	       $regerr !~ /invalid\s+host\s+or\s+serial\s+number/i ?
-	(2, undef, "$text{'licence_echk'} : $regerr", undef) :
-       $out =~ /^OK\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)(?:\s+(\d+)(?:\s+([\w])(?:\s+(\d+))?)?)?/ ?
-	(0, $1, undef, $2, $3, $4, $5, $6, $7) :
-	(1, undef,
-	 	(!$serial || uc($serial) eq 'GPL') ? 
-		    $text{"licence_evalidnone"} :
-		    &text("licence_evalid", "<tt data-evalid>$serial</tt>"));
+require './license-bypass.pl';
+
+# licence_scheduled: Retorna siempre OK (0 = válida)
+sub licence_scheduled {
+    my ($hostid, $serial, $key, $vps) = @_;
+    # Retorna: (status, expiry, error, doms_max, servers_max, servers_used, ...)
+    # 0 = OK, 3 = Expired, 1 = Invalid, 2 = Down
+    return (
+        0,                    # Status: VÁLIDA
+        "2099-12-31",        # Nunca expira
+        undef,               # Sin error
+        "999999",            # Dominios ilimitados
+        "999999",            # Servidores ilimitados
+        "0",                 # No contar uso
+        "1"                  # Auto-renewal activo
+    );
 }
 
-# Change license with a new serial and key
-sub change_licence
-{
-my ($serial, $key, $nocheck, $force_update) = @_;
-&require_licence($force_update);
-my ($status, $exp, $err, $doms, $server, $hostid);
-# Display a warning to GPL user trying to apply a license instead of
-# properly upgrading. Can be bypassed by using --force-update flag
-if (!$force_update) {
-	my $gpl_repos_warning = $text{'licence_gpl_repos_warning'};
-	my $yumrepo = &read_file_lines($virtualmin_yum_repo, 1);
-	my $aptrepo = &read_file_lines($virtualmin_apt_repo, 1);
-	if (($yumrepo && "@{$yumrepo}" =~ /\/gpl\//) ||
-	    ($aptrepo && "@{$aptrepo}" =~ /\/gpl\//)) {
-		return (1, $gpl_repos_warning);
-		}
-	}
-# Validate the new license
-if (!$nocheck) {
-	&$first_print(&text("licence_validating", "<tt>$key</tt>"));
-	$hostid = &get_licence_hostid();
-	($status, $exp, $err, $doms, $server) =
-		&licence_scheduled($hostid, $serial, $key, &get_vps_type());
-	if ($status) {
-		$err = lcfirst($err);
-		if ($status == 2) {
-			&$second_print("$text{'licence_evalidating'} : $err");
-			}
-		else {
-			&$second_print("$text{'licence_ecanvalidating'} : $err");
-			}
-		return (1, undef);
-		}
-	else {
-		my $dcount = ($doms <= 0 ? 0 : $doms);
-		if ($dcount == 0) {
-			&$second_print(&text("licence_valid_unlim", $exp));
-			}
-		else {
+# change_licence: Cambiar licencia sin validar
+sub change_licence {
+    my ($serial, $key, $nocheck, $force_update) = @_;
+    &first_print("Licencia Pro activada (bypass)");
+    &second_print("Licencia Pro establecida correctamente");
+    return (0, "exito");
+}
+
+# require_licence: Requerir licencia (siempre Ok)
+sub require_licence {
+    return 1;  # Siempre válida
+}
 			&$second_print(&text("licence_valid", $dcount, $exp));
 			}
 		}
