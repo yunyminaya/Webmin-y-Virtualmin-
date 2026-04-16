@@ -1,0 +1,4 @@
+feature_csv_create=1
+feature_csv_delete=1
+max_batch_size=500
+dry_run_default=1

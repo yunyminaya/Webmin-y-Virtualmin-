@@ -1,0 +1,7 @@
+desc=OpenVM Mail Manager
+name=openvm_mail
+version=0.1.0
+longdesc=Gestión nativa de filtros de correo y limpieza de buzones para Webmin/Virtualmin usando helpers GPL sin depender de licencias comerciales oficiales.
+category=System
+depends=virtual-server
+hidden=0

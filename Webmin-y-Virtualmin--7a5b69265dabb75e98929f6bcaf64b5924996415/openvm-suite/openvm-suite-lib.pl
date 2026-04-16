@@ -18,6 +18,13 @@ sub ovms_module_config
 my %config = (
 	'show_openvm_core' => 1,
 	'show_openvm_admin' => 1,
+	'show_openvm_ssl' => 1,
+	'show_openvm_scripts' => 1,
+	'show_openvm_mail' => 1,
+	'show_openvm_monitoring' => 1,
+	'show_openvm_batch' => 1,
+	'show_openvm_php' => 1,
+	'show_openvm_ssh' => 1,
 	'show_security_modules' => 1,
 	'show_infra_modules' => 1,
 	);
@@ -71,6 +78,76 @@ if ($config->{'show_openvm_admin'}) {
 			'name' => 'OpenVM Backup',
 			'path' => '../openvm-backup/index.cgi',
 			'description' => 'Backup schedules, key inventory and restore preparation over the GPL runtime.',
+			'group' => 'OpenVM'
+			});
+	}
+
+if ($config->{'show_openvm_ssl'}) {
+	push(@modules,
+		{
+			'name' => 'OpenVM SSL Manager',
+			'path' => '../openvm-ssl/index.cgi',
+			'description' => 'Gestión avanzada de certificados SSL: Let\'s Encrypt, ZeroSSL y BuyPass con renovación automática vía ACME.',
+			'group' => 'OpenVM'
+			});
+	}
+
+if ($config->{'show_openvm_scripts'}) {
+	push(@modules,
+		{
+			'name' => 'OpenVM Script Installer',
+			'path' => '../openvm-scripts/index.cgi',
+			'description' => 'Instalador nativo de aplicaciones web: WordPress, Drupal, Joomla, Laravel, Nextcloud, Ghost y más.',
+			'group' => 'OpenVM'
+			});
+	}
+
+if ($config->{'show_openvm_mail'}) {
+	push(@modules,
+		{
+			'name' => 'OpenVM Mail Manager',
+			'path' => '../openvm-mail/index.cgi',
+			'description' => 'Filtros de correo, cuotas de buzones y políticas de limpieza automática por dominio.',
+			'group' => 'OpenVM'
+			});
+	}
+
+if ($config->{'show_openvm_monitoring'}) {
+	push(@modules,
+		{
+			'name' => 'OpenVM Monitoring',
+			'path' => '../openvm-monitoring/index.cgi',
+			'description' => 'Monitoreo nativo de CPU, RAM, disco, ancho de banda y procesos con gráficas en tiempo real.',
+			'group' => 'OpenVM'
+			});
+	}
+
+if ($config->{'show_openvm_batch'}) {
+	push(@modules,
+		{
+			'name' => 'OpenVM Batch Manager',
+			'path' => '../openvm-batch/index.cgi',
+			'description' => 'Creación masiva de dominios desde CSV con modo dry-run y confirmación previa.',
+			'group' => 'OpenVM'
+			});
+	}
+
+if ($config->{'show_openvm_php'}) {
+	push(@modules,
+		{
+			'name' => 'OpenVM PHP Manager',
+			'path' => '../openvm-php/index.cgi',
+			'description' => 'Gestión de múltiples versiones PHP, configuración por directorio y ajuste de ini por dominio.',
+			'group' => 'OpenVM'
+			});
+	}
+
+if ($config->{'show_openvm_ssh'}) {
+	push(@modules,
+		{
+			'name' => 'OpenVM SSH Keys',
+			'path' => '../openvm-ssh/index.cgi',
+			'description' => 'Gestión de claves SSH autorizadas por dominio: agregar, listar y eliminar claves públicas.',
 			'group' => 'OpenVM'
 			});
 	}

@@ -1,0 +1,6 @@
+feature_letsencrypt=1
+feature_zerossl=1
+feature_buypass=1
+feature_auto_renew=1
+acme_binary=
+zerossl_api_key=

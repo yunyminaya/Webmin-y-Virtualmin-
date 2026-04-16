@@ -3,5 +3,5 @@ name=openvm_suite
 version=0.1.0
 longdesc=Panel unificado para los módulos abiertos de OpenVM y para la navegación operativa de funciones OSS sobre Webmin/Virtualmin.
 category=System
-depends=openvm_core,openvm_admin
+depends=openvm_core,openvm_admin,openvm_ssl,openvm_scripts,openvm_mail,openvm_monitoring,openvm_batch,openvm_php,openvm_ssh
 hidden=0

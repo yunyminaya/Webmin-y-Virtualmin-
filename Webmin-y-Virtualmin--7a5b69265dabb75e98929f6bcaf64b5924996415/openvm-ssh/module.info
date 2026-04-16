@@ -1,0 +1,7 @@
+desc=OpenVM SSH Key Manager
+name=openvm_ssh
+version=0.1.0
+longdesc=Gestión nativa de claves SSH por usuario y dominio para Webmin/Virtualmin sin depender de licencias comerciales oficiales.
+category=System
+depends=virtual-server
+hidden=0

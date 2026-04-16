@@ -1,0 +1,7 @@
+desc=OpenVM Script Installer
+name=openvm_scripts
+version=0.1.0
+longdesc=Instalador nativo de aplicaciones web para Webmin/Virtualmin con soporte para WP-CLI, Composer, Drush y más de 30 apps sin depender de licencias comerciales oficiales.
+category=System
+depends=virtual-server
+hidden=0

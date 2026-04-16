@@ -1,0 +1,7 @@
+desc=OpenVM SSL Manager
+name=openvm_ssl
+version=0.1.0
+longdesc=Gestión avanzada de certificados SSL para Webmin/Virtualmin con soporte nativo para Let's Encrypt, ZeroSSL y BuyPass sin depender de licencias comerciales oficiales.
+category=System
+depends=virtual-server
+hidden=0

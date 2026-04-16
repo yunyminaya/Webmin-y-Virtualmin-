@@ -1,0 +1,6 @@
+feature_filters=1
+feature_cleanup=1
+feature_quotas=1
+cleanup_days_old=90
+cleanup_trash_days=14
+quota_warning_pct=85

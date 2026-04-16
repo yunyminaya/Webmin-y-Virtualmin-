@@ -1,0 +1,7 @@
+desc=OpenVM Resource Monitoring
+name=openvm_monitoring
+version=0.1.0
+longdesc=Monitoreo nativo de recursos del sistema para Webmin/Virtualmin con gráficos de uso de CPU, memoria, disco y ancho de banda sin depender de licencias comerciales oficiales.
+category=System
+depends=virtual-server
+hidden=0

@@ -1,0 +1,7 @@
+feature_wordpress=1
+feature_drupal=1
+feature_joomla=1
+feature_laravel=1
+feature_composer=1
+wpcli_path=
+composer_path=

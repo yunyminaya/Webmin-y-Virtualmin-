@@ -1,0 +1,7 @@
+desc=OpenVM Batch Domain Manager
+name=openvm_batch
+version=0.1.0
+longdesc=Creación masiva de dominios virtuales para Webmin/Virtualmin desde archivos CSV sin depender de licencias comerciales oficiales.
+category=System
+depends=virtual-server
+hidden=0

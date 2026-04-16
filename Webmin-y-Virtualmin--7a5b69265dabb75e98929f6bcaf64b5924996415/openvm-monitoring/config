@@ -1,0 +1,6 @@
+feature_cpu=1
+feature_memory=1
+feature_disk=1
+feature_bandwidth=1
+feature_processes=1
+rrd_dir=/var/lib/collectd/rrd

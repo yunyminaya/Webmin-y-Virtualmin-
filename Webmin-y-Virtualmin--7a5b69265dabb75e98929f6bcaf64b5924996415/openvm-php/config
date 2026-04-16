@@ -1,0 +1,4 @@
+feature_versions=1
+feature_per_dir=1
+feature_ini=1
+php_versions_dir=/etc/php

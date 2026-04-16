@@ -1,0 +1,4 @@
+feature_list_keys=1
+feature_add_key=1
+feature_delete_key=1
+authorized_keys_file=.ssh/authorized_keys

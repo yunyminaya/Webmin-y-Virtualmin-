@@ -1,0 +1,7 @@
+desc=OpenVM PHP Manager
+name=openvm_php
+version=0.1.0
+longdesc=Gestión nativa de versiones PHP y configuración por directorio para Webmin/Virtualmin sin depender de licencias comerciales oficiales.
+category=System
+depends=virtual-server
+hidden=0
