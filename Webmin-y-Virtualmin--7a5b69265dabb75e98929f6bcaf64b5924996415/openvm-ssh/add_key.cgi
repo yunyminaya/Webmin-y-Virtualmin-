@@ -33,7 +33,7 @@ print "<input type='hidden' name='id' value='$d->{'id'}'>\n";
 
 print "<div style='margin-bottom:16px'>\n";
 print "<label style='display:block;font-weight:bold;margin-bottom:6px'>Clave p&uacute;blica SSH <span style='color:red'>*</span></label>\n";
-print "<textarea name='key_text' rows='6' style='width:100%;padding:10px;font-family:monospace;font-size:13px;border:1px solid #ccc;border-radius:4px;box-sizing:border-box' placeholder='Pega aqu&iacute; tu clave p&uacute;blica. Ejemplo:\nssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA... usuario@host\nssh-rsa AAAAB3Nza... usuario@host'></textarea>\n";
+print "<textarea name='key_text' rows='6' style='width:100%;padding:10px;font-family:monospace;font-size:13px;border:1px solid #ccc;border-radius:4px;box-sizing:border-box' placeholder='Pega aqu&iacute; tu clave p&uacute;blica. Ejemplo:\nssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA... usuario\@host\nssh-rsa AAAAB3Nza... usuario\@host'></textarea>\n";
 print "<small style='color:#7f8c8d'>Formatos soportados: ssh-ed25519, ssh-rsa, ssh-ecdsa, ecdsa-sha2-nistp256, sk-*</small>\n";
 print "</div>\n";
 

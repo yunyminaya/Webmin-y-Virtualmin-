@@ -3,6 +3,8 @@
 use strict;
 use warnings;
 
+our %in;
+
 require './openvm-ssh-lib.pl';
 &ReadParse();
 &require_acl();
