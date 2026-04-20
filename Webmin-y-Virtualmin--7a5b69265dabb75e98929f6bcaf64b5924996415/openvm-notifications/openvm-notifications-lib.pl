@@ -416,8 +416,10 @@ if (defined(&foreign_require)) {
 
 # Fallback: use sendmail
 my $mail_cmd = '/usr/sbin/sendmail';
-if (-x $mail_cmd) {
-	open(my $pipe, '|-', "$mail_cmd -t") || return 0;
+# SECURITY: Validate mail command path to prevent pipe injection
+$mail_cmd =~ s/[;\|`&\$]//g;
+if (-x $mail_cmd && $mail_cmd =~ m{^/usr/(sbin|bin)/sendmail}) {
+	open(my $pipe, '|-', $mail_cmd, '-t') || return 0;
 	print $pipe "To: $to\n";
 	print $pipe "From: openvm\@localhost\n";
 	print $pipe "Subject: $subject\n";

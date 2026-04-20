@@ -223,6 +223,9 @@ my $json = ovmbl_to_json($data);
 open(my $fh, '>', $file) or return 0;
 print $fh $json;
 close($fh);
+# SECURITY: Restrict financial data file permissions to owner only
+chmod(0600, $file);
+close($fh);
 return 1;
 }
 

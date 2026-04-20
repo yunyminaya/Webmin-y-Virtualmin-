@@ -6,6 +6,28 @@ use warnings;
 our (%in, %text, $module_config_directory, $base_remote_user);
 our $OPENVM_MAIL_VIRTUALMIN_LOADED = 0;
 
+###############################################################################
+# SECURITY: Sanitization helpers for shell commands
+###############################################################################
+
+# ovmm_sanitize_user - Validate username (only alphanumeric, underscore, hyphen, dot)
+sub ovmm_sanitize_user
+{
+my ($user) = @_;
+return undef unless (defined($user) && $user =~ /^[\w.\-]+$/);
+return $user;
+}
+
+# ovmm_sanitize_shell_arg - Escape shell metacharacters for single-quoted args
+sub ovmm_sanitize_shell_arg
+{
+my ($str) = @_;
+return '' unless (defined($str));
+# Remove any characters that could break out of single quotes
+$str =~ s/'/'\\''/g;
+return $str;
+}
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -270,11 +292,17 @@ if (defined(&create_user)) {
 	return 1;
 	}
 
-# Fallback: system command
-my $cmd = "useradd -m -s /usr/sbin/nologin '$user' 2>/dev/null";
+# Fallback: system command - SECURITY: Validate inputs before shell execution
+my $safe_user = ovmm_sanitize_user($user);
+return 0 unless ($safe_user);
+my $cmd = "useradd -m -s /usr/sbin/nologin '$safe_user' 2>/dev/null";
 system($cmd);
 if ($password) {
-	system("echo '$user:$password' | chpasswd 2>/dev/null");
+	# SECURITY: Use chpasswd via pipe to avoid password in command line
+	my $safe_pass = ovmm_sanitize_shell_arg($password);
+	open(my $chpw, '|-', "chpasswd 2>/dev/null") || return 0;
+	print $chpw "$safe_user:$safe_pass\n";
+	close($chpw);
 	}
 return 1;
 }
@@ -299,8 +327,10 @@ if (defined(&delete_user)) {
 	return 0;
 	}
 
-# Fallback
-system("userdel -r '$user' 2>/dev/null");
+# Fallback - SECURITY: Validate username before shell execution
+my $safe_user_del = ovmm_sanitize_user($user);
+return 0 unless ($safe_user_del);
+system("userdel -r '$safe_user_del' 2>/dev/null");
 return 1;
 }
 
@@ -323,8 +353,13 @@ if ($d && defined(&modify_user)) {
 	return 0;
 	}
 
-# Fallback
-system("echo '$user:$new_pass' | chpasswd 2>/dev/null");
+# Fallback - SECURITY: Use pipe to avoid password in command line
+my $safe_user_pw = ovmm_sanitize_user($user);
+return 0 unless ($safe_user_pw);
+my $safe_new_pass = ovmm_sanitize_shell_arg($new_pass);
+open(my $chpw2, '|-', "chpasswd 2>/dev/null") || return 0;
+print $chpw2 "$safe_user_pw:$safe_new_pass\n";
+close($chpw2);
 return 1;
 }
 
@@ -347,9 +382,12 @@ if ($d && defined(&modify_user)) {
 	return 0;
 	}
 
-# Fallback: setquota
-if ($quota && $quota > 0) {
-	system("setquota -u '$user' 0 $quota 0 0 -a 2>/dev/null");
+# Fallback: setquota - SECURITY: Validate username and quota
+if ($quota && $quota > 0 && $quota =~ /^\d+$/) {
+	my $safe_user_q = ovmm_sanitize_user($user);
+	if ($safe_user_q) {
+		system("setquota -u '$safe_user_q' 0 $quota 0 0 -a 2>/dev/null");
+		}
 	}
 return 1;
 }

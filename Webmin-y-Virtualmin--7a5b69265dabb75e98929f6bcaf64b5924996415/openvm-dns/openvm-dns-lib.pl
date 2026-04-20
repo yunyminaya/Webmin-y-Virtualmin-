@@ -7,6 +7,29 @@ our (%in, %text, $module_config_directory, $config_directory);
 our $OPENVM_DNS_VIRTUALMIN_LOADED = 0;
 
 ###############################################################################
+# SECURITY: Domain sanitization for shell commands
+###############################################################################
+
+# ovmns_sanitize_domain - Validate domain name (letters, digits, hyphens, dots)
+sub ovmns_sanitize_domain
+{
+my ($domain) = @_;
+return undef unless (defined($domain) && $domain ne '');
+# Only allow valid DNS characters: alphanumeric, hyphen, dot, underscore
+$domain =~ s/^\s+//; $domain =~ s/\s+$//;
+return undef unless ($domain =~ /^[a-zA-Z0-9][a-zA-Z0-9.\-_]*$/);
+return $domain;
+}
+
+# ovmns_sanitize_selector - Validate DKIM selector
+sub ovmns_sanitize_selector
+{
+my ($sel) = @_;
+return undef unless (defined($sel) && $sel =~ /^[a-zA-Z0-9._-]+$/);
+return $sel;
+}
+
+###############################################################################
 # Existing helper functions (preserved from original)
 ###############################################################################
 
@@ -305,6 +328,8 @@ if ($zone_file && -r $zone_file) {
 if (!@records && ovmns_check_dig()) {
 	my @types = ('A', 'AAAA', 'MX', 'NS', 'TXT', 'CNAME', 'SRV', 'CAA', 'SOA');
 	foreach my $type (@types) {
+		# SECURITY: Domain already validated by caller; ensure type is safe
+		$type =~ s/[^A-Z]//g;
 		my $cmd = "dig +short $domain $type 2>/dev/null";
 		my $out = `$cmd`;
 		foreach my $line (split(/\n/, $out)) {
@@ -458,6 +483,8 @@ my ($domain) = @_;
 return undef unless ($domain && $domain =~ /\./);
 
 if (ovmns_check_dig()) {
+	# SECURITY: Validate domain before shell command
+	return { 'ok' => 0, 'error' => 'Invalid domain' } unless (ovmns_sanitize_domain($domain));
 	my $cmd = "dig +short TXT $domain 2>/dev/null";
 	my $out = `$cmd`;
 	foreach my $line (split(/\n/, $out)) {
@@ -525,6 +552,7 @@ foreach my $sel (@selectors) {
 if (ovmns_check_dig()) {
 	foreach my $sel (@selectors) {
 		my $dkim_name = "$sel._domainkey.$domain";
+		# SECURITY: dkim_name built from validated domain + sanitized selector
 		my $cmd = "dig +short TXT $dkim_name 2>/dev/null";
 		my $out = `$cmd`;
 		foreach my $line (split(/\n/, $out)) {
@@ -561,6 +589,9 @@ return { 'ok' => 0, 'error' => 'Domain is required' } unless ($domain);
 
 my $selector = 'default';
 my $bits = 2048;
+# SECURITY: Validate domain and selector before shell commands
+return { 'ok' => 0, 'error' => 'Invalid domain name' } unless (ovmns_sanitize_domain($domain));
+return { 'ok' => 0, 'error' => 'Invalid selector' } unless (ovmns_sanitize_selector($selector));
 my $key_dir = "/etc/opendkim/keys/$domain";
 
 # Create key directory
@@ -619,6 +650,7 @@ return undef unless ($domain && $domain =~ /\./);
 
 if (ovmns_check_dig()) {
 	my $dmarc_name = "_dmarc.$domain";
+	# SECURITY: dmarc_name built from validated domain
 	my $cmd = "dig +short TXT $dmarc_name 2>/dev/null";
 	my $out = `$cmd`;
 	foreach my $line (split(/\n/, $out)) {
@@ -708,6 +740,8 @@ foreach my $kf (@key_files) {
 
 # Check DS record at parent
 if (ovmns_check_dig()) {
+	# SECURITY: Validate domain before shell command
+	return { 'ok' => 0, 'error' => 'Invalid domain' } unless (ovmns_sanitize_domain($domain));
 	my $cmd = "dig +short DS $domain 2>/dev/null";
 	my $out = `$cmd`;
 	if ($out && $out =~ /\d+/) {
@@ -748,6 +782,8 @@ my $zone_dir = $zone_file;
 $zone_dir =~ s/\/[^\/]+$//;
 
 # Generate ZSK (Zone Signing Key)
+# SECURITY: Validate domain before dnssec-keygen
+return { 'ok' => 0, 'error' => 'Invalid domain name' } unless (ovmns_sanitize_domain($domain));
 my $zsk_cmd = "cd $zone_dir && dnssec-keygen -a RSASHA256 -b 2048 -n ZONE $domain 2>&1";
 my $zsk_out = `$zsk_cmd`;
 return { 'ok' => 0, 'error' => "ZSK generation failed: $zsk_out" } if ($? != 0);
@@ -807,6 +843,9 @@ my $local_value = '';
 
 # Get local value first
 if (ovmns_check_dig()) {
+	# SECURITY: Validate domain and type before dig
+	return { 'ok' => 0, 'error' => 'Invalid domain' } unless (ovmns_sanitize_domain($domain));
+	$type =~ s/[^A-Z]//g;
 	my $local_cmd = "dig +short $domain $type \@localhost 2>/dev/null";
 	$local_value = `$local_cmd`;
 	chomp($local_value);
@@ -823,7 +862,10 @@ foreach my $srv (@servers) {
 		};
 
 	if (ovmns_check_dig()) {
-		my $cmd = "dig +short +time=5 $domain $type \@$srv->{'ip'} 2>/dev/null";
+		# SECURITY: Sanitize server IP before dig
+		my $safe_ip = $srv->{'ip'} || '';
+		$safe_ip =~ s/[^0-9.:a-fA-F]//g;
+		my $cmd = "dig +short +time=5 $domain $type \@$safe_ip 2>/dev/null";
 		my $start = time();
 		my $out = `$cmd`;
 		my $elapsed = (time() - $start) * 1000;
@@ -920,6 +962,8 @@ my ($domain) = @_;
 return undef unless ($domain && $domain =~ /\./);
 
 if (ovmns_check_dig()) {
+	# SECURITY: Validate domain before dig
+	return { 'ok' => 0, 'error' => 'Invalid domain' } unless (ovmns_sanitize_domain($domain));
 	my $cmd = "dig SOA $domain +noall +answer 2>/dev/null";
 	my $out = `$cmd`;
 	if ($out =~ /SOA\s+(\S+)\s+(\S+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)/) {

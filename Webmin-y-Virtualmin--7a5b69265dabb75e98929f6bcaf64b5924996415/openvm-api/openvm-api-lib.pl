@@ -22,7 +22,7 @@ return 1 if ($OPENVM_API_LOADED);
 	'api_rate_limit'   => 100,
 	'api_token_expiry' => 3600,
 	'cors_enabled'     => 1,
-	'cors_origins'     => '*',
+	'cors_origins'     => '',  # SECURITY: Empty by default, must be configured explicitly
 	);
 
 # Leer archivo config del módulo
@@ -43,11 +43,17 @@ if ($config_file && -r $config_file) {
 	}
 
 # Asegurar directorio de tokens
+# SECURITY: Never use /tmp for tokens (world-readable). Require module_config_directory.
 my $token_dir = $module_config_directory
 	? "$module_config_directory/api_tokens"
-	: '/tmp/openvm_api_tokens';
-if (!-d $token_dir) {
-	make_path($token_dir) || warn "ovm_api_init: cannot create $token_dir: $!";
+	: undef;
+if (!$token_dir) {
+	warn "ovm_api_init: SECURITY - module_config_directory not set, API tokens disabled";
+	$token_dir = undef;
+	}
+elsif (!-d $token_dir) {
+	make_path($token_dir, { mode => 0700 }) || warn "ovm_api_init: cannot create $token_dir: $!";
+	chmod(0700, $token_dir);  # SECURITY: Restrict to owner only
 	}
 
 $OPENVM_API_LOADED = 1;
@@ -78,9 +84,12 @@ if ($api_key ne '') {
 	return $info if ($info);
 	}
 
-# 3. Intentar API Key desde parámetro query
+# 3. SECURITY: API Key in query string is disabled (logged in server logs, insecure)
+# Use Authorization header or X-API-Key header instead.
+# Kept for backward compatibility with a warning.
 $api_key = $in{'api_key'} || '';
 if ($api_key ne '') {
+	warn "ovm_api_auth: SECURITY WARNING - API key passed via query string is deprecated. Use HTTP headers.";
 	my $info = ovm_api_validate_token($api_key);
 	return $info if ($info);
 	}
@@ -104,6 +113,9 @@ sub ovm_api_check_rate_limit
 {
 my ($client_id) = @_;
 $client_id ||= 'anonymous';
+# SECURITY: Sanitize client_id to prevent path traversal in rate file
+$client_id =~ s/[^a-zA-Z0-9_\-.]//g;
+$client_id = 'anonymous' if ($client_id eq '');
 
 my $limit = int($ovm_api_config{'api_rate_limit'} || 100);
 my $rate_dir = $module_config_directory
@@ -529,9 +541,14 @@ sub ovm_api_validate_token
 my ($token) = @_;
 return undef if (!$token || $token eq '');
 
+# SECURITY: Sanitize token to prevent path traversal
+$token =~ s/[^a-zA-Z0-9_\-.]//g;
+return undef if ($token eq '');
+
 my $token_dir = $module_config_directory
 	? "$module_config_directory/api_tokens"
-	: '/tmp/openvm_api_tokens';
+	: undef;
+return undef unless ($token_dir);  # SECURITY: No token dir = no validation
 
 my $token_file = "$token_dir/$token.json";
 return undef if (!-r $token_file);
@@ -566,8 +583,15 @@ sub ovm_api_cors_headers
 {
 return if (!$ovm_api_config{'cors_enabled'});
 
-my $origin = $ovm_api_config{'cors_origins'} || '*';
-print "Access-Control-Allow-Origin: $origin\r\n";
+# SECURITY: Use configured origin(s), never wildcard in production
+my $origin = $ovm_api_config{'cors_origins'} || '';
+if ($origin eq '' || $origin eq '*') {
+	# SECURITY: If no origin configured, use the request origin (same-origin policy)
+	$origin = $ENV{'HTTP_ORIGIN'} || $ENV{'HTTP_HOST'} || '';
+	}
+if ($origin ne '') {
+	print "Access-Control-Allow-Origin: $origin\r\n";
+	}
 print "Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS\r\n";
 print "Access-Control-Allow-Headers: Content-Type, Authorization, X-API-Key\r\n";
 print "Access-Control-Max-Age: 86400\r\n";

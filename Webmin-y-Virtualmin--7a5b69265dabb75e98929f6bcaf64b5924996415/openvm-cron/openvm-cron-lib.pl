@@ -2,9 +2,32 @@
 
 use strict;
 use warnings;
+use File::Temp qw(tempfile);
 
 our (%in, %text, $module_config_directory, $base_remote_user);
 our $OPENVM_CRON_VIRTUALMIN_LOADED = 0;
+
+###############################################################################
+# ovmcr_sanitize_user - Validate and sanitize username for shell commands
+# Only allows alphanumeric, underscore, hyphen, and dot (POSIX safe chars)
+###############################################################################
+sub ovmcr_sanitize_user
+{
+my ($user) = @_;
+return undef unless (defined($user) && $user =~ /^[\w.\-]+$/);
+return $user;
+}
+
+###############################################################################
+# ovmcr_sanitize_shell - Escape shell metacharacters in a string
+###############################################################################
+sub ovmcr_sanitize_shell
+{
+my ($str) = @_;
+return '' unless (defined($str));
+$str =~ s/'/'\\''/g;
+return $str;
+}
 
 ###############################################################################
 # ovmcr_text - Get text string with fallback
@@ -139,6 +162,12 @@ sub ovmcr_list_jobs
 {
 my ($user) = @_;
 $user ||= 'root';
+# SECURITY: Validate username to prevent command injection
+if ($user ne 'root') {
+	my $safe_user = ovmcr_sanitize_user($user);
+	return [] unless ($safe_user);
+	$user = $safe_user;
+	}
 my @jobs;
 my $out;
 if ($user eq 'root') {
@@ -168,6 +197,12 @@ sub ovmcr_add_job
 {
 my ($user, $min, $hour, $day, $month, $wday, $cmd) = @_;
 $user ||= 'root';
+# SECURITY: Validate username to prevent command injection
+if ($user ne 'root') {
+	my $safe_user = ovmcr_sanitize_user($user);
+	return { 'ok' => 0, 'error' => 'Invalid username' } unless ($safe_user);
+	$user = $safe_user;
+	}
 return { 'ok' => 0, 'error' => 'No command specified' } unless ($cmd);
 my $validation = ovmcr_validate_schedule($min, $hour, $day, $month, $wday);
 return { 'ok' => 0, 'error' => "Invalid schedule: $validation" } if ($validation);
@@ -187,8 +222,8 @@ if ($user eq 'root') {
 else {
 	$existing = `crontab -u $user -l 2>/dev/null`;
 	}
-my $tmp = "/tmp/ovmcr_crontab_$$";
-open(my $fh, '>', $tmp) || return { 'ok' => 0, 'error' => "Cannot write temp file: $!" };
+# SECURITY: Use File::Temp instead of predictable /tmp filename
+my ($fh, $tmp) = tempfile(UNLINK => 1, SUFFIX => '.cron') || return { 'ok' => 0, 'error' => "Cannot write temp file: $!" };
 print $fh $existing if ($existing);
 print $fh $new_line . "\n";
 close($fh);
@@ -213,6 +248,12 @@ sub ovmcr_delete_job
 {
 my ($user, $line_num) = @_;
 $user ||= 'root';
+# SECURITY: Validate username to prevent command injection
+if ($user ne 'root') {
+	my $safe_user = ovmcr_sanitize_user($user);
+	return { 'ok' => 0, 'error' => 'Invalid username' } unless ($safe_user);
+	$user = $safe_user;
+	}
 return { 'ok' => 0, 'error' => 'No line number specified' } unless (defined($line_num));
 my $existing = '';
 if ($user eq 'root') {
@@ -222,8 +263,8 @@ else {
 	$existing = `crontab -u $user -l 2>/dev/null`;
 	}
 my @lines = split(/\n/, $existing);
-my $tmp = "/tmp/ovmcr_crontab_$$";
-open(my $fh, '>', $tmp) || return { 'ok' => 0, 'error' => "Cannot write temp file: $!" };
+# SECURITY: Use File::Temp instead of predictable /tmp filename
+my ($fh, $tmp) = tempfile(UNLINK => 1, SUFFIX => '.cron') || return { 'ok' => 0, 'error' => "Cannot write temp file: $!" };
 my $current = 0;
 foreach my $line (@lines) {
 	$current++;
@@ -252,6 +293,12 @@ sub ovmcr_edit_job
 {
 my ($user, $line_num, $min, $hour, $day, $month, $wday, $cmd) = @_;
 $user ||= 'root';
+# SECURITY: Validate username to prevent command injection
+if ($user ne 'root') {
+	my $safe_user = ovmcr_sanitize_user($user);
+	return { 'ok' => 0, 'error' => 'Invalid username' } unless ($safe_user);
+	$user = $safe_user;
+	}
 return { 'ok' => 0, 'error' => 'No line number specified' } unless (defined($line_num));
 return { 'ok' => 0, 'error' => 'No command specified' } unless ($cmd);
 my $validation = ovmcr_validate_schedule($min, $hour, $day, $month, $wday);
@@ -273,8 +320,8 @@ else {
 	$existing = `crontab -u $user -l 2>/dev/null`;
 	}
 my @lines = split(/\n/, $existing);
-my $tmp = "/tmp/ovmcr_crontab_$$";
-open(my $fh, '>', $tmp) || return { 'ok' => 0, 'error' => "Cannot write temp file: $!" };
+# SECURITY: Use File::Temp instead of predictable /tmp filename
+my ($fh, $tmp) = tempfile(UNLINK => 1, SUFFIX => '.cron') || return { 'ok' => 0, 'error' => "Cannot write temp file: $!" };
 my $current = 0;
 foreach my $line (@lines) {
 	$current++;
@@ -307,12 +354,21 @@ sub ovmcr_get_job_output
 {
 my ($user, $line_num) = @_;
 $user ||= 'root';
+# SECURITY: Validate username to prevent command injection
+if ($user ne 'root') {
+	my $safe_user = ovmcr_sanitize_user($user);
+	return { 'ok' => 0, 'error' => 'Invalid username' } unless ($safe_user);
+	$user = $safe_user;
+	}
 my $jobs = ovmcr_list_jobs($user);
 my $job = $jobs->[$line_num - 1];
 return { 'ok' => 0, 'error' => 'Job not found' } unless ($job);
 my $cmd = $job->{'cmd'};
 $cmd =~ s/\s+.*$//;
 $cmd =~ s/.*\///;
+# SECURITY: Sanitize extracted command name for use in file path
+$cmd =~ s/[^a-zA-Z0-9_\-.]//g;
+return { 'ok' => 0, 'error' => 'Invalid command name' } unless ($cmd && length($cmd) < 256);
 my $log_file = "/var/log/cron_output_${cmd}.log";
 if (-r $log_file) {
 	open(my $fh, '<', $log_file) || return { 'ok' => 0, 'error' => "Cannot read $log_file" };

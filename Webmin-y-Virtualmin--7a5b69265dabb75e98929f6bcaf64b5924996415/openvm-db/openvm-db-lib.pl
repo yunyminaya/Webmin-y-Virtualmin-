@@ -7,6 +7,82 @@ our (%in, %text, $module_config_directory, $base_remote_user);
 our $OPENVM_DB_VIRTUALMIN_LOADED = 0;
 
 ###############################################################################
+# SECURITY: Sanitization helpers for SQL and shell inputs
+###############################################################################
+
+# Whitelist of valid MySQL charsets
+my %OVMDB_ALLOWED_CHARSETS = map { $_ => 1 } qw(
+	utf8 utf8mb4 latin1 ascii binary big5 cp1252 cp850 dec8 euckr gb2312 gbk
+	geostd8 greek hebrew hp8 keybcs2 koi8r koi8u latin2 latin5 latin7 macce
+	macroman sjis swe7 tis620 ucs2 ujis utf16 utf16le utf32
+);
+
+# Whitelist of valid MySQL/PostgreSQL privilege names
+my %OVMDB_ALLOWED_PRIVS = map { $_ => 1 } qw(
+	ALL ALTER CREATE DELETE DROP EXECUTE GRANT INDEX INSERT REFERENCES SELECT
+	UPDATE USAGE CREATE ROUTINE ALTER ROUTINE CREATE VIEW CREATE TEMPORARY TABLES
+	LOCK TABLES EVENT TRIGGER SHOW VIEW RELOAD SHUTDOWN PROCESS FILE
+	CONNECT TEMPORARY CREATE USER REPLICATION SLAVE REPLICATION CLIENT
+	SHOW DATABASES SUPER
+);
+
+# ovmdb_sanitize_sql_identifier - Only allow word chars in SQL identifiers
+sub ovmdb_sanitize_sql_identifier
+{
+my ($id) = @_;
+return undef unless (defined($id) && $id =~ /^[\w]+$/);
+return $id;
+}
+
+# ovmdb_sanitize_sql_string - Escape single quotes for SQL string literals
+sub ovmdb_sanitize_sql_string
+{
+my ($str) = @_;
+return '' unless (defined($str));
+$str =~ s/'/''/g;
+$str =~ s/\\/\\\\/g;
+return $str;
+}
+
+# ovmdb_sanitize_charset - Validate charset against whitelist
+sub ovmdb_sanitize_charset
+{
+my ($charset) = @_;
+return undef unless (defined($charset) && exists($OVMDB_ALLOWED_CHARSETS{lc($charset)}));
+return $charset;
+}
+
+# ovmdb_sanitize_privs - Validate privilege list against whitelist
+sub ovmdb_sanitize_privs
+{
+my ($privs) = @_;
+return undef unless (defined($privs) && $privs ne '');
+return 'ALL' if ($privs eq 'ALL' || $privs eq 'ALL PRIVILEGES');
+my @parts = split(/,\s*/, $privs);
+my @safe;
+foreach my $p (@parts) {
+	$p =~ s/^\s+//; $p =~ s/\s+$//;
+	$p = uc($p);
+	return undef unless (exists($OVMDB_ALLOWED_PRIVS{$p}));
+	push(@safe, $p);
+	}
+return join(', ', @safe);
+}
+
+# ovmdb_sanitize_filepath - Prevent path traversal in file paths
+sub ovmdb_sanitize_filepath
+{
+my ($file) = @_;
+return undef unless (defined($file) && $file ne '');
+# Remove any path traversal attempts
+$file =~ s/\.\.//g;
+$file =~ s/[;\|`&\$]//g;
+# Only allow safe filename chars
+return undef unless ($file =~ /^[\w.\-]+$/);
+return $file;
+}
+
+###############################################################################
 # ovmdb_text - Get text string with fallback
 ###############################################################################
 sub ovmdb_text
@@ -189,9 +265,12 @@ sub ovmdb_create_database
 my ($name, $charset) = @_;
 return { 'ok' => 0, 'error' => 'Invalid database name' } unless ($name && $name =~ /^[\w]+$/);
 $charset ||= ovmdb_module_config()->{'default_charset'} || 'utf8mb4';
+# SECURITY: Validate charset against whitelist
+my $safe_charset = ovmdb_sanitize_charset($charset);
+return { 'ok' => 0, 'error' => 'Invalid charset name' } unless ($safe_charset);
 my $config = ovmdb_module_config();
 if ($config->{'db_manager'} eq 'mysql') {
-	my $out = `mysql -e "CREATE DATABASE \`$name\` CHARACTER SET $charset" 2>&1`;
+my $out = `mysql -e "CREATE DATABASE \`$name\` CHARACTER SET $safe_charset" 2>&1`;
 	if ($?) {
 		return { 'ok' => 0, 'error' => $out };
 		}
@@ -236,7 +315,10 @@ sub ovmdb_backup_database
 my ($db, $file) = @_;
 return { 'ok' => 0, 'error' => 'Invalid parameters' } unless ($db && $file);
 my $config = ovmdb_module_config();
-$file = $config->{'backup_dir'} . '/' . $file unless ($file =~ m{^/});
+# SECURITY: Sanitize filename to prevent path traversal
+my $safe_file = ovmdb_sanitize_filepath($file);
+return { 'ok' => 0, 'error' => 'Invalid backup filename' } unless ($safe_file);
+$file = $config->{'backup_dir'} . '/' . $safe_file unless ($safe_file =~ m{^/});
 if ($config->{'db_manager'} eq 'mysql') {
 	my $out = `mysqldump --single-transaction --routines --triggers "$db" > "$file" 2>&1`;
 	if ($?) {
@@ -310,7 +392,12 @@ if ($config->{'db_manager'} eq 'mysql') {
 	foreach my $line (split(/\n/, $out)) {
 		my @f = split(/\t/, $line);
 		next unless ($f[0]);
-		my $privs_out = `mysql -BNe "SHOW GRANTS FOR '$f[0]'\@'$f[1]'" 2>/dev/null`;
+		# SECURITY: Sanitize user/host from DB output before using in SQL
+		my $safe_f0 = ovmdb_sanitize_sql_identifier($f[0]) || $f[0];
+		$safe_f0 =~ s/[^a-zA-Z0-9_\-.]//g;
+		my $safe_f1 = $f[1] || 'localhost';
+		$safe_f1 =~ s/[^a-zA-Z0-9_\-.%]//g;
+		my $privs_out = `mysql -BNe "SHOW GRANTS FOR '$safe_f0'\@'$safe_f1'" 2>/dev/null`;
 		my @privs;
 		foreach my $pline (split(/\n/, $privs_out)) {
 			push(@privs, $pline) if ($pline);
@@ -346,13 +433,16 @@ return { 'ok' => 0, 'error' => 'Invalid username' } unless ($user && $user =~ /^
 $host ||= 'localhost';
 my $config = ovmdb_module_config();
 if ($config->{'db_manager'} eq 'mysql') {
-	my $out = `mysql -e "CREATE USER '$user'\@'$host' IDENTIFIED BY '$pass'" 2>&1`;
+	# SECURITY: Escape password for SQL string literal
+	my $safe_pass = ovmdb_sanitize_sql_string($pass);
+	my $safe_host = ovmdb_sanitize_sql_string($host);
+	my $out = `mysql -e "CREATE USER '$user'\@'$safe_host' IDENTIFIED BY '$safe_pass'" 2>&1`;
 	if ($?) {
 		return { 'ok' => 0, 'error' => $out };
 		}
 	}
 elsif ($config->{'db_manager'} eq 'postgresql') {
-	my $out = `psql -c "CREATE USER $user WITH PASSWORD '$pass'" 2>&1`;
+	my $out = `psql -c "CREATE USER $user WITH PASSWORD '$safe_pass'" 2>&1`;
 	if ($?) {
 		return { 'ok' => 0, 'error' => $out };
 		}
@@ -394,14 +484,17 @@ return { 'ok' => 0, 'error' => 'Invalid parameters' } unless ($user && $db);
 $privs ||= 'ALL';
 my $config = ovmdb_module_config();
 if ($config->{'db_manager'} eq 'mysql') {
-	my $out = `mysql -e "GRANT $privs ON \`$db\`.* TO '$user'\@'localhost'" 2>&1`;
+	# SECURITY: Validate privilege list against whitelist
+	my $safe_privs = ovmdb_sanitize_privs($privs);
+	return { 'ok' => 0, 'error' => 'Invalid privilege specification' } unless ($safe_privs);
+	my $out = `mysql -e "GRANT $safe_privs ON \`$db\`.* TO '$user'\@'localhost'" 2>&1`;
 	if ($?) {
 		return { 'ok' => 0, 'error' => $out };
 		}
 	`mysql -e "FLUSH PRIVILEGES" 2>/dev/null`;
 	}
 elsif ($config->{'db_manager'} eq 'postgresql') {
-	my $out = `psql -c "GRANT $privs ON DATABASE $db TO $user" 2>&1`;
+	my $out = `psql -c "GRANT $safe_privs ON DATABASE $db TO $user" 2>&1`;
 	if ($?) {
 		return { 'ok' => 0, 'error' => $out };
 		}
