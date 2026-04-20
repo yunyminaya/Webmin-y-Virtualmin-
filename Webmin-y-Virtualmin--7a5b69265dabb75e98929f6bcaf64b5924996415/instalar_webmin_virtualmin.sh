@@ -19,8 +19,11 @@ readonly REPORT_PATH="${REPORT_PATH:-/root/webmin_virtualmin_installation_report
 readonly VIRTUALMIN_INSTALL_URL="${VIRTUALMIN_INSTALL_URL:-https://download.virtualmin.com/virtualmin-install}"
 readonly REPO_RAW_BASE="${REPO_RAW_BASE:-https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main}"
 readonly REPO_INSTALLER_URL="${REPO_INSTALLER_URL:-${REPO_RAW_BASE}/install_pro_complete.sh}"
+readonly REPO_INSTALLER_SHA256="${REPO_INSTALLER_SHA256:-4bd1bb111c8b125185c9b9b4db37dbb6d6dbe1df8e9edcefcb26d818a48c81eb}"
 readonly REPO_PROFILE_STATUS_FILE="${REPO_PROFILE_STATUS_FILE:-/root/webmin_repo_profile_status.txt}"
 readonly VIRTUALMIN_AUTO_FQDN_DOMAIN="${VIRTUALMIN_AUTO_FQDN_DOMAIN:-sslip.io}"
+readonly ALLOW_REMOTE_BOOTSTRAP="${ALLOW_REMOTE_BOOTSTRAP:-0}"
+readonly SCRIPT_SOURCE="${BASH_SOURCE[0]-}"
 
 OS=''
 VERSION_ID=''
@@ -31,6 +34,7 @@ SERVER_IP=''
 GRADE_B_FLAG=0
 REPO_PROFILE_APPLIED=0
 REPO_PROFILE_MESSAGE='not-requested'
+SCRIPT_DIR=''
 
 cleanup() {
     local exit_code=$?
@@ -55,6 +59,41 @@ log_error() {
 fail() {
     log_error "$*"
     exit 1
+}
+
+init_script_dir() {
+    if [[ -n "$SCRIPT_SOURCE" && -f "$SCRIPT_SOURCE" ]]; then
+        SCRIPT_DIR="$(CDPATH='' cd -- "$(dirname -- "$SCRIPT_SOURCE")" && pwd)"
+    fi
+}
+
+sha256_file() {
+    local file_path="$1"
+
+    if command -v sha256sum >/dev/null 2>&1; then
+        sha256sum "$file_path" | awk '{print $1}'
+        return 0
+    fi
+
+    if command -v shasum >/dev/null 2>&1; then
+        shasum -a 256 "$file_path" | awk '{print $1}'
+        return 0
+    fi
+
+    fail 'No se encontro sha256sum ni shasum para validar integridad.'
+}
+
+verify_download_checksum() {
+    local file_path="$1"
+    local expected_checksum="$2"
+    local source_url="$3"
+    local actual_checksum=""
+
+    [[ -n "$expected_checksum" ]] || fail "No hay checksum configurado para validar ${source_url}."
+
+    actual_checksum="$(sha256_file "$file_path")"
+    [[ "$actual_checksum" == "$expected_checksum" ]] || \
+        fail "Checksum invalido para ${source_url}. Esperado: ${expected_checksum} Actual: ${actual_checksum}"
 }
 
 enable_logging() {
@@ -216,18 +255,19 @@ ensure_downloader() {
 download_file() {
     local url="$1"
     local destination="$2"
+    local expected_checksum="${3:-}"
 
     if command -v curl >/dev/null 2>&1; then
         curl -fsSL "$url" -o "$destination"
-        return 0
-    fi
-
-    if command -v wget >/dev/null 2>&1; then
+    elif command -v wget >/dev/null 2>&1; then
         wget -qO "$destination" "$url"
-        return 0
+    else
+        fail 'No hay curl ni wget disponibles para descargar archivos.'
     fi
 
-    fail 'No hay curl ni wget disponibles para descargar archivos.'
+    if [[ -n "$expected_checksum" ]]; then
+        verify_download_checksum "$destination" "$expected_checksum" "$url"
+    fi
 }
 
 is_deb_package_installed() {
@@ -490,6 +530,7 @@ supports_repo_profile() {
 
 apply_repository_profile() {
     local profile_installer="$TEMP_DIR/install_pro_complete.sh"
+    local local_profile_installer=""
 
     if [[ "${VIRTUALMIN_SKIP_REPO_PROFILE:-0}" == '1' ]]; then
         REPO_PROFILE_MESSAGE='skipped-by-env'
@@ -504,8 +545,18 @@ apply_repository_profile() {
     fi
 
     log_info 'Aplicando perfil profesional del panel desde el mismo repositorio.'
-    download_file "$REPO_INSTALLER_URL" "$profile_installer"
-    chmod 700 "$profile_installer"
+
+    if [[ -n "$SCRIPT_DIR" && -f "$SCRIPT_DIR/install_pro_complete.sh" ]]; then
+        local_profile_installer="$SCRIPT_DIR/install_pro_complete.sh"
+        profile_installer="$local_profile_installer"
+    else
+        if [[ "$ALLOW_REMOTE_BOOTSTRAP" != '1' ]]; then
+            fail 'No se encontro install_pro_complete.sh local. Para produccion usa el checkout completo del repositorio o exporta ALLOW_REMOTE_BOOTSTRAP=1 para una descarga remota controlada.'
+        fi
+
+        download_file "$REPO_INSTALLER_URL" "$profile_installer" "$REPO_INSTALLER_SHA256"
+        chmod 700 "$profile_installer"
+    fi
 
     if bash "$profile_installer" --post-base; then
         REPO_PROFILE_APPLIED=1
@@ -580,6 +631,7 @@ show_completion_message() {
 }
 
 main() {
+    init_script_dir
     enable_logging
     log_info 'Inicio de instalacion automatica Webmin/Virtualmin.'
 

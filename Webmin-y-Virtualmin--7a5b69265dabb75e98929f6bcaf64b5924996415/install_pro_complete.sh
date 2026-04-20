@@ -3,8 +3,8 @@
 # ============================================================================
 # INSTALADOR COMPLETO DE UN SOLO COMANDO - PERFIL PROFESIONAL DE PRODUCCION
 # ============================================================================
-# Instala la base Webmin/Virtualmin y aplica el perfil profesional del repositorio:
-# curl -sSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/install_pro_complete.sh | bash
+# Instala la base Webmin/Virtualmin y aplica el perfil profesional del repositorio
+# desde un checkout local auditado del repo.
 # ============================================================================
 
 set -euo pipefail
@@ -21,11 +21,10 @@ NC='\033[0m'
 
 # Variables
 REPO_URL="https://github.com/yunyminaya/Webmin-y-Virtualmin-.git"
-REPO_RAW_BASE="https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main"
-SCRIPT_URL="${REPO_RAW_BASE}/install_pro_complete.sh"
 INSTALL_DIR="/opt/virtualmin-pro"
 START_TIME=$(date +%s)
 POST_BASE_ONLY=0
+SCRIPT_SOURCE="${BASH_SOURCE[0]-}"
 
 parse_args() {
     while [[ $# -gt 0 ]]; do
@@ -67,6 +66,8 @@ log_install() {
 
 # Verificar permisos de root
 check_root() {
+    local temp_script="" exit_code=0
+
     if [[ $EUID -eq 0 ]]; then
         log_install "SUCCESS" "Ejecutándose como root - permisos completos"
         return 0
@@ -79,17 +80,27 @@ check_root() {
 
     log_install "INFO" "Elevando privilegios con sudo..."
 
-    if command -v curl >/dev/null 2>&1; then
-        curl -fsSL "$SCRIPT_URL" | sudo -E bash
+    if [[ -n "$SCRIPT_SOURCE" && -f "$SCRIPT_SOURCE" ]]; then
+        if sudo -E bash "$SCRIPT_SOURCE" "$@"; then
+            exit 0
+        fi
         exit $?
     fi
 
-    if command -v wget >/dev/null 2>&1; then
-        wget -qO- "$SCRIPT_URL" | sudo -E bash
-        exit $?
+    if [[ -n "$SCRIPT_SOURCE" && -r "$SCRIPT_SOURCE" ]]; then
+        temp_script="$(mktemp /tmp/virtualmin-pro-bootstrap.XXXXXX.sh)"
+        cat "$SCRIPT_SOURCE" > "$temp_script"
+        chmod 700 "$temp_script"
+        if sudo -E bash "$temp_script" "$@"; then
+            rm -f "$temp_script"
+            exit 0
+        fi
+        exit_code=$?
+        rm -f "$temp_script"
+        exit "$exit_code"
     fi
 
-    log_install "ERROR" "No se encontro curl ni wget para relanzar el instalador con sudo"
+    log_install "ERROR" "No se pudo relanzar el instalador actual con sudo. Ejecútalo desde un checkout local del repositorio."
     exit 1
 }
 
@@ -328,7 +339,7 @@ main() {
     fi
 
     # Verificar sistema
-    check_root
+    check_root "$@"
 
     # Instalar componentes
     install_dependencies

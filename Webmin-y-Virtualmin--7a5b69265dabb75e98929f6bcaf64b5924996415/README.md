@@ -4,15 +4,15 @@ Repositorio enfocado en una instalacion automatica y repetible de Webmin + Virtu
 
 Hay dos rutas soportadas:
 
-- `install.sh`: bootstrap recomendado; descarga `instalar_webmin_virtualmin.sh`.
-- `instalar_webmin_virtualmin.sh`: instala la base Webmin + Virtualmin y, en Ubuntu/Debian, aplica automaticamente el perfil profesional del repositorio.
+- `install.sh`: bootstrap recomendado desde un checkout local auditado del repo.
+- `instalar_webmin_virtualmin.sh`: instala la base Webmin + Virtualmin y, en Ubuntu/Debian, aplica automaticamente el perfil profesional del repositorio usando los scripts locales del checkout.
 
 ## Estado real del instalador
 
 - Instala Webmin + Virtualmin GPL usando el instalador oficial.
-- Funciona como one-liner con `curl ... | bash` y eleva privilegios con `sudo` si hace falta.
+- La ruta soportada para produccion es ejecutar el instalador desde un checkout local del repositorio.
 - Selecciona `full` cuando el servidor ya tiene un FQDN valido.
-- Selecciona `mini` automaticamente cuando no hay FQDN, para evitar una configuracion de correo invalida.
+- Falla de forma explicita cuando no hay FQDN valido para una instalacion `full`.
 - Bloquea instalaciones sobre sistemas ya preconfigurados, salvo que se fuerce con `VIRTUALMIN_ALLOW_PRECONFIGURED=1`.
 - Genera log en `/var/log/webmin-virtualmin-install.log` y reporte en `/root/webmin_virtualmin_installation_report.txt`.
 
@@ -20,6 +20,7 @@ Hay dos rutas soportadas:
 
 La ruta profesional soportada ahora queda integrada en `instalar_webmin_virtualmin.sh` y `install.sh`. En Ubuntu/Debian, el servidor termina con un perfil mas cercano a produccion profesional:
 
+- mantiene los mismos nombres y la paridad funcional GPL/PRO del panel, pero con runtime sincronizado de forma nativa desde este repositorio
 - despliega overlays runtime del panel Pro del repo en el modulo instalado de Virtualmin
 - activa herramientas de operacion para resellers, backup keys, mail log search, connectivity check y editor web
 - aplica baseline de seguridad con `ufw`, `fail2ban` y `unattended-upgrades`
@@ -50,34 +51,44 @@ Sistemas Grade B solo deben usarse con validacion manual y requieren `VIRTUALMIN
 
 ## Instalacion de una linea
 
-Instalacion automatica recomendada:
+Instalacion automatica recomendada para produccion:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/install.sh | bash
+git clone https://github.com/yunyminaya/Webmin-y-Virtualmin-.git
+cd Webmin-y-Virtualmin-
+sudo ./install.sh
 ```
 
-Instalacion directa con el instalador principal:
+Instalacion directa con el instalador principal desde el checkout local:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/instalar_webmin_virtualmin.sh | sudo bash
+git clone https://github.com/yunyminaya/Webmin-y-Virtualmin-.git
+cd Webmin-y-Virtualmin-
+sudo ./instalar_webmin_virtualmin.sh
 ```
 
 Para forzar solo la base y omitir el perfil profesional del repo:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/instalar_webmin_virtualmin.sh | sudo env VIRTUALMIN_SKIP_REPO_PROFILE=1 bash
+sudo env VIRTUALMIN_SKIP_REPO_PROFILE=1 ./instalar_webmin_virtualmin.sh
 ```
 
 Instalacion full con hostname explicito:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/install.sh | VIRTUALMIN_HOSTNAME=panel.example.com bash
+sudo env VIRTUALMIN_HOSTNAME=panel.example.com ./install.sh
 ```
 
 Instalacion LEMP en una sola linea:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/install.sh | VIRTUALMIN_HOSTNAME=panel.example.com VIRTUALMIN_BUNDLE=LEMP bash
+sudo env VIRTUALMIN_HOSTNAME=panel.example.com VIRTUALMIN_BUNDLE=LEMP ./install.sh
+```
+
+Bootstrap remoto controlado solo para laboratorios o pruebas efimeras:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/install.sh | env ALLOW_REMOTE_BOOTSTRAP=1 bash
 ```
 
 ## Variables utiles

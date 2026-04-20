@@ -22,6 +22,26 @@ PASSED_CHECKS=0
 FAILED_CHECKS=0
 WARNINGS=0
 
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+port_is_listening() {
+    local port="$1"
+
+    if command_exists ss; then
+        ss -tln 2>/dev/null | grep -q "[\:\.]${port}[[:space:]]"
+        return $?
+    fi
+
+    if command_exists netstat; then
+        netstat -tln 2>/dev/null | grep -q ":${port}[[:space:]]"
+        return $?
+    fi
+
+    return 1
+}
+
 # Función de logging
 log() {
     local level="$1"
@@ -119,34 +139,49 @@ validate_system_resources() {
 # Validar conectividad de red
 validate_network() {
     log "INFO" "Validando conectividad de red..."
-    
-    # Verificar conexión a internet
-    if ! ping -c 1 google.com &> /dev/null; then
-        log "FAIL" "No hay conexión a internet"
+
+    # Verificar conectividad al origen de actualizaciones del repositorio
+    if command_exists curl && curl -fsSI --connect-timeout 5 https://raw.githubusercontent.com/ >/dev/null 2>&1; then
+        log "PASS" "Conectividad HTTPS hacia el repositorio de actualizaciones funcional"
+        count_check "PASS"
+    elif command_exists wget && wget -q --spider --timeout=5 https://raw.githubusercontent.com/ >/dev/null 2>&1; then
+        log "PASS" "Conectividad HTTPS hacia el repositorio de actualizaciones funcional"
+        count_check "PASS"
+    else
+        log "FAIL" "No hay conectividad HTTPS hacia raw.githubusercontent.com"
         count_check "FAIL"
-    else
-        log "PASS" "Conexión a internet funcional"
-        count_check "PASS"
     fi
-    
-    # Verificar resolución DNS
-    if ! nslookup google.com &> /dev/null; then
-        log "WARN" "Problemas de resolución DNS"
+
+    # Verificar resolución DNS del origen del repositorio
+    if getent ahosts raw.githubusercontent.com >/dev/null 2>&1 || getent hosts raw.githubusercontent.com >/dev/null 2>&1; then
+        log "PASS" "Resolución DNS del repositorio funcional"
+        count_check "PASS"
+    else
+        log "WARN" "Problemas de resolución DNS hacia raw.githubusercontent.com"
         count_check "WARN"
-    else
-        log "PASS" "Resolución DNS funcional"
-        count_check "PASS"
     fi
-    
-    # Verificar puertos abiertos
-    local ports=("22" "80" "443" "10000")
-    for port in "${ports[@]}"; do
-        if netstat -tlnp | grep -q ":$port "; then
-            log "PASS" "Puerto $port está abierto"
+
+    # Verificar puertos esenciales del panel y web pública
+    local required_ports=("22" "10000")
+    local advisory_ports=("80" "443")
+
+    for port in "${required_ports[@]}"; do
+        if port_is_listening "$port"; then
+            log "PASS" "Puerto $port está escuchando"
             count_check "PASS"
         else
-            log "FAIL" "Puerto $port no está abierto"
+            log "FAIL" "Puerto $port no está escuchando"
             count_check "FAIL"
+        fi
+    done
+
+    for port in "${advisory_ports[@]}"; do
+        if port_is_listening "$port"; then
+            log "PASS" "Puerto $port está escuchando"
+            count_check "PASS"
+        else
+            log "WARN" "Puerto $port no está escuchando"
+            count_check "WARN"
         fi
     done
 }
@@ -201,12 +236,15 @@ validate_webmin() {
         count_check "WARN"
     fi
     
-    # Verificar acceso remoto
-    if grep -q "allow=0.0.0.0" /etc/webmin/miniserv.conf; then
-        log "PASS" "Acceso remoto configurado en Webmin"
+    # Verificar exposición remota
+    if grep -Eq '^allow=.*(0\.0\.0\.0|::/0)' /etc/webmin/miniserv.conf; then
+        log "FAIL" "Webmin está expuesto a cualquier IP en miniserv.conf"
+        count_check "FAIL"
+    elif grep -q '^allow=' /etc/webmin/miniserv.conf; then
+        log "PASS" "Webmin tiene ACL de acceso remoto explícita"
         count_check "PASS"
     else
-        log "WARN" "Acceso remoto limitado en Webmin"
+        log "WARN" "Webmin no declara ACL explícita en miniserv.conf; revisar firewall o reverse proxy"
         count_check "WARN"
     fi
     
@@ -289,27 +327,40 @@ validate_virtualmin() {
 # Validar seguridad
 validate_security() {
     log "INFO" "Validando configuración de seguridad..."
-    
-    # Verificar firewall
-    if ufw status | grep -q "Status: active"; then
+
+    local firewall_rules=("22" "80" "443" "10000")
+    local port
+
+    if command_exists ufw && ufw status 2>/dev/null | grep -q "Status: active"; then
         log "PASS" "Firewall UFW está activo"
         count_check "PASS"
+
+        for port in "${firewall_rules[@]}"; do
+            if ufw status 2>/dev/null | grep -q "$port"; then
+                log "PASS" "Regla UFW para puerto $port encontrada"
+                count_check "PASS"
+            else
+                log "WARN" "Regla UFW para puerto $port no encontrada"
+                count_check "WARN"
+            fi
+        done
+    elif command_exists firewall-cmd && firewall-cmd --state >/dev/null 2>&1; then
+        log "PASS" "Firewall firewalld está activo"
+        count_check "PASS"
+
+        for port in "${firewall_rules[@]}"; do
+            if firewall-cmd --list-ports 2>/dev/null | grep -Eq "(^|[[:space:]])${port}/tcp([[:space:]]|$)"; then
+                log "PASS" "Regla firewalld para puerto $port encontrada"
+                count_check "PASS"
+            else
+                log "WARN" "Regla firewalld para puerto $port no encontrada"
+                count_check "WARN"
+            fi
+        done
     else
-        log "FAIL" "Firewall UFW no está activo"
+        log "FAIL" "No se detectó firewall activo compatible"
         count_check "FAIL"
     fi
-    
-    # Verificar reglas de firewall
-    local firewall_rules=("22" "80" "443" "10000")
-    for port in "${firewall_rules[@]}"; do
-        if ufw status | grep -q "$port"; then
-            log "PASS" "Regla de firewall para puerto $port encontrada"
-            count_check "PASS"
-        else
-            log "WARN" "Regla de firewall para puerto $port no encontrada"
-            count_check "WARN"
-        fi
-    done
     
     # Verificar Fail2Ban
     if systemctl is-active --quiet fail2ban; then
@@ -321,7 +372,7 @@ validate_security() {
     fi
     
     # Verificar configuración de Fail2Ban
-    if [[ -f /etc/fail2ban/jail.d/webmin-production.local || -f /etc/fail2ban/jail.local ]]; then
+    if [[ -f /etc/fail2ban/jail.d/webmin-production.local || -f /etc/fail2ban/jail.d/webmin-production.conf || -f /etc/fail2ban/jail.local ]]; then
         log "PASS" "Configuración de Fail2Ban encontrada"
         count_check "PASS"
     else
@@ -341,49 +392,66 @@ validate_security() {
 
 # Validar módulos adicionales
 validate_additional_modules() {
-    log "INFO" "Validando módulos adicionales..."
-    
-    # Verificar sistema de backup
-    if [[ -d /opt/intelligent_backup_system ]]; then
-        log "PASS" "Sistema de backup inteligente encontrado"
-        count_check "PASS"
-        
-        # Verificar dependencias de Python
-        if pip3 list | grep -q "cryptography"; then
-            log "PASS" "Dependencias de backup instaladas"
+    log "INFO" "Validando runtime nativo GPL/PRO del panel..."
+
+    local module_base=""
+    local native_modules=("openvm-core" "openvm-admin" "openvm-suite" "openvm-dns" "openvm-backup")
+    local native_tools=(
+        "vmin-install-app"
+        "vmin-ssh-keys"
+        "vmin-backup-keys"
+        "vmin-mail-search"
+        "vmin-cloud-dns"
+        "vmin-resource-limits"
+        "vmin-mailbox-cleanup"
+        "vmin-secondary-mx"
+        "vmin-check-connectivity"
+        "vmin-graphs"
+        "vmin-batch-create"
+        "vmin-add-link"
+        "vmin-ssl-cert"
+        "vmin-edit-file"
+        "vmin-email-owners"
+    )
+    local module
+    local tool
+
+    if [[ -d /usr/share/webmin ]]; then
+        module_base="/usr/share/webmin"
+    elif [[ -d /usr/libexec/webmin ]]; then
+        module_base="/usr/libexec/webmin"
+    fi
+
+    if [[ -n "$module_base" ]]; then
+        for module in "${native_modules[@]}"; do
+            if [[ -d "${module_base}/${module}" ]]; then
+                log "PASS" "Módulo nativo instalado: ${module}"
+                count_check "PASS"
+            else
+                log "FAIL" "Módulo nativo faltante: ${module}"
+                count_check "FAIL"
+            fi
+        done
+    else
+        log "FAIL" "No se pudo detectar el directorio base de módulos Webmin/OpenVM"
+        count_check "FAIL"
+    fi
+
+    for tool in "${native_tools[@]}"; do
+        if command_exists "$tool"; then
+            log "PASS" "Herramienta nativa disponible: ${tool}"
             count_check "PASS"
         else
-            log "WARN" "Dependencias de backup no encontradas"
-            count_check "WARN"
+            log "FAIL" "Herramienta nativa faltante: ${tool}"
+            count_check "FAIL"
         fi
-    else
-        log "WARN" "Sistema de backup inteligente no encontrado"
-        count_check "WARN"
-    fi
-    
-    # Verificar sistema de monitoreo
-    if [[ -f /etc/systemd/system/webmin-monitor.service ]]; then
-        log "PASS" "Servicio de monitoreo encontrado"
-        count_check "PASS"
-        
-        if systemctl is-active --quiet webmin-monitor; then
-            log "PASS" "Servicio de monitoreo activo"
-            count_check "PASS"
-        else
-            log "WARN" "Servicio de monitoreo no activo"
-            count_check "WARN"
-        fi
-    else
-        log "WARN" "Servicio de monitoreo no encontrado"
-        count_check "WARN"
-    fi
-    
-    # Verificar firewall inteligente
-    if [[ -f /opt/intelligent_firewall/config ]]; then
-        log "PASS" "Firewall inteligente encontrado"
+    done
+
+    if [[ -f /opt/virtualmin-pro/production_profile_status.json ]]; then
+        log "PASS" "Estado del perfil nativo de producción presente"
         count_check "PASS"
     else
-        log "WARN" "Firewall inteligente no encontrado"
+        log "WARN" "No se encontró production_profile_status.json en /opt/virtualmin-pro"
         count_check "WARN"
     fi
 }
@@ -445,33 +513,22 @@ validate_ssl() {
 
 # Validar configuración de usuarios
 validate_users() {
-    log "INFO" "Validando configuración de usuarios..."
-    
-    # Verificar usuario webminadmin
-    if id "webminadmin" &> /dev/null; then
-        log "PASS" "Usuario webminadmin encontrado"
-        count_check "PASS"
-        
-        # Verificar si está en el grupo sudo
-        if groups webminadmin | grep -q "sudo"; then
-            log "PASS" "Usuario webminadmin en grupo sudo"
-            count_check "PASS"
-        else
-            log "WARN" "Usuario webminadmin no en grupo sudo"
-            count_check "WARN"
-        fi
-    else
-        log "WARN" "Usuario webminadmin no encontrado"
-        count_check "WARN"
-    fi
-    
-    # Verificar usuario root
+    log "INFO" "Validando acceso administrativo y cuentas del sistema..."
+
     if id "root" &> /dev/null; then
         log "PASS" "Usuario root encontrado"
         count_check "PASS"
     else
         log "FAIL" "Usuario root no encontrado"
         count_check "FAIL"
+    fi
+
+    if [[ -f /etc/webmin/miniserv.users ]]; then
+        log "PASS" "Base de usuarios administrativos de Webmin presente"
+        count_check "PASS"
+    else
+        log "WARN" "No se encontró /etc/webmin/miniserv.users"
+        count_check "WARN"
     fi
 }
 
@@ -500,17 +557,8 @@ Tasa de éxito: ${success_rate}%
 
 ESTADO DE COMPONENTES:
 ---------------------
-Sistema Operativo: $(validate_os &>/dev/null && echo "✅ OK" || echo "❌ ERROR")
-Recursos del Sistema: ${PASSED_CHECKS}/$TOTAL_CHECKS checks pasados
-Conectividad de Red: ${PASSED_CHECKS}/$TOTAL_CHECKS checks pasados
-Servicios del Sistema: ${PASSED_CHECKS}/$TOTAL_CHECKS checks pasados
-Webmin: ${PASSED_CHECKS}/$TOTAL_CHECKS checks pasados
-Virtualmin: ${PASSED_CHECKS}/$TOTAL_CHECKS checks pasados
-Seguridad: ${PASSED_CHECKS}/$TOTAL_CHECKS checks pasados
-Módulos Adicionales: ${PASSED_CHECKS}/$TOTAL_CHECKS checks pasados
-Base de Datos: ${PASSED_CHECKS}/$TOTAL_CHECKS checks pasados
-Configuración SSL: ${PASSED_CHECKS}/$TOTAL_CHECKS checks pasados
-Configuración de Usuarios: ${PASSED_CHECKS}/$TOTAL_CHECKS checks pasados
+- El detalle por componente queda registrado en el log completo de validación.
+- Este reporte resume el estado global y no reutiliza contadores agregados como si fueran estado individual.
 
 ACCESO WEBMIN:
 --------------

@@ -94,6 +94,23 @@ jobs:
       run: |
         bash scripts/run_smoke_tests.sh
 
+    - name: Run native GPL/PRO shell suite
+      run: |
+        bash tests/unit/test_git_scripts.sh
+        bash tests/unit/test_secure_credentials.sh
+        bash tests/unit/test_secure_credentials_fixed.sh
+        bash tests/unit/test_system_scripts.sh
+        bash tests/integration/test_backup_integration.sh
+        bash tests/integration/test_openvm_stack.sh
+        bash tests/functional/test_openvm_admin.sh
+        bash tests/functional/test_openvm_backup.sh
+        bash tests/functional/test_openvm_core.sh
+        bash tests/functional/test_openvm_dns.sh
+        bash tests/functional/test_panel_commands_open.sh
+        bash tests/functional/test_openvm_suite.sh
+        bash tests/functional/test_virtualmin_pro_compat.sh
+        bash tests/functional/test_webmin_deployment.sh
+
     - name: Compile production Python services
       run: |
         python -m py_compile database_manager/backend/app.py

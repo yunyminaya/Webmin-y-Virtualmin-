@@ -24,7 +24,7 @@
 #   [16] Email Server Owners        - Notificaciones masivas a propietarios
 # =============================================================================
 
-set +e  # No abortar en errores - continuar siempre
+set -euo pipefail
 
 # --- Colores ---
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
@@ -45,6 +45,7 @@ LOG="/var/log/setup_pro_production.log"
 STATUS_FILE="${SCRIPT_DIR}/production_profile_status.json"
 PASS_COUNT=0
 FAIL_COUNT=0
+VALIDATION_FAILURES=0
 
 log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" >> "$LOG"; }
 
@@ -132,7 +133,7 @@ deploy_runtime_panel_overlay() {
     mkdir -p "$WEBMIN_PRO_DIR"
 
     while IFS= read -r -d '' source_file; do
-        relative_path="${source_file#${VIRTUALMIN_REPO_DIR}/}"
+        relative_path="${source_file#"${VIRTUALMIN_REPO_DIR}"/}"
         target_file="${WEBMIN_MODULE_DIR}/${relative_path}"
         install_runtime_file "$source_file" "$target_file" || return 1
         deployed_count=$((deployed_count + 1))
@@ -349,6 +350,102 @@ write_production_status() {
 EOF
 }
 
+validation_ok() {
+    ok "[Validacion] $*"
+}
+
+validation_fail() {
+    VALIDATION_FAILURES=$((VALIDATION_FAILURES + 1))
+    fail "[Validacion] $*"
+}
+
+check_validation_file() {
+    local path="$1"
+    local message="$2"
+
+    if [[ -e "$path" ]]; then
+        validation_ok "$message"
+    else
+        validation_fail "$message"
+    fi
+}
+
+check_validation_command() {
+    local command_name="$1"
+    local message="$2"
+
+    if command_exists "$command_name"; then
+        validation_ok "$message"
+    else
+        validation_fail "$message"
+    fi
+}
+
+validate_native_feature_parity() {
+    VALIDATION_FAILURES=0
+
+    local command_name
+    local required_commands=(
+        vmin-install-app
+        vmin-ssh-keys
+        vmin-backup-keys
+        vmin-mail-search
+        vmin-cloud-dns
+        vmin-resource-limits
+        vmin-mailbox-cleanup
+        vmin-secondary-mx
+        vmin-check-connectivity
+        vmin-graphs
+        vmin-batch-create
+        vmin-add-link
+        vmin-ssl-cert
+        vmin-edit-file
+        vmin-email-owners
+    )
+
+    for command_name in "${required_commands[@]}"; do
+        check_validation_command "$command_name" "Herramienta nativa disponible: ${command_name}"
+    done
+
+    check_validation_file "/etc/webmin/custom/0" "Custom Links base desplegados en Webmin"
+    check_validation_file "/etc/fail2ban/jail.d/webmin-production.local" "Plantilla Fail2Ban de producción presente"
+    check_validation_file "/etc/apt/apt.conf.d/20auto-upgrades" "Auto-upgrades del sistema configurados"
+    check_validation_file "/etc/cron.weekly/vmin-mailbox-cleanup" "Limpieza semanal de buzones programada"
+    check_validation_file "/etc/cron.daily/vmin-ssl-renew" "Renovación SSL diaria programada"
+    check_validation_file "/usr/local/share/vmin-batch-example.csv" "CSV de ejemplo para creación masiva presente"
+    check_validation_file "/etc/webmin/virtual-server/bkeys" "Keyring nativo de backups presente"
+
+    if grep -q '^edit_html=1$' "$WEBMIN_VSERVER/config" 2>/dev/null; then
+        validation_ok "Editor web nativo habilitado en runtime"
+    else
+        validation_fail "Editor web nativo no quedó habilitado en runtime"
+    fi
+
+    if grep -q '^backup_key=gnupg$' "$WEBMIN_VSERVER/config" 2>/dev/null; then
+        validation_ok "Backups cifrados nativos configurados con GnuPG"
+    else
+        validation_fail "Backups cifrados nativos no quedaron configurados con GnuPG"
+    fi
+
+    if grep -Eq '^allow=.*(0\.0\.0\.0|::/0)' "$WEBMIN_MINISERV_CONF" 2>/dev/null; then
+        validation_fail "Webmin quedó expuesto a cualquier IP en miniserv.conf"
+    else
+        validation_ok "miniserv.conf no expone acceso global explícito"
+    fi
+
+    if command_exists certbot || [[ -x /root/.acme.sh/acme.sh ]]; then
+        validation_ok "Proveedor SSL automatizado disponible"
+    else
+        validation_fail "No se detectó ningún proveedor SSL automatizado"
+    fi
+
+    if (( VALIDATION_FAILURES > 0 )); then
+        return 1
+    fi
+
+    return 0
+}
+
 validate_runtime_profile() {
     local failures=0
     local file
@@ -363,7 +460,7 @@ validate_runtime_profile() {
     info "[Validacion] Verificando panel profesional en runtime..."
 
     while IFS= read -r -d '' source_file; do
-        relative_path="${source_file#${VIRTUALMIN_REPO_DIR}/}"
+        relative_path="${source_file#"${VIRTUALMIN_REPO_DIR}"/}"
         file="${WEBMIN_MODULE_DIR}/${relative_path}"
         if [[ -f "$file" ]]; then
             ok "[Validacion] Overlay runtime presente: $file"
@@ -408,6 +505,10 @@ validate_runtime_profile() {
     else
         failures=$((failures + 1))
         fail "[Validacion] timer de actualizacion del repositorio no esta habilitado"
+    fi
+
+    if ! validate_native_feature_parity; then
+        failures=$((failures + VALIDATION_FAILURES))
     fi
 
     if (( failures > 0 )); then

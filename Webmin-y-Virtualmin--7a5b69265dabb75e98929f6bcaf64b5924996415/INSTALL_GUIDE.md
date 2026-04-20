@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Esta guia documenta el flujo soportado para instalar Webmin + Virtualmin con una sola linea y con criterios mas cercanos a produccion.
+Esta guia documenta el flujo soportado para instalar Webmin + Virtualmin con criterios de produccion y con el runtime GPL/PRO nativo mantenido desde este repositorio.
 
 El flujo soportado usa:
 
@@ -31,26 +31,30 @@ Requisitos recomendados:
 - 40 GB libres o mas
 - FQDN configurado si quieres instalacion `full`
 
-## One-liner recomendado
+## Flujo recomendado para produccion
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/install.sh | bash
+git clone https://github.com/yunyminaya/Webmin-y-Virtualmin-.git
+cd Webmin-y-Virtualmin-
+sudo ./install.sh
 ```
 
 Ese comando hace lo siguiente:
 
-1. Descarga el bootstrap `install.sh`.
+1. Ejecuta el bootstrap `install.sh` desde un checkout local auditado.
 2. Usa `sudo` automaticamente si no estas en root.
-3. Descarga `instalar_webmin_virtualmin.sh`.
+3. Reutiliza `instalar_webmin_virtualmin.sh` del mismo checkout local.
 4. Ejecuta el instalador oficial de Virtualmin con validaciones previas.
-5. En Ubuntu/Debian aplica automaticamente el perfil profesional del repositorio.
+5. En Ubuntu/Debian aplica automaticamente el perfil profesional del repositorio usando scripts locales del checkout.
 
-## One-liner directo del instalador principal
+## Instalador principal directo desde el checkout
 
 Este comando ya deja el perfil profesional del panel en Ubuntu/Debian:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/instalar_webmin_virtualmin.sh | sudo bash
+git clone https://github.com/yunyminaya/Webmin-y-Virtualmin-.git
+cd Webmin-y-Virtualmin-
+sudo ./instalar_webmin_virtualmin.sh
 ```
 
 Ese flujo hace ademas:
@@ -65,7 +69,15 @@ Ese flujo hace ademas:
 Si quieres omitir ese perfil y dejar solo la base:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/instalar_webmin_virtualmin.sh | sudo env VIRTUALMIN_SKIP_REPO_PROFILE=1 bash
+sudo env VIRTUALMIN_SKIP_REPO_PROFILE=1 ./instalar_webmin_virtualmin.sh
+```
+
+## Bootstrap remoto controlado
+
+El bootstrap remoto ya no es la ruta soportada para produccion. Solo debe usarse en laboratorios o pruebas efimeras y requiere habilitarlo explicitamente:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/install.sh | env ALLOW_REMOTE_BOOTSTRAP=1 bash
 ```
 
 ## Modos de instalacion
@@ -73,28 +85,28 @@ curl -fsSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/mai
 ### Modo automatico
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/install.sh | bash
+sudo ./install.sh
 ```
 
 - Si detecta un FQDN valido, instala `full`.
-- Si no detecta un FQDN valido, instala `mini`.
+- Si no detecta un FQDN valido, falla y exige configurarlo de forma explicita antes de seguir.
 
 ### Forzar hostname y full
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/install.sh | VIRTUALMIN_HOSTNAME=panel.example.com VIRTUALMIN_TYPE=full bash
+sudo env VIRTUALMIN_HOSTNAME=panel.example.com VIRTUALMIN_TYPE=full ./install.sh
 ```
 
 ### Instalar con Nginx en lugar de Apache
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/install.sh | VIRTUALMIN_HOSTNAME=panel.example.com VIRTUALMIN_BUNDLE=LEMP bash
+sudo env VIRTUALMIN_HOSTNAME=panel.example.com VIRTUALMIN_BUNDLE=LEMP ./install.sh
 ```
 
 ### Forzar mini explicitamente
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/main/install.sh | VIRTUALMIN_TYPE=mini bash
+sudo env VIRTUALMIN_TYPE=mini ./install.sh
 ```
 
 ## Variables soportadas
@@ -106,6 +118,7 @@ curl -fsSL https://raw.githubusercontent.com/yunyminaya/Webmin-y-Virtualmin-/mai
 - `VIRTUALMIN_ALLOW_PRECONFIGURED=1`: omite el control de sistema limpio.
 - `VIRTUALMIN_ALLOW_GRADE_B=1`: permite distros Grade B.
 - `VIRTUALMIN_SKIP_REPO_PROFILE=1`: omite el perfil profesional del repositorio y deja solo la base.
+- `ALLOW_REMOTE_BOOTSTRAP=1`: permite descargar scripts del repo por HTTPS. Solo para entornos no productivos o laboratorios controlados.
 - `INSTALL_LOG`: cambia la ruta del log.
 - `REPORT_PATH`: cambia la ruta del reporte final.
 
