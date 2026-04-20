@@ -1,0 +1,7 @@
+desc=OpenVM Notifications
+name=openvm_notifications
+version=0.1.0
+longdesc=Centralized notification system with alerts, email, Slack, and webhook integrations
+category=servers
+depends=virtual-server 3.0
+hidden=0

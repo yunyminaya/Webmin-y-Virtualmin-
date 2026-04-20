@@ -1,7 +1,7 @@
 desc=OpenVM Unified Suite
 name=openvm_suite
-version=0.1.0
-longdesc=Panel unificado para los módulos abiertos de OpenVM y para la navegación operativa de funciones OSS sobre Webmin/Virtualmin.
+version=2.0.0
+longdesc=Panel unificado para los módulos abiertos de OpenVM: Core, Admin, DNS, SSL, PHP, Scripts, SSH, Backup, Monitoring, Dashboard, API, DB Manager, Mail, Notifications, Cron, Batch, Billing y seguridad. Navegación centralizada con métricas en tiempo real y soporte i18n (EN, ES, PT, FR, DE).
 category=System
-depends=openvm_core,openvm_admin,openvm_ssl,openvm_scripts,openvm_mail,openvm_monitoring,openvm_batch,openvm_php,openvm_ssh
+depends=openvm_core,openvm_admin,openvm_dns,openvm_ssl,openvm_php,openvm_scripts,openvm_ssh,openvm_backup,openvm_monitoring,openvm_dashboard,openvm_api,openvm_db,openvm_mail,openvm_notifications,openvm_cron,openvm_batch,openvm_billing
 hidden=0

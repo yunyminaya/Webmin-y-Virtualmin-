@@ -1,0 +1,7 @@
+desc=OpenVM API
+name=openvm_api
+version=0.1.0
+longdesc=REST API for OpenVM panel integration, billing systems and automation
+category=virtualmin
+depends=virtual-server
+hidden=0

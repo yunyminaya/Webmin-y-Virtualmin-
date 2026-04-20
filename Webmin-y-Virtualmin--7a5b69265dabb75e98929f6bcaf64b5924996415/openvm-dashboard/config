@@ -1,0 +1,8 @@
+refresh_interval=30
+show_cpu_graph=1
+show_memory_graph=1
+show_disk_graph=1
+show_bandwidth_graph=1
+show_domain_list=1
+max_domains_display=20
+chart_type=bar

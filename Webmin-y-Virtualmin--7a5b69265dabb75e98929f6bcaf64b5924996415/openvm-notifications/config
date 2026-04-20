@@ -1,0 +1,9 @@
+notify_email=admin@localhost
+notify_slack=no
+slack_webhook=
+notify_webhook=no
+webhook_url=
+notify_browser=yes
+digest_daily=yes
+digest_time=08:00
+max_notifications=1000

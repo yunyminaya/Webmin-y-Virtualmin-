@@ -1,0 +1,5 @@
+api_enabled=1
+api_rate_limit=100
+api_token_expiry=3600
+cors_enabled=1
+cors_origins=*

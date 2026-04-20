@@ -1,0 +1,7 @@
+desc=OpenVM Cron Manager
+name=openvm_cron
+version=0.1.0
+longdesc=Manage scheduled tasks and cron jobs for domains and users
+category=servers
+depends=virtual-server 3.0
+hidden=0

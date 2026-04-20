@@ -1,0 +1,7 @@
+desc=OpenVM Database Manager
+name=openvm_db
+version=0.1.0
+longdesc=Manage MySQL and PostgreSQL databases, users, and permissions
+category=servers
+depends=virtual-server 3.0
+hidden=0

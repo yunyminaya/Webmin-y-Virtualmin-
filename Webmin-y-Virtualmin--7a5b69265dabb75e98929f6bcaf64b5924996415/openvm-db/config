@@ -1,0 +1,5 @@
+db_manager=mysql
+backup_dir=/var/db-backups
+max_backups=30
+allow_remote=no
+default_charset=utf8mb4

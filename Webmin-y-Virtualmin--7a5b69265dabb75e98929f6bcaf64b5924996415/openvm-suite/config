@@ -1,4 +1,38 @@
+# OpenVM Suite v2.0.0 - Module Visibility Configuration
+# Set to 1 to show, 0 to hide each module in the suite dashboard
+
+# Core
 show_openvm_core=1
 show_openvm_admin=1
+show_openvm_suite=1
+
+# Servicios Web
+show_openvm_dns=1
+show_openvm_ssl=1
+show_openvm_php=1
+show_openvm_scripts=1
+show_openvm_ssh=1
+
+# Infraestructura
+show_openvm_backup=1
+show_openvm_monitoring=1
+show_openvm_dashboard=1
+show_openvm_api=1
+
+# Base de Datos
+show_openvm_db=1
+
+# Email
+show_openvm_mail=1
+show_openvm_notifications=1
+
+# Automatización
+show_openvm_cron=1
+show_openvm_batch=1
+
+# Negocio
+show_openvm_billing=1
+
+# Security / Infra (legacy)
 show_security_modules=1
 show_infra_modules=1

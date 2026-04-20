@@ -1,0 +1,7 @@
+desc=OpenVM Billing
+name=openvm_billing
+version=0.1.0
+longdesc=Billing and invoicing management for hosting services with plans, invoices, and payment tracking
+category=servers
+depends=virtual-server 3.0
+hidden=0

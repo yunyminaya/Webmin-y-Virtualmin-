@@ -1,0 +1,4 @@
+cron_user=root
+log_output=yes
+max_log_size=1048576
+allow_user_cron=yes

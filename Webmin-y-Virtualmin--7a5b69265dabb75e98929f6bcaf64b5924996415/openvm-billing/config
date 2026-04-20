@@ -1,0 +1,13 @@
+currency=USD
+currency_symbol=$
+tax_rate=0
+tax_enabled=no
+invoice_prefix=INV-
+invoice_start=1000
+payment_terms=30
+late_fee_percent=5
+auto_suspend=no
+suspend_after_days=30
+billing_email=billing@localhost
+company_name=OpenVM Hosting
+company_address=
