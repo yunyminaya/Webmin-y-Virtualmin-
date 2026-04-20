@@ -12,7 +12,7 @@ my @doms = compat_selected_domains();
 if ($in{'confirm'}) {
 	&ui_print_unbuffered_header(undef, 'Enable Virtual Servers', '', undef, undef, 1);
 	foreach my $d (@doms) {
-		if (!&can_disable_domain($d)) {
+		if (defined(&can_enable_domain) ? !&can_enable_domain($d) : !&can_edit_domain($d)) {
 			print "<div>Skipped ".&html_escape($d->{'dom'})." : permission denied</div>\n";
 			next;
 			}

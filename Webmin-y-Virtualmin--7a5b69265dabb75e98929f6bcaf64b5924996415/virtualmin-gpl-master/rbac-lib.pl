@@ -4,7 +4,7 @@
 use strict;
 use warnings;
 
-our %rbac_config;
+our ($config_directory, %rbac_config);
 
 # Load RBAC configuration
 sub load_rbac_config {
@@ -77,36 +77,41 @@ sub check_permission {
                         ($role_perms->{$module} && grep { $_ eq '*' || $_ eq $action } @{$role_perms->{$module}});
 
     # Check conditional policies
-    require './conditional-policies-lib.pl';
-    my $policy_result = &check_conditional_policies($remote_user, $module, $action);
-    if (defined $policy_result) {
-        return $policy_result;
+    if (-r './conditional-policies-lib.pl') {
+        eval { require './conditional-policies-lib.pl'; };
+        if (!$@ && defined(&check_conditional_policies)) {
+            my $policy_result = &check_conditional_policies($remote_user, $module, $action);
+            if (defined $policy_result) {
+                return $policy_result;
+            }
+        }
     }
 
     # Zero-Trust integration
-    if (-d '../zero-trust') {
-        require '../zero-trust/zero-trust-lib.pl';
+    if (-d '../zero-trust' && -r '../zero-trust/zero-trust-lib.pl') {
+        eval { require '../zero-trust/zero-trust-lib.pl'; };
+        if (!$@ && defined(&check_continuous_auth)) {
+            # Check continuous authentication
+            my $session_id = $ENV{'SESSION_ID'} || 'default_session';
+            unless (&check_continuous_auth($remote_user, $session_id)) {
+                &log_zero_trust_event('auth_failure', $remote_user, "Continuous authentication failed for $module:$action") if (defined(&log_zero_trust_event));
+                return 0;
+            }
 
-        # Check continuous authentication
-        my $session_id = $ENV{'SESSION_ID'} || 'default_session';
-        unless (&check_continuous_auth($remote_user, $session_id)) {
-            &log_zero_trust_event('auth_failure', $remote_user, "Continuous authentication failed for $module:$action");
-            return 0;
+            # Check contextual access
+            my $context = {
+                'ip' => $ENV{'REMOTE_ADDR'},
+                'user_agent' => $ENV{'HTTP_USER_AGENT'},
+                'device_fingerprint' => $ENV{'DEVICE_FINGERPRINT'} || 'unknown'
+            };
+            unless (&check_contextual_access($remote_user, $module, $action, $context)) {
+                &log_zero_trust_event('context_denied', $remote_user, "Contextual access denied for $module:$action from $context->{'ip'}") if (defined(&log_zero_trust_event));
+                return 0;
+            }
+
+            # Adapt policies based on successful access
+            &adapt_policies($remote_user, 1, $context) if (defined(&adapt_policies));
         }
-
-        # Check contextual access
-        my $context = {
-            'ip' => $ENV{'REMOTE_ADDR'},
-            'user_agent' => $ENV{'HTTP_USER_AGENT'},
-            'device_fingerprint' => $ENV{'DEVICE_FINGERPRINT'} || 'unknown'
-        };
-        unless (&check_contextual_access($remote_user, $module, $action, $context)) {
-            &log_zero_trust_event('context_denied', $remote_user, "Contextual access denied for $module:$action from $context->{'ip'}");
-            return 0;
-        }
-
-        # Adapt policies based on successful access
-        &adapt_policies($remote_user, 1, $context);
     }
 
     return $has_role_perm ? 1 : 0;

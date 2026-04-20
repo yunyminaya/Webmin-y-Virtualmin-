@@ -4,11 +4,20 @@
 use strict;
 use warnings;
 
-our $audit_log_file = "$config_directory/rbac_audit.log";
+our ($config_directory);
+our $audit_log_file;
+
+sub _init_audit_log_file
+{
+    $audit_log_file = "$config_directory/rbac_audit.log" if ($config_directory && !$audit_log_file);
+}
+
+BEGIN { $audit_log_file = '/etc/webmin/rbac_audit.log'; }
 
 # Log action
 sub log_action {
     my ($user, $action, $module, $details) = @_;
+    _init_audit_log_file();
     my $timestamp = time();
     my $log_entry = "$timestamp|$user|$action|$module|$details\n";
 
@@ -20,6 +29,7 @@ sub log_action {
 # Get audit logs
 sub get_audit_logs {
     my ($limit) = @_;
+    _init_audit_log_file();
     $limit ||= 100;
 
     my @logs;
@@ -48,6 +58,7 @@ sub get_audit_logs {
 
 # Clean old logs (older than 90 days)
 sub clean_audit_logs {
+    _init_audit_log_file();
     my $cutoff = time() - (90 * 24 * 60 * 60);
 
     if (-f $audit_log_file) {
