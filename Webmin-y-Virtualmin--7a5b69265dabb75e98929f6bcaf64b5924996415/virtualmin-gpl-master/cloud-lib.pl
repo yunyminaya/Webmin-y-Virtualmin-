@@ -256,6 +256,102 @@ return ( [ 'https://identity.api.rackspacecloud.com/v1.0', 'US default' ],
 
 ######## Functions for Google Cloud Storage ########
 
+# gcloud_trim_output(text)
+# Normalizes command output into a single trimmed line or undef
+sub gcloud_trim_output
+{
+my ($out) = @_;
+return undef if (!defined($out));
+$out =~ s/\r//g;
+$out =~ s/^\s+//;
+$out =~ s/\s+$//;
+return length($out) ? $out : undef;
+}
+
+# has_gcloud_cmd()
+# Returns the configured gcloud command path, if available
+sub has_gcloud_cmd
+{
+my ($cmd) = &split_quoted_string($config{'gcloud_cmd'} || "gcloud");
+return &has_command($cmd);
+}
+
+# gcloud_metadata_get(path)
+# Queries the Google metadata service for a value, if available
+sub gcloud_metadata_get
+{
+my ($path) = @_;
+my $url = "http://metadata.google.internal/computeMetadata/v1/$path";
+my $cmd;
+if (my $curl = &has_command("curl")) {
+	$cmd = "$curl -s -f -H 'Metadata-Flavor: Google' ".quotemeta($url);
+	}
+elsif (my $wget = &has_command("wget")) {
+	$cmd = "$wget -q -O - --header='Metadata-Flavor: Google' ".quotemeta($url);
+	}
+else {
+	return undef;
+	}
+my $out = &backquote_command("$cmd 2>/dev/null </dev/null");
+return $? ? undef : &gcloud_trim_output($out);
+}
+
+# get_gcloud_account()
+# Returns the active gcloud account or the default GCE service account email
+sub get_gcloud_account
+{
+return $ENV{'CLOUDSDK_CORE_ACCOUNT'} if ($ENV{'CLOUDSDK_CORE_ACCOUNT'});
+if (my $gcloud = &has_gcloud_cmd()) {
+	my $out = &gcloud_trim_output(
+		&backquote_command("$gcloud config get-value account 2>/dev/null </dev/null"));
+	return $out if ($out && $out ne '(unset)');
+
+	$out = &gcloud_trim_output(
+		&backquote_command("$gcloud auth list --filter=status:ACTIVE --format='value(account)' 2>/dev/null </dev/null"));
+	return $out if ($out && $out ne '(unset)');
+	}
+return &gcloud_metadata_get("instance/service-accounts/default/email");
+}
+
+# get_gcloud_project()
+# Returns the active gcloud project or the GCE project id
+sub get_gcloud_project
+{
+return $ENV{'GOOGLE_CLOUD_PROJECT'} if ($ENV{'GOOGLE_CLOUD_PROJECT'});
+return $ENV{'GCLOUD_PROJECT'} if ($ENV{'GCLOUD_PROJECT'});
+if (my $gcloud = &has_gcloud_cmd()) {
+	my $out = &gcloud_trim_output(
+		&backquote_command("$gcloud config get-value project 2>/dev/null </dev/null"));
+	return $out if ($out && $out ne '(unset)');
+
+	$out = &gcloud_trim_output(
+		&backquote_command("$gcloud config list --format='value(core.project)' 2>/dev/null </dev/null"));
+	return $out if ($out && $out ne '(unset)');
+	}
+return &gcloud_metadata_get("project/project-id");
+}
+
+# can_use_gcloud_storage_creds()
+# Returns 1 if Google Cloud credentials can be inferred from local tooling
+# or from the GCE metadata service.
+sub can_use_gcloud_storage_creds
+{
+my $acct = &get_gcloud_account();
+my $proj = &get_gcloud_project();
+
+if (my $gcloud = &has_gcloud_cmd()) {
+	my $out = &gcloud_trim_output(
+		&backquote_command("$gcloud auth application-default print-access-token 2>/dev/null </dev/null"));
+	return 1 if ($out && $acct);
+
+	$out = &gcloud_trim_output(
+		&backquote_command("$gcloud auth print-access-token 2>/dev/null </dev/null"));
+	return 1 if ($out && $acct);
+	}
+
+return ($acct && $proj) ? 1 : 0;
+}
+
 sub cloud_google_get_state
 {
 if ($config{'google_account'} &&
