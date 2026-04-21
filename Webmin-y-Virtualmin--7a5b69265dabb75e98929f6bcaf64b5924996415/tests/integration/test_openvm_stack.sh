@@ -36,6 +36,19 @@ INSTALLER_FILE="${ROOT_DIR}/install_openvm_suite.sh"
 PRODUCTION_INSTALLER_FILE="${ROOT_DIR}/install_openvm_production.sh"
 PRO_COMPAT_TEST_FILE="${ROOT_DIR}/tests/functional/test_virtualmin_pro_compat.sh"
 RUNTIME_SYNC_FILE="${ROOT_DIR}/setup_pro_production.sh"
+LICENSE_PATCH_SCRIPT="${ROOT_DIR}/remove_license_warning.sh"
+
+expected_runtime_gpl_files=(
+  "newreseller.cgi"
+  "edit_newresels.cgi"
+  "remotedns.cgi"
+  "audit-lib.pl"
+  "list_admins.cgi"
+  "rbac_dashboard.cgi"
+  "rbac_install.pl"
+  "rbac-lib.pl"
+  "conditional-policies-lib.pl"
+)
 
 echo "[openvm-stack-test] Verificando módulos declarados en instalador principal"
 for module in "${expected_modules[@]}"; do
@@ -72,6 +85,30 @@ grep -q "setup_pro_production.sh" "$PRODUCTION_INSTALLER_FILE" || {
 }
 grep -q -- "--sync-runtime" "$PRODUCTION_INSTALLER_FILE" || {
   echo "El instalador de producción no sincroniza el overlay runtime GPL/OpenVM" >&2
+  exit 1
+}
+
+echo "[openvm-stack-test] Verificando integración de 9 piezas GPL/PRO y licencia permanente"
+[[ -f "$LICENSE_PATCH_SCRIPT" ]] || {
+  echo "No existe remove_license_warning.sh en el repositorio" >&2
+  exit 1
+}
+grep -q "apply_permanent_license_patch" "$RUNTIME_SYNC_FILE" || {
+  echo "setup_pro_production.sh no integra el parche permanente de licencia" >&2
+  exit 1
+}
+for runtime_file in "${expected_runtime_gpl_files[@]}"; do
+  grep -q "$runtime_file" "$RUNTIME_SYNC_FILE" || {
+    echo "setup_pro_production.sh no despliega el archivo crítico: ${runtime_file}" >&2
+    exit 1
+  }
+done
+grep -q "SerialNumber=GPL" "$RUNTIME_SYNC_FILE" || {
+  echo "setup_pro_production.sh no aplica la licencia GPL" >&2
+  exit 1
+}
+grep -q "hide_license=1" "$RUNTIME_SYNC_FILE" || {
+  echo "setup_pro_production.sh no oculta el aviso de licencia" >&2
   exit 1
 }
 

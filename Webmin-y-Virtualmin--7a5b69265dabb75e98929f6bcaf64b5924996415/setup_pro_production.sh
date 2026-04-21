@@ -454,7 +454,15 @@ validate_runtime_profile() {
     local required_runtime_files=(
         "${WEBMIN_MODULE_DIR}/virtual-server-lib-funcs.pl"
         "${WEBMIN_MODULE_DIR}/pro-tip-lib.pl"
+        "${WEBMIN_MODULE_DIR}/newreseller.cgi"
+        "${WEBMIN_MODULE_DIR}/edit_newresels.cgi"
         "${WEBMIN_MODULE_DIR}/remotedns.cgi"
+        "${WEBMIN_MODULE_DIR}/audit-lib.pl"
+        "${WEBMIN_MODULE_DIR}/list_admins.cgi"
+        "${WEBMIN_MODULE_DIR}/rbac_dashboard.cgi"
+        "${WEBMIN_MODULE_DIR}/rbac_install.pl"
+        "${WEBMIN_MODULE_DIR}/rbac-lib.pl"
+        "${WEBMIN_MODULE_DIR}/conditional-policies-lib.pl"
     )
 
     info "[Validacion] Verificando panel profesional en runtime..."
@@ -478,6 +486,35 @@ validate_runtime_profile() {
             fail "[Validacion] Falta archivo runtime: $file"
         fi
     done
+
+    if grep -q 'Always returns valid status' "${WEBMIN_MODULE_DIR}/virtualmin-licence.pl" 2>/dev/null; then
+        ok "[Validacion] Parche permanente de licencia aplicado"
+    else
+        failures=$((failures + 1))
+        fail "[Validacion] virtualmin-licence.pl no esta parcheado"
+    fi
+
+    if grep -q 'SerialNumber=GPL' "${SCRIPT_DIR}/setup_pro_production.sh" 2>/dev/null && \
+       grep -q 'LicenseKey=GPL' "${SCRIPT_DIR}/setup_pro_production.sh" 2>/dev/null; then
+        ok "[Validacion] setup_pro_production.sh aplica licencia GPL"
+    else
+        failures=$((failures + 1))
+        fail "[Validacion] setup_pro_production.sh no aplica licencia GPL"
+    fi
+
+    if [[ -f "/var/webmin/modules/virtual-server/licence-status" ]] && grep -q '^status=0$' "/var/webmin/modules/virtual-server/licence-status" 2>/dev/null; then
+        ok "[Validacion] Cache de licencia valida en runtime"
+    else
+        failures=$((failures + 1))
+        fail "[Validacion] Cache de licencia no valida o ausente"
+    fi
+
+    if grep -q 'hide_license=1' "${SCRIPT_DIR}/setup_pro_production.sh" 2>/dev/null; then
+        ok "[Validacion] setup_pro_production.sh configura hide_license=1"
+    else
+        failures=$((failures + 1))
+        fail "[Validacion] setup_pro_production.sh no configura hide_license=1"
+    fi
 
     if systemd_running && systemctl is-active --quiet webmin; then
         ok "[Validacion] webmin.service activo"
@@ -1551,6 +1588,7 @@ main() {
     case "$mode" in
         --sync-runtime|sync-runtime)
             deploy_runtime_panel_overlay || exit 1
+            apply_permanent_license_patch || exit 1
             configure_webmin_hardening || exit 1
             if systemd_running; then
                 systemctl restart webmin 2>/dev/null || true
@@ -1569,6 +1607,7 @@ main() {
     esac
 
     deploy_runtime_panel_overlay || exit 1
+    apply_permanent_license_patch || exit 1
 
     setup_reseller_accounts
     setup_web_apps_installer

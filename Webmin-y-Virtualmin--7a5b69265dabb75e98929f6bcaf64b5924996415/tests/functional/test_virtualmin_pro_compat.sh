@@ -5,6 +5,7 @@ IFS=$'\n\t'
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 PRO_DIR="${ROOT_DIR}/virtualmin-gpl-master/pro"
+SYNC_SCRIPT="${ROOT_DIR}/setup_pro_production.sh"
 
 required_files=(
   "virtualmin-gpl-master/pro/openvm-compat-lib.pl"
@@ -24,6 +25,19 @@ required_files=(
   "virtualmin-gpl-master/pro/save_user_web.cgi"
 )
 
+required_runtime_support_files=(
+  "virtualmin-gpl-master/newreseller.cgi"
+  "virtualmin-gpl-master/edit_newresels.cgi"
+  "virtualmin-gpl-master/remotedns.cgi"
+  "virtualmin-gpl-master/audit-lib.pl"
+  "virtualmin-gpl-master/list_admins.cgi"
+  "virtualmin-gpl-master/rbac_dashboard.cgi"
+  "virtualmin-gpl-master/rbac_install.pl"
+  "virtualmin-gpl-master/rbac-lib.pl"
+  "virtualmin-gpl-master/conditional-policies-lib.pl"
+  "remove_license_warning.sh"
+)
+
 echo "[virtualmin-pro-compat-test] Verificando archivos requeridos"
 for file in "${required_files[@]}"; do
   [[ -f "${ROOT_DIR}/${file}" ]] || {
@@ -31,6 +45,20 @@ for file in "${required_files[@]}"; do
     exit 1
   }
 done
+
+echo "[virtualmin-pro-compat-test] Verificando artefactos runtime GPL complementarios"
+for file in "${required_runtime_support_files[@]}"; do
+  [[ -f "${ROOT_DIR}/${file}" ]] || {
+    echo "Falta artefacto runtime/complementario: ${file}" >&2
+    exit 1
+  }
+done
+
+echo "[virtualmin-pro-compat-test] Verificando integración del parche permanente de licencia"
+grep -q "apply_permanent_license_patch" "$SYNC_SCRIPT" || {
+  echo "setup_pro_production.sh no integra el parche permanente de licencia" >&2
+  exit 1
+}
 
 echo "[virtualmin-pro-compat-test] Ejecutando validación sintáctica Perl"
 while IFS= read -r -d '' file; do
