@@ -2,6 +2,10 @@
 
 use strict;
 use warnings;
+no strict 'subs';
+
+# Import Webmin core functions
+do '../webmin-lib.pl';
 
 our (%text, $module_config_directory);
 
