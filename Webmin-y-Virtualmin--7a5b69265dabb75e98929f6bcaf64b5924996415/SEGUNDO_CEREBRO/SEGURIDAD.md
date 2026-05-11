@@ -258,6 +258,16 @@ curl -sk -o /dev/null -w "%{ssl_verify_result}\n" https://domain.com
 | CVE-2024-53677 | ALSA scarlett2 OOB write | 6.x | ALTA |
 | CVE-2025-0677 | HID OOB write | 6.x | ALTA |
 | CVE-2025-21703 | KVM x86 privilege escalation | 6.x | CRÍTICA |
+| CVE-2026-43275 | Kernel Medium (Ubuntu 22.04/24.04) | 5.15, 6.8, 6.11 | MEDIA |
+| CVE-2026-43276 | Kernel Medium (Ubuntu 22.04/24.04) | 5.15, 6.8, 6.11 | MEDIA |
+| CVE-2026-43277 | Kernel Medium (Ubuntu 22.04/24.04) | 5.15, 6.8, 6.11 | MEDIA |
+| CVE-2026-43278 | Kernel Medium (Ubuntu 22.04/24.04) | 5.15, 6.8, 6.11 | MEDIA |
+| CVE-2026-43279 | Kernel Medium (Ubuntu 22.04/24.04) | 5.15, 6.8, 6.11 | MEDIA |
+| CVE-2026-43280 | Kernel Medium (Ubuntu 22.04/24.04) | 5.15, 6.8, 6.11 | MEDIA |
+| CVE-2026-43281 | Kernel Medium (Ubuntu 22.04/24.04) | 5.15, 6.8, 6.11 | MEDIA |
+| CVE-2026-43282 | Kernel Medium (Ubuntu 22.04/24.04) | 5.15, 6.8, 6.11 | MEDIA |
+| CVE-2026-43283 | Kernel Medium (Ubuntu 22.04/24.04) | 5.15, 6.8, 6.11 | MEDIA |
+| CVE-2026-43284 | Kernel Medium (Ubuntu 22.04/24.04) | 5.15, 6.8, 6.11 | MEDIA |
 
 ### Script de Auditoría y Remediación
 

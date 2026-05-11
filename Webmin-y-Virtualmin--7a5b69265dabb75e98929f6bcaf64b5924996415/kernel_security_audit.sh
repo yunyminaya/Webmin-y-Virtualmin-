@@ -48,6 +48,7 @@ separator() {
 # CVE-2025-0677: HID out-of-bounds write
 # CVE-2025-21703: KVM x86 privilege escalation
 # CVE-2025-22655: HID big_bench out-of-bounds
+# CVE-2026-43275..43284: Kernel Medium (affects 5.15, 6.8, 6.11 on Ubuntu 22.04/24.04)
 # CVE-2025-23127: HID core double free
 
 check_kernel_version() {
@@ -62,12 +63,55 @@ check_kernel_version() {
     
     log_info "Versión mayor: $major, menor: $minor, patch: $patch"
     
+    # Detectar versión de Ubuntu
+    local ubuntu_version=""
+    local ubuntu_codename=""
+    if [[ -f /etc/lsb-release ]]; then
+        ubuntu_version="$(grep DISTRIB_RELEASE /etc/lsb-release 2>/dev/null | cut -d'=' -f2)"
+        ubuntu_codename="$(grep DISTRIB_CODENAME /etc/lsb-release 2>/dev/null | cut -d'=' -f2)"
+    elif [[ -f /etc/os-release ]]; then
+        ubuntu_version="$(grep VERSION_ID /etc/os-release 2>/dev/null | cut -d'"' -f2)"
+        ubuntu_codename="$(grep VERSION_CODENAME /etc/os-release 2>/dev/null | cut -d'=' -f2)"
+    fi
+    
+    if [[ -n "$ubuntu_version" ]]; then
+        log_info "Ubuntu detectado: $ubuntu_version ($ubuntu_codename)"
+        
+        # Mostrar información de compatibilidad por versión
+        case "$ubuntu_version" in
+            22.04)
+                log_info "Ubuntu 22.04 LTS (Jammy) - Kernel GA: 5.15, HWE: 6.5"
+                log_info "Soporte estándar hasta: 2027-04 | ESM hasta: 2032-04"
+                log_info "Webmin/Virtualmin: COMPATIBLE"
+                ;;
+            24.04)
+                log_info "Ubuntu 24.04 LTS (Noble) - Kernel GA/HWE: 6.8"
+                log_info "Soporte estándar hasta: 2029-04 | ESM hasta: 2034-04"
+                log_info "Webmin/Virtualmin: COMPATIBLE"
+                ;;
+            24.10)
+                log_info "Ubuntu 24.10 (Oracular) - Kernel: 6.11"
+                log_warn "Ubuntu 24.10 EOL: Julio 2025 - Actualizar a 25.04 o usar 24.04 LTS"
+                log_info "Webmin/Virtualmin: COMPATIBLE (versión intermedia)"
+                ;;
+            25.04)
+                log_info "Ubuntu 25.04 (Plucky) - Kernel: 6.12-6.13"
+                log_info "Soporte estándar hasta: Enero 2026"
+                log_info "Webmin/Virtualmin: COMPATIBLE"
+                ;;
+            *)
+                log_info "Versión Ubuntu: $ubuntu_version - Verificar compatibilidad manualmente"
+                ;;
+        esac
+    fi
+    
     # Verificar si el kernel es vulnerable
     local vulnerable=0
     
     # Kernel 5.x vulnerable a CVE-2024-1086 (netfilter)
     if [[ "$major" == "5" ]]; then
         log_warn "Kernel 5.x detectado - Potencialmente vulnerable a CVE-2024-1086 (netfilter nf_tables)"
+        log_info "Ubuntu 22.04 con kernel GA 5.15: Aplicar parches de seguridad via apt"
         vulnerable=1
     fi
     
@@ -79,36 +123,45 @@ check_kernel_version() {
         fi
     fi
     
-    # Kernel 6.5.x < 6.5.16 vulnerable
+    # Kernel 6.5.x (Ubuntu 22.04 HWE)
     if [[ "$major" == "6" && "$minor" == "5" ]]; then
+        log_info "Kernel 6.5.x (Ubuntu 22.04 HWE) - Verificar parches Ubuntu"
         if [[ "$patch" -lt 16 ]]; then
-            log_warn "Kernel 6.5.$patch vulnerable a múltiples CVEs (requiere >= 6.5.16)"
+            log_warn "Kernel 6.5.$patch vulnerable (requiere >= 6.5.16)"
             vulnerable=1
         fi
     fi
     
-    # Kernel 6.6.x < 6.6.15 vulnerable
-    if [[ "$major" == "6" && "$minor" == "6" ]]; then
-        if [[ "$patch" -lt 15 ]]; then
-            log_warn "Kernel 6.6.$patch vulnerable a múltiples CVEs (requiere >= 6.6.15)"
+    # Kernel 6.8.x (Ubuntu 24.04 Noble)
+    if [[ "$major" == "6" && "$minor" == "8" ]]; then
+        log_info "Kernel 6.8.x (Ubuntu 24.04 Noble) - Verificar parches Ubuntu"
+        if [[ "$patch" -lt 45 ]]; then
+            log_warn "Kernel 6.8.$patch puede tener CVEs pendientes (actualizar via apt)"
             vulnerable=1
         fi
     fi
     
-    # Kernel 6.7.x < 6.7.3 vulnerable
-    if [[ "$major" == "6" && "$minor" == "7" ]]; then
-        if [[ "$patch" -lt 3 ]]; then
-            log_warn "Kernel 6.7.$patch vulnerable a múltiples CVEs (requiere >= 6.7.3)"
+    # Kernel 6.11.x (Ubuntu 24.10 Oracular)
+    if [[ "$major" == "6" && "$minor" == "11" ]]; then
+        log_info "Kernel 6.11.x (Ubuntu 24.10 Oracular) - Verificar parches Ubuntu"
+        if [[ "$patch" -lt 11 ]]; then
+            log_warn "Kernel 6.11.$patch vulnerable (requiere >= 6.11.11)"
             vulnerable=1
         fi
     fi
     
-    # Kernel 6.12.x < 6.12.10 vulnerable a CVE-2025-*
+    # Kernel 6.12.x (Ubuntu 25.04 Plucky)
     if [[ "$major" == "6" && "$minor" == "12" ]]; then
+        log_info "Kernel 6.12.x (Ubuntu 25.04 Plucky) - Verificar parches Ubuntu"
         if [[ "$patch" -lt 10 ]]; then
             log_warn "Kernel 6.12.$patch vulnerable a CVE-2025-* (requiere >= 6.12.10)"
             vulnerable=1
         fi
+    fi
+    
+    # Kernel 6.13.x (Ubuntu 25.04 HWE)
+    if [[ "$major" == "6" && "$minor" == "13" ]]; then
+        log_info "Kernel 6.13.x (Ubuntu 25.04+) - Verificar parches Ubuntu"
     fi
     
     if [[ "$vulnerable" -eq 0 ]]; then
