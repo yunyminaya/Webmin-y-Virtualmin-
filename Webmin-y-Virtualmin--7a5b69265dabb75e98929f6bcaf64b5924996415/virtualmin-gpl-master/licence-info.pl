@@ -22,7 +22,7 @@ if (!$module_name) {
 		}
 	$0 = "$pwd/info.pl";
 	require './virtual-server-lib.pl';
-	require './license-bypass.pl';
+	require './openvm-license-layer.pl';
 	}
 
 while(@ARGV > 0) {

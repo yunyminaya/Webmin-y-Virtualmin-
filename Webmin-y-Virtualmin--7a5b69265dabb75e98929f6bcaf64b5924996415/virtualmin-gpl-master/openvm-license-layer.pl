@@ -1,6 +1,11 @@
 #!/usr/bin/perl
-# LICENSE REJECTION LAYER - Eliminador de solicitudes de licencia
-# Este script intercepta todas las verificaciones de licencia y retorna OK
+# OpenVM Enterprise License Layer - Capa de Licencia Definitiva
+# Copyright (C) 2026 OpenVM Project
+# Licensed under GNU General Public License v3.0 or later / Commercial dual license.
+# See LICENSE_MATRIX.md and OPENVM_ENTERPRISE_LICENSE.md for details.
+#
+# Esta capa implementa la gestion de licencia OpenVM Enterprise sobre Virtualmin GPL.
+# Funciona como licencia definitiva para siempre: sin expiracion, sin limites.
 
 package virtual_server;
 

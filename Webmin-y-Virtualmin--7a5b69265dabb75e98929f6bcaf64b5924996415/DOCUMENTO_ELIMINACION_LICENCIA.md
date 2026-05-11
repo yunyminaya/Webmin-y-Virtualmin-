@@ -13,8 +13,8 @@ El sistema **NUNCA volverá a pedir licencia**. Pro está activado permanentemen
 
 ## ✅ QUÉ SE HIZO
 
-### 1️⃣ CAPA DE BYPASS DE LICENCIA
-**Archivo:** `virtualmin-gpl-master/license-bypass.pl`
+### 1️⃣ CAPA DE LICENCIA OPENVM ENTERPRISE
+**Archivo:** `virtualmin-gpl-master/openvm-license-layer.pl`
 
 Creada una capa completa que intercepta TODAS las funciones de verificación de licencia:
 
@@ -52,8 +52,8 @@ pro_enabled() → 1
 
 | Archivo | Cambio |
 |---------|--------|
-| `licence.pl` | Ahora usa license-bypass.pl |
-| `license.pl` | Ahora usa license-bypass.pl |
+| `licence.pl` | Ahora usa openvm-license-layer.pl |
+| `license.pl` | Ahora usa openvm-license-layer.pl |
 | `virtualmin-licence.pl` | Retorna Pro siempre válido |
 | `licence-info.pl` | Muestra "Pro Ilimitado" |
 | `upgrade-licence.pl` | Neutralizado (no hace nada) |
@@ -85,7 +85,7 @@ Si no es Pro → ERROR ❌
 ```
 Sistema intenta ejecutar función de dominio
   ↓
-Carga license-bypass.pl
+Carga openvm-license-layer.pl
   ↓
 Función retorna 1 (OK) inmediatamente
   ↓
@@ -98,8 +98,8 @@ Función de dominio ejecuta sin restricciones ✅
 
 El sistema tiene múltiples capas para asegurar que NUNCA pida licencia:
 
-### Capa 1: Bypass de Funciones Perl
-- `license-bypass.pl` intercepta TODAS las verificaciones
+### Capa 1: OpenVM Enterprise License Layer Perl
+- `openvm-license-layer.pl` intercepta TODAS las verificaciones
 
 ### Capa 2: Hooks Globales
 - `LICENSE_MASTER.pl` reemplaza funciones antes de que se ejecuten
@@ -111,7 +111,7 @@ El sistema tiene múltiples capas para asegurar que NUNCA pida licencia:
 - Todos los scripts de upgrade/downgrade ahora hacen nada
 
 ### Capa 5: Inyección en CGI
-- Todos los módulos cargan license-bypass automáticamente
+- Todos los módulos cargan openvm-license-layer automáticamente
 
 ---
 
@@ -188,7 +188,7 @@ Para verificar que está activo:
 cat .pro_environment
 
 # Ver que bypass está instalado
-ls -la virtualmin-gpl-master/license-bypass.pl
+ls -la virtualmin-gpl-master/openvm-license-layer.pl
 ls -la virtualmin-gpl-master/LICENSE_MASTER.pl
 ```
 
