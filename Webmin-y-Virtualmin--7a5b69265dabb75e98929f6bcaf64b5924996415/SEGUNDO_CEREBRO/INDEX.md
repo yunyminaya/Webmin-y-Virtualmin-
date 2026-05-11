@@ -1,5 +1,5 @@
 # 🧠 SEGUNDO CEREBRO — Webmin & Virtualmin
-> Sistema de Gestión del Conocimiento | Última actualización: 2026-04-28
+> Sistema de Gestión del Conocimiento | Última actualización: 2026-05-11
 
 ---
 
@@ -55,25 +55,88 @@
 
 ---
 
-## 🔓 Parches GPL Aplicados
+## 🔓 Licencia Enterprise Por Vida (Definitiva)
 
-| Función | Efecto | Archivo |
-|---------|--------|---------|
-| `is_virtualmin_pro()` → `return 1` | Reporta como Pro | `virtual-server-lib-funcs.pl` |
-| `check_virtualmin_gpl()` → `return 0` | Desbloquea features | `virtual-server-lib-funcs.pl` |
-| `check_licence_expired()` → válido 2099 | Licencia siempre válida | `virtual-server-lib-funcs.pl` |
-| `licence_status()` → `return` | Sin warnings | `virtual-server-lib-funcs.pl` |
-| `supports_pro_feature()` → `return 1` | Todas las features | `virtual-server-lib-funcs.pl` |
-| `can_pro_feature()` → `return 1` | Features habilitadas | `virtual-server-lib-funcs.pl` |
-| `max_domains()` → `undef` | Sin límite dominios | `virtual-server-lib-funcs.pl` |
-| `max_mailboxes()` → `undef` | Sin límite buzones | `virtual-server-lib-funcs.pl` |
-| `max_aliases()` → `undef` | Sin límite alias | `virtual-server-lib-funcs.pl` |
-| `max_databases()` → `undef` | Sin límite BD | `virtual-server-lib-funcs.pl` |
-| Stubs cloud-lib.pl | 5 funciones Google Cloud | `cloud-lib.pl` |
-| 16 CGI stubs Pro | Features Pro disponibles | `pro/*.cgi` |
+**Archivo:** `virtualmin-gpl-master/openvm-license-layer.pl`
+**Commit:** `9ce6a92` → renombrado de `license-bypass.pl` → `openvm-license-layer.pl`
+**Último update:** `da189b8` — 14 funciones de UI lock removal
 
-**Watchers systemd activos:** `openvm-gpl-watcher.path`, `openvm-cloud-lib-watcher.path`
+| Función | Retorna | Efecto |
+|---------|---------|--------|
+| `licence_scheduled()` | `(0, "2099-12-31", ...)` | Licencia siempre válida, nunca expira |
+| `is_pro_feature_available()` | `1` | PRO siempre disponible |
+| `is_pro_available()` | `1` | PRO siempre activo |
+| `can_use_pro_feature()` | `1` | Todas las features PRO |
+| `is_gpl()` | `0` | No limitado a GPL |
+| `is_gpl_only()` | `0` | No es solo GPL |
+| `is_license_expired()` | `0` | Nunca expira |
+| `show_licence_upgrade_link()` | `0` | Sin enlace upgrade |
+| `licence_status()` | OK | Sin advertencias |
+| `require_licence()` | `1` | Siempre válida |
+| `validate_license()` | `1` | Siempre válida |
+| `get_licence_info()` | PRO/Unlimited | Info completa |
+| `change_licence()` | OK | Acepta sin validar |
+| `get_license_status()` | valid/pro/not expired | Estado completo |
+
+**Dominios:** 999999 (Ilimitados) | **Servidores:** 999999 (Ilimitados) | **Expiración:** 2099-12-31
+
+**Parches adicionales en `virtual-server-lib-funcs.pl`:**
+
+| Función | Efecto |
+|---------|--------|
+| `is_virtualmin_pro()` → `return 1` | Reporta como Pro |
+| `check_virtualmin_gpl()` → `return 0` | Desbloquea features |
+| `supports_pro_feature()` → `return 1` | Todas las features |
+| `max_domains()` → `undef` | Sin límite dominios |
+| `max_mailboxes()` → `undef` | Sin límite buzones |
+| `max_aliases()` → `undef` | Sin límite alias |
+| `max_databases()` → `undef` | Sin límite BD |
+| Stubs cloud-lib.pl | 5 funciones Google Cloud |
+| 16 CGI stubs Pro | Features Pro disponibles |
+
+**Watchers systemd:** `openvm-gpl-watcher.path`, `openvm-cloud-lib-watcher.path`
 **Scripts persistentes:** `/usr/local/bin/openvm-pro-unlock`, `/usr/local/bin/openvm-patch-cloud-lib`
+
+---
+
+## 🐧 Kernel Linux — Seguridad y Compatibilidad Ubuntu
+
+**Script:** `kernel_security_audit.sh` (ejecutar como root en servidores)
+**CVEs cubiertas:** 2024 (8), 2025 (3), 2026 (10)
+
+### Matriz Ubuntu / Webmin / Virtualmin
+
+| Ubuntu | Kernel GA | Kernel HWE | Soporte Std | ESM | Webmin |
+|--------|-----------|------------|-------------|-----|--------|
+| 22.04 LTS (Jammy) | 5.15 | 6.5 | 2027-04 | 2032-04 | ✅ |
+| 24.04 LTS (Noble) | 6.8 | 6.8 | 2029-04 | 2034-04 | ✅ |
+| 24.10 (Oracular) | 6.11 | - | Jul 2025 | - | ✅ |
+| 25.04 (Plucky) | 6.12/6.13 | - | Ene 2026 | - | ✅ |
+
+### Últimas CVEs detectadas (ubuntu.com/security)
+
+| CVE | Severidad | Kernels | Ubuntu |
+|-----|-----------|---------|--------|
+| CVE-2026-43275..43284 (x10) | Medium | 5.15, 6.8, 6.11 | 22.04, 24.04 |
+| CVE-2025-21703 | Crítica | 6.x | Todas |
+| CVE-2024-1086 | Crítica | 5.x | 22.04 |
+
+### Hardening sysctl aplicado
+
+```bash
+kernel.kptr_restrict = 1          # Ocultar direcciones del kernel
+kernel.dmesg_restrict = 1         # Restringir dmesg
+kernel.kexec_load_disabled = 1    # Prevenir carga maliciosa
+kernel.randomize_va_space = 2     # ASLR completo
+kernel.unprivileged_bpf_disabled = 1
+kernel.yama.ptrace_scope = 2
+kernel.io_uring_disabled = 2
+```
+
+### Referencias Ubuntu
+- https://ubuntu.com/security/cves
+- https://ubuntu.com/about/release-cycle
+- https://ubuntu.com/security/notices
 
 ---
 
