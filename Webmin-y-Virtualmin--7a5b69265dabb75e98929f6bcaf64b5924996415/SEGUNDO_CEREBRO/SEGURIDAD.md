@@ -241,3 +241,70 @@ curl -sk -o /dev/null -w "%{ssl_verify_result}\n" https://domain.com
 - [ARQUITECTURA.md](ARQUITECTURA.md) — Arquitectura del sistema
 - [SOLUCIONES.md](SOLUCIONES.md) — Problemas resueltos
 - [COMANDOS.md](COMANDOS.md) — Comandos de diagnóstico
+
+---
+
+## 🔒 Kernel Linux — Vulnerabilidades y Remediación (Mayo 2026)
+
+### CVEs Críticos Recientes del Kernel
+
+| CVE | Descripción | Kernels Afectados | Severidad |
+|-----|-------------|-------------------|-----------|
+| CVE-2024-1086 | nf_tables use-after-free | 5.x - 6.x | CRÍTICA |
+| CVE-2024-0193 | io_uring use-after-free | 5.x - 6.7 | ALTA |
+| CVE-2024-0582 | io_uring memory overwrite | 5.x - 6.7 | ALTA |
+| CVE-2024-21626 | runc container escape | contenedores | CRÍTICA |
+| CVE-2024-41009 | bpf ringbuf privilege escalation | 6.x | ALTA |
+| CVE-2024-53677 | ALSA scarlett2 OOB write | 6.x | ALTA |
+| CVE-2025-0677 | HID OOB write | 6.x | ALTA |
+| CVE-2025-21703 | KVM x86 privilege escalation | 6.x | CRÍTICA |
+
+### Script de Auditoría y Remediación
+
+Archivo: `kernel_security_audit.sh`
+
+Ejecutar en servidores:
+```bash
+sudo bash kernel_security_audit.sh
+```
+
+Funciones del script:
+1. **Verificación de versión** - Detecta kernels vulnerables
+2. **CVE-2024-1086** - Verifica nf_tables activo
+3. **CVE-2024-0193/0582** - Verifica io_uring
+4. **Integridad del kernel** - Detecta rootkits y módulos sospechosos
+5. **Hardening** - Aplica sysctl de seguridad
+6. **Compromiso** - Detecta procesos ocultos, ld.so.preload, puertos inusuales
+7. **Actualización** - Actualiza kernel vía apt/dnf/yum
+
+### Hardening Aplicado (sysctl)
+
+```bash
+kernel.kptr_restrict = 1          # Ocultar direcciones del kernel
+kernel.dmesg_restrict = 1         # Restringir dmesg
+kernel.kexec_load_disabled = 1    # Prevenir carga de kernel malicioso
+kernel.randomize_va_space = 2     # ASLR completo
+kernel.unprivileged_bpf_disabled = 1  # Deshabilitar BPF no privilegiado
+kernel.yama.ptrace_scope = 2      # Restringir ptrace
+kernel.io_uring_disabled = 2      # Restringir io_uring
+fs.protected_symlinks = 1         # Protección contra symlinks
+fs.protected_hardlinks = 1        # Protección contra hardlinks
+fs.suid_dumpable = 0              # Sin core dumps de SUID
+```
+
+### Licencia GPL/PRO — Candados Eliminados
+
+Commit: `da189b8` - Agregadas 14 funciones UI lock removal en `openvm-license-layer.pl`
+
+Funciones clave:
+- `licence_status()` → vacío (sin advertencias)
+- `is_pro_available()` → 1 (PRO activo)
+- `show_licence_upgrade_link()` → 0 (sin enlace upgrade)
+- `is_gpl()` → 0 (no limitado)
+- `can_use_pro_feature()` → 1 (siempre accesible)
+
+### Referencia Ubuntu
+- https://ubuntu.com/security/cves
+- https://ubuntu.com/security/notices
+- `pro audit` (Ubuntu Pro)
+- `ua fix CVE-2024-1086` (Ubuntu Advantage)
