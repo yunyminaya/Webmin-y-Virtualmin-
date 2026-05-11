@@ -187,4 +187,94 @@ sub disable_gpl_mode {
     return 1;  # Éxito
 }
 
+# ============================================================
+# FUNCIONES CRÍTICAS PARA ELIMINAR CANDADOS DE LA UI
+# Estas funciones son las que Virtualmin usa para decidir
+# si muestra candados (locks) o no en la interfaz web.
+# ============================================================
+
+# licence_status() - Función principal de verificación de licencia
+# Es llamada por TODOS los scripts CGI y CLI de Virtualmin.
+# Al retornar vacío sin errores, Virtualmin asume licencia válida.
+sub licence_status {
+    return;  # Sin errores = licencia válida = sin candados
+}
+
+# is_pro_available() - Verifica si las funciones PRO están disponibles
+# Retorna 1 = PRO activo, sin candados en funciones PRO
+sub is_pro_available {
+    return 1;
+}
+
+# is_virtualmin_pro() - Verifica si es versión Pro
+sub is_virtualmin_pro {
+    return 1;
+}
+
+# get_product_name() - Nombre del producto
+sub get_product_name {
+    return "OpenVM Enterprise Professional";
+}
+
+# get_licence_type() - Tipo de licencia
+sub get_licence_type {
+    return "PRO";
+}
+
+# check_licence_warning() - Verificar advertencia de licencia
+# Retorna vacío = sin advertencia = sin candados
+sub check_licence_warning {
+    return;
+}
+
+# licence_expired() - Verificar si la licencia expiró
+sub licence_expired {
+    return 0;  # No expirada
+}
+
+# get_licence_info() - Información completa de licencia para la UI
+sub get_licence_info {
+    return {
+        'serial' => 'OPENVM-ENTERPRISE-UNLIMITED',
+        'key' => 'OPENVM-PRO-FOREVER-2026',
+        'status' => 0,  # 0 = OK
+        'type' => 'PRO',
+        'expiry' => '2099-12-31',
+        'domains' => 999999,
+        'servers' => 999999,
+        'mailboxes' => 999999,
+    };
+}
+
+# show_licence_upgrade_link() - Enlace de upgrade PRO
+# Retorna 0 = no mostrar enlace de upgrade = sin candados
+sub show_licence_upgrade_link {
+    return 0;
+}
+
+# is_gpl() - Verificar si es GPL limitado
+sub is_gpl {
+    return 0;  # No es GPL limitado
+}
+
+# can_use_pro_feature() - Verificar si se puede usar feature PRO
+sub can_use_pro_feature {
+    return 1;  # Siempre se puede
+}
+
+# pro_upgrade_link() - Link de upgrade (vacío = sin candado)
+sub pro_upgrade_link {
+    return "";
+}
+
+# licence_scheduled_check() - Check programado (no-op)
+sub licence_scheduled_check {
+    return;
+}
+
+# get_virtualmin_shop_link() - Link a tienda (vacío)
+sub get_virtualmin_shop_link {
+    return "";
+}
+
 1;
