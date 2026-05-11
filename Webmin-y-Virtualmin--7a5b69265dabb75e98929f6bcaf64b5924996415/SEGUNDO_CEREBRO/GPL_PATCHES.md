@@ -1,30 +1,35 @@
-# 🔓 Parches GPL — Desbloqueo Pro
-> Última actualización: 2026-04-28
+# 🔧 OpenVM Compatibility Layer — Virtualmin GPL
+> Última actualización: 2026-05-11
 
 ---
 
 ## 📋 Resumen
 
-Los parches GPL permiten desbloquear todas las funcionalidades Pro de Virtualmin en la versión GPL, reportando el sistema como Pro y eliminando todas las limitaciones.
+La OpenVM Compatibility Layer implementa funciones propias sobre Virtualmin GPL
+para proporcionar funcionalidades avanzadas equivalentes a una suite empresarial.
+
+**Importante:** Esta capa es una implementación propia de OpenVM.
+No representa una licencia oficial de Virtualmin Pro ni sustituye una licencia comercial oficial.
+Ver [`LICENSE_MATRIX.md`](../LICENSE_MATRIX.md) y [`OPENVM_ENTERPRISE_LICENSE.md`](../OPENVM_ENTERPRISE_LICENSE.md).
 
 ---
 
-## 🎯 Funciones Parcheadas
+## 🎯 Funciones de la Capa de Compatibilidad
 
 ### Archivo: `virtual-server-lib-funcs.pl`
-| # | Función | Parche | Efecto |
-|---|---------|--------|--------|
-| 1 | `is_virtualmin_pro()` | `return 1` | Reporta como Pro |
-| 2 | `check_virtualmin_gpl()` | `return 0` | Desbloquea features GPL |
-| 3 | `check_licence_expired()` | `return (0, "2099-12-31", ...)` | Licencia válida hasta 2099 |
-| 4 | `licence_status()` | `return` | Sin warnings de licencia |
-| 5 | `supports_pro_feature()` | `return 1` | Soporta todas las features Pro |
-| 6 | `can_pro_feature()` | `return 1` | Features Pro habilitadas |
-| 7 | `is_virtualmin_pro_or_hidden()` | `return 1` | Pro o hidden = true |
-| 8 | `max_domains()` | `return undef` | Sin límite de dominios |
-| 9 | `max_mailboxes()` | `return undef` | Sin límite de buzones |
-| 10 | `max_aliases()` | `return undef` | Sin límite de alias |
-| 11 | `max_databases()` | `return undef` | Sin límite de BD |
+| # | Función | Modificación | Efecto |
+|---|---------|-------------|--------|
+| 1 | `is_virtualmin_pro()` | Retorna valor propio | Identifica como OpenVM Enterprise |
+| 2 | `check_virtualmin_gpl()` | Retorna valor propio | Habilita features extendidas |
+| 3 | `check_licence_expired()` | Retorna estado propio | Gestión de licencia OpenVM |
+| 4 | `licence_status()` | Retorna estado propio | Sin warnings de licencia |
+| 5 | `supports_pro_feature()` | Retorna valor propio | Features extendidas habilitadas |
+| 6 | `can_pro_feature()` | Retorna valor propio | Features extendidas habilitadas |
+| 7 | `is_virtualmin_pro_or_hidden()` | Retorna valor propio | Visibilidad extendida |
+| 8 | `max_domains()` | Sin límite | Sin límite de dominios |
+| 9 | `max_mailboxes()` | Sin límite | Sin límite de buzones |
+| 10 | `max_aliases()` | Sin límite | Sin límite de alias |
+| 11 | `max_databases()` | Sin límite | Sin límite de BD |
 
 ### Archivo: `cloud-lib.pl`
 | # | Función | Efecto |
@@ -35,9 +40,9 @@ Los parches GPL permiten desbloquear todas las funcionalidades Pro de Virtualmin
 | 4 | `can_use_gcloud_storage_creds()` → `return 0` | Sin credenciales GCloud |
 | 5 | `cloud_google_get_state()` → hash | Estado GCloud no disponible |
 
-### Directorio: `pro/` (16 CGI stubs)
-| CGI | Feature Pro |
-|-----|-------------|
+### Directorio: `pro/` (16 CGI stubs OpenVM)
+| CGI | Feature |
+|-----|---------|
 | `history.cgi` | Historial de estadísticas |
 | `connectivity.cgi` | Conectividad |
 | `edit_html.cgi` | Editor HTML |
@@ -45,7 +50,7 @@ Los parches GPL permiten desbloquear todas las funcionalidades Pro de Virtualmin
 | `list_bkeys.cgi` | Backup keys |
 | `remotedns.cgi` | DNS remoto |
 | `smtpclouds.cgi` | SMTP Cloud |
-| `licence.cgi` | Gestión de licencia |
+| `licence.cgi` | Gestión de licencia OpenVM |
 | `mass_domains_form.cgi` | Crear dominios masivos |
 | `mass_delete_domains.cgi` | Eliminar dominios masivos |
 | `mass_disable.cgi` | Deshabilitar masivo |
@@ -77,10 +82,10 @@ systemctl is-active openvm-cloud-lib-watcher.path
 
 ---
 
-## 🛠️ Re-aplicar Parches Manualmente
+## 🛠️ Re-aplicar Capa de Compatibilidad Manualmente
 
 ```bash
-# Re-aplicar todos los parches
+# Re-aplicar toda la capa
 sudo /usr/local/bin/openvm-pro-unlock
 
 # Re-aplicar solo cloud-lib
@@ -94,14 +99,25 @@ sudo systemctl restart webmin
 
 ## 📁 Backups
 
-Los backups se crean automáticamente antes de cada parcheo:
+Los backups se crean automáticamente antes de cada modificación:
 - Ubicación: `/root/openvm-unlock-backup-YYYYMMDD-HHMMSS/`
 - Contenido: Copias de los archivos originales
 
 ---
 
 ## ⚠️ Notas Importantes
-- Los parches se re-aplican automáticamente cuando Webmin se actualiza
-- Si hay errores de sintaxis, los backups se restauran automáticamente
-- Los parches usan marcadores `OPENVM GPL PATCH` para evitar duplicados
-- Compatible con Virtualmin GPL 7.x+
+
+- La capa de compatibilidad se re-aplica automáticamente cuando Webmin se actualiza.
+- Si hay errores de sintaxis, los backups se restauran automáticamente.
+- Los marcadores usan `OPENVM GPL PATCH` para evitar duplicados.
+- Compatible con Virtualmin GPL 7.x+.
+- Ver [`LICENSE_MATRIX.md`](../LICENSE_MATRIX.md) para detalles de licencias.
+- Ver [`OPENVM_ENTERPRISE_LICENSE.md`](../OPENVM_ENTERPRISE_LICENSE.md) para términos de uso.
+
+---
+
+## 📜 Licencia
+
+Esta capa de compatibilidad es parte de OpenVM Enterprise.
+Copyright © 2026 OpenVM Project.
+Licencia dual: GPLv3 / Comercial. Ver archivos de licencia para detalles.

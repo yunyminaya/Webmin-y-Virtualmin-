@@ -6,14 +6,14 @@
 
 ## 📋 Lista de Dominios
 
-### Servidor 192.168.1.39
+### Servidor principal
 
 | Dominio | Tipo | SSL | Estado | Document Root |
 |---------|------|-----|--------|---------------|
 | vendoto.com | Principal | ✅ Let's Encrypt | Activo | /home/vendoto/public_html |
 | *(otros dominios por verificar)* | - | - | - | - |
 
-### Servidor 192.168.1.46
+### Servidor secundario
 
 | Dominio | Tipo | SSL | Estado | Document Root |
 |---------|------|-----|--------|---------------|
@@ -26,22 +26,22 @@
 ### Listar Dominios
 ```bash
 # Listar todos los dominios (ejecutar en servidor)
-sshpass -p 'Ymo55095509' ssh yuny@192.168.1.39 'sudo virtualmin list-domains'
+ssh -i "$OPENVM_SSH_KEY" "$OPENVM_SSH_USER@$OPENVM_SRV1_HOST" 'sudo virtualmin list-domains'
 
 # Listar con detalles
-sshpass -p 'Ymo55095509' ssh yuny@192.168.1.39 'sudo virtualmin list-domains --with-status'
+ssh -i "$OPENVM_SSH_KEY" "$OPENVM_SSH_USER@$OPENVM_SRV1_HOST" 'sudo virtualmin list-domains --with-status'
 ```
 
 ### Crear Dominio
 ```bash
 # Crear dominio nuevo
-sshpass -p 'Ymo55095509' ssh yuny@192.168.1.39 'sudo virtualmin create-domain --domain nuevo.com --pass PASSWORD123 --unix --web --dns --mail'
+ssh -i "$OPENVM_SSH_KEY" "$OPENVM_SSH_USER@$OPENVM_SRV1_HOST" 'sudo virtualmin create-domain --domain nuevo.com --pass "$OPENVM_DOMAIN_PASSWORD" --unix --web --dns --mail'
 ```
 
 ### Eliminar Dominio
 ```bash
 # Eliminar dominio
-sshpass -p 'Ymo55095509' ssh yuny@192.168.1.39 'sudo virtualmin delete-domain --domain dominio.com'
+ssh -i "$OPENVM_SSH_KEY" "$OPENVM_SSH_USER@$OPENVM_SRV1_HOST" 'sudo virtualmin delete-domain --domain dominio.com'
 ```
 
 ### Verificar Dominio
@@ -50,7 +50,7 @@ sshpass -p 'Ymo55095509' ssh yuny@192.168.1.39 'sudo virtualmin delete-domain --
 curl -sk -o /dev/null -w "%{http_code}" https://vendoto.com
 
 # Verificar DNS
-dig vendoto.com @192.168.1.39
+dig vendoto.com @"$OPENVM_SRV1_HOST"
 
 # Verificar SSL
 echo | openssl s_client -connect vendoto.com:443 -servername vendoto.com 2>/dev/null | openssl x509 -noout -dates
@@ -72,13 +72,13 @@ echo | openssl s_client -connect vendoto.com:443 -servername vendoto.com 2>/dev/
 ### Comandos de Correo
 ```bash
 # Ver cola de correo
-sshpass -p 'Ymo55095509' ssh yuny@192.168.1.39 'sudo mailq'
+ssh -i "$OPENVM_SSH_KEY" "$OPENVM_SSH_USER@$OPENVM_SRV1_HOST" 'sudo mailq'
 
 # Ver logs de correo
-sshpass -p 'Ymo55095509' ssh yuny@192.168.1.39 'sudo tail -50 /var/log/mail.log'
+ssh -i "$OPENVM_SSH_KEY" "$OPENVM_SSH_USER@$OPENVM_SRV1_HOST" 'sudo tail -50 /var/log/mail.log'
 
 # Ver buzones
-sshpass -p 'Ymo55095509' ssh yuny@192.168.1.39 'sudo ls -la /home/vendoto/Maildir/'
+ssh -i "$OPENVM_SSH_KEY" "$OPENVM_SSH_USER@$OPENVM_SRV1_HOST" 'sudo ls -la /home/vendoto/Maildir/'
 ```
 
 ---
@@ -99,10 +99,10 @@ sshpass -p 'Ymo55095509' ssh yuny@192.168.1.39 'sudo ls -la /home/vendoto/Maildi
 ### Renovar Certificado
 ```bash
 # Renovar todos
-sshpass -p 'Ymo55095509' ssh yuny@192.168.1.39 'sudo certbot renew'
+ssh -i "$OPENVM_SSH_KEY" "$OPENVM_SSH_USER@$OPENVM_SRV1_HOST" 'sudo certbot renew'
 
 # Renovar dominio específico
-sshpass -p 'Ymo55095509' ssh yuny@192.168.1.39 'sudo certbot renew --cert-name vendoto.com'
+ssh -i "$OPENVM_SSH_KEY" "$OPENVM_SSH_USER@$OPENVM_SRV1_HOST" 'sudo certbot renew --cert-name vendoto.com'
 ```
 
 ---
@@ -112,10 +112,10 @@ sshpass -p 'Ymo55095509' ssh yuny@192.168.1.39 'sudo certbot renew --cert-name v
 ### Ver Tráfico
 ```bash
 # Tráfico web
-sshpass -p 'Ymo55095509' ssh yuny@192.168.1.39 'sudo cat /home/vendoto/logs/access_log | wc -l'
+ssh -i "$OPENVM_SSH_KEY" "$OPENVM_SSH_USER@$OPENVM_SRV1_HOST" 'sudo cat /home/vendoto/logs/access_log | wc -l'
 
 # Uso de disco
-sshpass -p 'Ymo55095509' ssh yuny@192.168.1.39 'sudo du -sh /home/vendoto/'
+ssh -i "$OPENVM_SSH_KEY" "$OPENVM_SSH_USER@$OPENVM_SRV1_HOST" 'sudo du -sh /home/vendoto/'
 ```
 
 ---
@@ -125,10 +125,10 @@ sshpass -p 'Ymo55095509' ssh yuny@192.168.1.39 'sudo du -sh /home/vendoto/'
 ### Comandos MySQL
 ```bash
 # Listar bases de datos
-sshpass -p 'Ymo55095509' ssh yuny@192.168.1.39 'sudo mysql -e "SHOW DATABASES;"'
+ssh -i "$OPENVM_SSH_KEY" "$OPENVM_SSH_USER@$OPENVM_SRV1_HOST" 'sudo mysql -e "SHOW DATABASES;"'
 
 # Ver tablas de una base
-sshpass -p 'Ymo55095509' ssh yuny@192.168.1.39 'sudo mysql -e "USE vendoto; SHOW TABLES;"'
+ssh -i "$OPENVM_SSH_KEY" "$OPENVM_SSH_USER@$OPENVM_SRV1_HOST" 'sudo mysql -e "USE vendoto; SHOW TABLES;"'
 ```
 
 ---

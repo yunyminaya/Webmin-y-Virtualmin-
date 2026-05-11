@@ -23,6 +23,19 @@ api_keys.txt
 *.pfx
 *.p12
 *.kubeconfig
+*.secret
+*.secrets
+*.token
+*.env
+*.env.*
+id_rsa*
+id_ed25519*
+known_hosts
+ssh_config.local
+servers.secrets.md
+SEGUNDO_CEREBRO/*SECRET*.md
+SEGUNDO_CEREBRO/*PRIVATE*.md
+SEGUNDO_CEREBRO/*CRED*.md
 
 # Secretos de infraestructura y backups
 *.tfstate
@@ -68,6 +81,7 @@ htmlcov/
 # CONFIGURACIÓN LOCAL DE HERRAMIENTAS / IDE
 .vscode/
 .roo/
+.claude/settings.local.json
 .kilocode/
 .kilocodemodes
 

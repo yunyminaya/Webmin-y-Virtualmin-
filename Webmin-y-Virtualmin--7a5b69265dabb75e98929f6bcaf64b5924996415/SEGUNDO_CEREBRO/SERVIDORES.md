@@ -7,8 +7,8 @@
 
 | ID | Hostname | IP | Rol | SO | Estado |
 |----|----------|-----|-----|-----|--------|
-| **SRV-1** | *(por verificar)* | `192.168.1.39` | Producción Principal | Ubuntu/Debian | ✅ Activo |
-| **SRV-2** | *(por verificar)* | `192.168.1.46` | Producción Secundario | Ubuntu/Debian | ✅ Activo |
+| **SRV-1** | *(por verificar)* | `[REDACTED_PRIVATE_IP]` | Producción Principal | Ubuntu/Debian | ✅ Activo |
+| **SRV-2** | *(por verificar)* | `[REDACTED_PRIVATE_IP]` | Producción Secundario | Ubuntu/Debian | ✅ Activo |
 
 ---
 
@@ -17,31 +17,31 @@
 ### SSH
 | Parámetro | Valor |
 |-----------|-------|
-| **Usuario** | `yuny` |
-| **Contraseña** | `Ymo55095509` |
+| **Usuario** | `[REDACTED_USER]` |
+| **Contraseña** | `[NO_GUARDAR_EN_GIT]` |
 | **Puerto** | `22` |
-| **Método** | Password Auth |
+| **Método recomendado** | SSH key + 2FA, sin password auth |
 
 ### Comando de conexión rápida
 ```bash
-# SRV-1 (192.168.1.39)
-sshpass -p 'Ymo55095509' ssh -o StrictHostKeyChecking=no yuny@192.168.1.39
+# SRV-1
+ssh -i "$OPENVM_SSH_KEY" "$OPENVM_SSH_USER@$OPENVM_SRV1_HOST"
 
-# SRV-2 (192.168.1.46)
-sshpass -p 'Ymo55095509' ssh -o StrictHostKeyChecking=no yuny@192.168.1.46
+# SRV-2
+ssh -i "$OPENVM_SSH_KEY" "$OPENVM_SSH_USER@$OPENVM_SRV2_HOST"
 ```
 
 ### Webmin Panel
 | Servidor | URL |
 |----------|-----|
-| SRV-1 | `https://192.168.1.39:10000` |
-| SRV-2 | `https://192.168.1.46:10000` |
+| SRV-1 | `https://$OPENVM_SRV1_HOST:10000` |
+| SRV-2 | `https://$OPENVM_SRV2_HOST:10000` |
 
 ---
 
 ## 📊 Servicios por Servidor
 
-### SRV-1 (192.168.1.39)
+### SRV-1
 | Servicio | Puerto | Estado |
 |----------|--------|--------|
 | Apache2 | 80/443 | ✅ |
@@ -53,7 +53,7 @@ sshpass -p 'Ymo55095509' ssh -o StrictHostKeyChecking=no yuny@192.168.1.46
 | Webmin | 10000 | ✅ |
 | SSH | 22 | ✅ |
 
-### SRV-2 (192.168.1.46)
+### SRV-2
 | Servicio | Puerto | Estado |
 |----------|--------|--------|
 | Apache2 | 80/443 | ✅ |
@@ -101,6 +101,6 @@ systemctl is-active openvm-cloud-lib-watcher.path
 ---
 
 ## 📝 Notas
-- Ambos servidores están en red local (192.168.1.x)
+- Los hosts reales se inyectan por variables de entorno locales o gestor de secretos
 - Los parches GPL se re-aplican automáticamente cuando Webmin se actualiza
 - Los backups de parches están en `/root/openvm-unlock-backup-*`

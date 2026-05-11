@@ -24,10 +24,10 @@
 
 | Servidor | IP | Usuario | Rol | Estado |
 |----------|-----|---------|-----|--------|
-| **SRV-1** | `192.168.1.39` | `yuny` | Producción Principal | ✅ Activo |
-| **SRV-2** | `192.168.1.46` | `yuny` | Producción Secundario | ✅ Activo |
+| **SRV-1** | `[REDACTED_PRIVATE_IP]` | `[REDACTED_USER]` | Producción Principal | ✅ Activo |
+| **SRV-2** | `[REDACTED_PRIVATE_IP]` | `[REDACTED_USER]` | Producción Secundario | ✅ Activo |
 
-**Contraseña SSH (ambos):** `Ymo55095509`
+**Credenciales SSH:** no deben guardarse en el repositorio. Usar gestor de secretos, claves SSH rotadas y variables de entorno locales.
 
 ---
 

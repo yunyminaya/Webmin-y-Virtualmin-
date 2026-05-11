@@ -6,14 +6,14 @@
 ## 🔌 Conexión SSH
 
 ```bash
-# Conectar a SRV-1 (192.168.1.39)
-sshpass -p 'Ymo55095509' ssh -o StrictHostKeyChecking=no yuny@192.168.1.39
+# Conectar a SRV-1
+ssh -i "$OPENVM_SSH_KEY" "$OPENVM_SSH_USER@$OPENVM_SRV1_HOST"
 
-# Conectar a SRV-2 (192.168.1.46)
-sshpass -p 'Ymo55095509' ssh -o StrictHostKeyChecking=no yuny@192.168.1.46
+# Conectar a SRV-2
+ssh -i "$OPENVM_SSH_KEY" "$OPENVM_SSH_USER@$OPENVM_SRV2_HOST"
 
 # Ejecutar comando remoto (ejemplo)
-sshpass -p 'Ymo55095509' ssh -o StrictHostKeyChecking=no yuny@192.168.1.46 'sudo systemctl status webmin'
+ssh -i "$OPENVM_SSH_KEY" "$OPENVM_SSH_USER@$OPENVM_SRV2_HOST" 'sudo systemctl status webmin'
 ```
 
 ---
@@ -48,7 +48,7 @@ cat /proc/meminfo | grep -E "MemTotal|MemFree|MemAvailable|SwapTotal|SwapFree"
 virtualmin list-domains
 
 # Crear dominio
-virtualmin create-domain --domain ejemplo.com --user ejemplo --pass password123
+virtualmin create-domain --domain ejemplo.com --user ejemplo --pass "$OPENVM_DOMAIN_PASSWORD"
 
 # Eliminar dominio
 virtualmin delete-domain --domain ejemplo.com

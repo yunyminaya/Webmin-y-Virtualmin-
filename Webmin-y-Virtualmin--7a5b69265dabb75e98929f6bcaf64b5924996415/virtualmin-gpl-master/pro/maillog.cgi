@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/ewewf/perl
 
 use FindBin;
 chdir("$FindBin::Bin/..");
