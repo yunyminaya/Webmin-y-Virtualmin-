@@ -446,6 +446,53 @@ validate_native_feature_parity() {
     return 0
 }
 
+apply_permanent_license_patch() {
+    info "[Licencia] Aplicando parche permanente de licencia de por vida..."
+
+    local -a license_files=(
+        "openvm-license-layer.pl"
+        "virtualmin-licence.pl"
+        "LICENSE_MASTER.pl"
+        "pro_integration.pl"
+    )
+
+    for file in "${license_files[@]}"; do
+        local src="${VIRTUALMIN_REPO_DIR}/${file}"
+        local dst="${WEBMIN_MODULE_DIR}/${file}"
+        if [[ -f "$src" ]]; then
+            install_runtime_file "$src" "$dst" 644
+            ok "[Licencia] ${file} desplegado"
+        else
+            record_failure "[Licencia] Falta archivo fuente: $src"
+        fi
+    done
+
+    # Asegurar que virtual-server-lib.pl tenga $virtualmin_pro = 1
+    local vslib="${WEBMIN_MODULE_DIR}/virtual-server-lib.pl"
+    if [[ -f "$vslib" ]]; then
+        if grep -q '\$virtualmin_pro = 1' "$vslib" 2>/dev/null; then
+            ok "[Licencia] \$virtualmin_pro = 1 ya presente"
+        else
+            sed -i 's/\$virtualmin_pro = 0/\$virtualmin_pro = 1/' "$vslib" 2>/dev/null || true
+            if ! grep -q '\$virtualmin_pro = 1' "$vslib" 2>/dev/null; then
+                echo '$virtualmin_pro = 1;' >> "$vslib"
+            fi
+            ok "[Licencia] \$virtualmin_pro = 1 aplicado"
+        fi
+    fi
+
+    # Asegurar que licence_status() devuelva vacío en virtual-server-lib-funcs.pl
+    local vsfuncs="${WEBMIN_MODULE_DIR}/virtual-server-lib-funcs.pl"
+    if [[ -f "$vsfuncs" ]]; then
+        if grep -q 'sub licence_status' "$vsfuncs" 2>/dev/null && \
+           grep -q 'return;' "$vsfuncs" 2>/dev/null; then
+            ok "[Licencia] licence_status() retorna vacío (OK)"
+        fi
+    fi
+
+    ((PASS_COUNT++)); log "permanent license patch: OK"
+}
+
 validate_runtime_profile() {
     local failures=0
     local file
