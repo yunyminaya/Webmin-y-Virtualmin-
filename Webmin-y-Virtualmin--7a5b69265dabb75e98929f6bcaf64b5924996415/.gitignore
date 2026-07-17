@@ -98,3 +98,5 @@ remote_*.log
 # NOTA: Los scripts de instalación deben estar en el repositorio
 # para que los usuarios puedan descargarlos directamente desde GitHub
 # Los scripts de instalación se mantienen en el repositorio
+# Local Pi runtime state
+.atl/
