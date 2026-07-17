@@ -65,6 +65,54 @@ log_backup() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') [BACKUP] $*" | tee -a "$LOG_FILE"
 }
 
+# Virtualmin domain backup usando CLI de Virtualmin
+virtualmin_backup_domains() {
+    log_info "Iniciando backup de dominios Virtualmin..."
+    
+    if ! command -v virtualmin &>/dev/null; then
+        log_info "Virtualmin CLI no encontrado - salteando backup de dominios"
+        return 0
+    fi
+    
+    local vbackup_dir="${VIRTUALMIN_BACKUP_DIR:-$BACKUP_DIR/virtualmin-domains}"
+    mkdir -p "$vbackup_dir"
+    chmod 700 "$vbackup_dir" 2>/dev/null || true
+    
+    local domains
+    domains=$(virtualmin list-domains --name-only 2>/dev/null)
+    
+    if [[ -z "$domains" ]]; then
+        log_info "No hay dominios Virtualmin configurados"
+        return 0
+    fi
+    
+    local retention="${VIRTUALMIN_BACKUP_RETENTION:-7}"
+    local failed=0
+    
+    for domain in $domains; do
+        local dest="$vbackup_dir/${domain}.%Y-%m-%d.tgz"
+        log_info "Backup dominio: $domain -> $vbackup_dir"
+        
+        if virtualmin backup-domain --domain "$domain" \
+            --dest "$dest" \
+            --all-features \
+            --strftime \
+            --purge "$retention" 2>&1 | tee -a "$LOG_FILE"; then
+            log_success "Backup completado: $domain"
+        else
+            log_error "Backup fallido: $domain"
+            ((failed++)) || true
+        fi
+    done
+    
+    if [[ $failed -gt 0 ]]; then
+        log_error "$failed backup(s) de dominio fallaron"
+        return 1
+    fi
+    
+    log_success "Backups de dominios Virtualmin completados"
+}
+
 # Verificar permisos de root (opcional para desarrollo)
 check_root() {
     if [[ $EUID -ne 0 ]]; then
@@ -272,6 +320,11 @@ Tipo: Diario
 Servidor: $(hostname)
 Sistema: $(uname -a)
 EOF
+
+    # Backup de dominios Virtualmin
+    if [[ "${VIRTUALMIN_BACKUP_ENABLED:-true}" == "true" ]]; then
+        virtualmin_backup_domains
+    fi
 
     log_success "Backup diario completado: $daily_dir"
 }
