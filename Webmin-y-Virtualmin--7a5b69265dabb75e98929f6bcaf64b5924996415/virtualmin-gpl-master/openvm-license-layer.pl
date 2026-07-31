@@ -277,4 +277,19 @@ sub get_virtualmin_shop_link {
     return "";
 }
 
+
+# ============================================================
+# PRO FEATURE STUBS - Functions that exist in Pro but not in GPL
+# ============================================================
+
+sub can_use_gcloud_storage_creds { return 0; }
+sub can_use_s3_storage_creds { return 0; }
+sub can_use_azure_storage_creds { return 0; }
+sub can_use_cloud_storage { return 0; }
+sub can_use_git_backup { return 0; }
+sub can_use_git_restore { return 0; }
+sub get_mail_rate_limit { return undef; }
+sub can_use_mail_rate_limit { return 0; }
+
+
 1;
