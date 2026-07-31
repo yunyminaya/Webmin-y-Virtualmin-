@@ -290,6 +290,7 @@ sub can_use_git_backup { return 0; }
 sub can_use_git_restore { return 0; }
 sub get_mail_rate_limit { return undef; }
 sub can_use_mail_rate_limit { return 0; }
-
-
+sub modify_all_resellers { return 0; }  # Pro-only reseller batch update
+    
+    
 1;
