@@ -30,11 +30,7 @@ check_dependencies() {
     if ! command -v openssl >/dev/null 2>&1; then
         missing_deps+=("openssl")
     fi
-    
-    if ! command -v hexdump >/dev/null 2>&1; then
-        missing_deps+=("hexdump")
-    fi
-    
+
     if [ ${#missing_deps[@]} -ne 0 ]; then
         echo -e "${RED}Error: Dependencias faltantes: ${missing_deps[*]}${NC}"
         return 1
